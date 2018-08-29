@@ -1,0 +1,616 @@
+[
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_settlementID",
+                "type": "uint32"
+            },
+            {
+                "name": "_orderType",
+                "type": "uint8"
+            },
+            {
+                "name": "_parity",
+                "type": "uint8"
+            },
+            {
+                "name": "_expiry",
+                "type": "uint64"
+            },
+            {
+                "name": "_tokens",
+                "type": "uint64"
+            },
+            {
+                "name": "_priceC",
+                "type": "uint16"
+            },
+            {
+                "name": "_priceQ",
+                "type": "uint16"
+            },
+            {
+                "name": "_volumeC",
+                "type": "uint16"
+            },
+            {
+                "name": "_volumeQ",
+                "type": "uint16"
+            },
+            {
+                "name": "_minimumVolumeC",
+                "type": "uint16"
+            },
+            {
+                "name": "_minimumVolumeQ",
+                "type": "uint16"
+            },
+            {
+                "name": "_nonceHash",
+                "type": "uint256"
+            }
+        ],
+        "name": "submitOrder",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "matchDetails",
+        "outputs": [
+            {
+                "name": "lowTokenVolume",
+                "type": "uint256"
+            },
+            {
+                "name": "highTokenVolume",
+                "type": "uint256"
+            },
+            {
+                "name": "lowToken",
+                "type": "uint32"
+            },
+            {
+                "name": "highToken",
+                "type": "uint32"
+            },
+            {
+                "name": "lowTokenAddress",
+                "type": "address"
+            },
+            {
+                "name": "highTokenAddress",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_buyID",
+                "type": "bytes32"
+            },
+            {
+                "name": "_sellID",
+                "type": "bytes32"
+            }
+        ],
+        "name": "submitMatch",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "orderStatus",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "renExTokensContract",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "submissionGasPriceLimit",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "_orderID",
+                "type": "bytes32"
+            }
+        ],
+        "name": "getMatchDetails",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "name": "",
+                "type": "uint32"
+            },
+            {
+                "name": "",
+                "type": "uint32"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_newOrderbookContract",
+                "type": "address"
+            }
+        ],
+        "name": "updateOrderbook",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_newSubmissionGasPriceLimit",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateSubmissionGasPriceLimit",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "DARKNODE_FEES_DENOMINATOR",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [],
+        "name": "renounceOwnership",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "orderSubmitter",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "RENEX_ATOMIC_SETTLEMENT_ID",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint32"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_trader",
+                "type": "address"
+            },
+            {
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "traderCanWithdraw",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "orderDetails",
+        "outputs": [
+            {
+                "name": "settlementID",
+                "type": "uint32"
+            },
+            {
+                "name": "parity",
+                "type": "uint8"
+            },
+            {
+                "name": "orderType",
+                "type": "uint8"
+            },
+            {
+                "name": "expiry",
+                "type": "uint64"
+            },
+            {
+                "name": "tokens",
+                "type": "uint64"
+            },
+            {
+                "name": "priceC",
+                "type": "uint64"
+            },
+            {
+                "name": "priceQ",
+                "type": "uint64"
+            },
+            {
+                "name": "volumeC",
+                "type": "uint64"
+            },
+            {
+                "name": "volumeQ",
+                "type": "uint64"
+            },
+            {
+                "name": "minimumVolumeC",
+                "type": "uint64"
+            },
+            {
+                "name": "minimumVolumeQ",
+                "type": "uint64"
+            },
+            {
+                "name": "nonceHash",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "DARKNODE_FEES_NUMERATOR",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "orderTrader",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "orderbookContract",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "RENEX_SETTLEMENT_ID",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint32"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "renExBalancesContract",
+        "outputs": [
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_newRenExBalancesContract",
+                "type": "address"
+            }
+        ],
+        "name": "updateRenExBalances",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "name": "_orderbookContract",
+                "type": "address"
+            },
+            {
+                "name": "_renExTokensContract",
+                "type": "address"
+            },
+            {
+                "name": "_renExBalancesContract",
+                "type": "address"
+            },
+            {
+                "name": "_submissionGasPriceLimit",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "token",
+                "type": "uint32"
+            },
+            {
+                "indexed": false,
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Transfer",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "name": "previousOrderbook",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "nextOrderbook",
+                "type": "address"
+            }
+        ],
+        "name": "OrderbookUpdates",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "name": "previousRenExBalances",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "nextRenExBalances",
+                "type": "address"
+            }
+        ],
+        "name": "RenExBalancesUpdates",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "name": "previousSubmissionGasPriceLimit",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "name": "nextSubmissionGasPriceLimit",
+                "type": "uint256"
+            }
+        ],
+        "name": "SubmissionGasPriceLimitUpdates",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "name": "previousOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipRenounced",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    }
+]
