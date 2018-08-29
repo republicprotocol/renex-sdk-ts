@@ -167,15 +167,15 @@ export async function cancelOrder(web3: Web3, walletDetails: WalletDetail, addre
     return {};
 }
 
-export async function getOrder(wallet: Wallet, orderId: string): Promise<Order> {
-    // FIXME: Unimplemented
-    return Promise.resolve(new Order({}));
-}
+// export async function getOrder(wallet: Wallet, orderId: string): Promise<Order> {
+//     // FIXME: Unimplemented
+//     return Promise.resolve(new Order({}));
+// }
 
-export async function getOrders(wallet: Wallet, order: Order): Promise<List<Order>> {
-    // FIXME: Unimplemented
-    return Promise.resolve(List<Order>());
-}
+// export async function getOrders(wallet: Wallet, order: Order): Promise<List<Order>> {
+//     // FIXME: Unimplemented
+//     return Promise.resolve(List<Order>());
+// }
 
 export function getOrderID(web3: Web3, order: Order): string {
     const bytes = Buffer.concat([

@@ -1,8 +1,5 @@
 import { NetworkData } from "./network";
 
-// TODO: Generate production key
-export const INFURA_KEY = "8ZCgtqu4tkIIRHh9hFZj";
-
 // Contracts
 interface ContractDetails {
     ABI: any[];
