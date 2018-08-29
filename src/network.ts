@@ -23,4 +23,4 @@ export interface NetworkData {
     };
 }
 
-export const NetworkData: NetworkData = NETWORK;
+export const NetworkData: NetworkData = null;

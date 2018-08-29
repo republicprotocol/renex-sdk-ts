@@ -1,37 +1,38 @@
 import { NetworkData } from "./network";
 
-// Contracts
-interface ContractDetails {
-    ABI: any[];
-    address: string;
-}
+import contract from "truffle-contract";
+import { RenExSettlementArtifact } from "./bindings/ren_ex_settlement";
+import { OrderbookArtifact } from "./bindings/orderbook";
+import { DarknodeRegistryArtifact } from "./bindings/darknode_registry";
+import { RenExBalancesArtifact } from "./bindings/ren_ex_balances";
+import { RenExAtomicInfoArtifact } from "./bindings/ren_ex_atomic_info";
 
-export const ERC20Contract: ContractDetails = {
-    ABI: require("./ABIs/ERC20.json"),
+export const ERC20 = contract({
+    abi: require("./ABIs/ERC20.json"),
     address: ""
-};
+});
 
-export const DarknodeRegistryContract: ContractDetails = {
-    ABI: require("./ABIs/DarknodeRegistry.json"),
+export const DarknodeRegistry: DarknodeRegistryArtifact = contract({
+    abi: require("./ABIs/DarknodeRegistry.json"),
     address: NetworkData.contracts[0].darknodeRegistry,
-};
+});
 
-export const OrderbookContract: ContractDetails = {
-    ABI: require("./ABIs/Orderbook.json"),
+export const Orderbook: OrderbookArtifact = contract({
+    abi: require("./ABIs/Orderbook.json"),
     address: NetworkData.contracts[0].orderbook,
-};
+});
 
-export const RenExSettlementContract: ContractDetails = {
-    ABI: require("./ABIs/RenExSettlement.json"),
+export const RenExSettlement: RenExSettlementArtifact = contract({
+    abi: require("./ABIs/RenExSettlement.json"),
     address: NetworkData.contracts[0].renExSettlement,
-};
+});
 
-export const RenExBalancesContract: ContractDetails = {
-    ABI: require("./ABIs/RenExBalances.json"),
+export const RenExBalances: RenExBalancesArtifact = contract({
+    abi: require("./ABIs/RenExBalances.json"),
     address: NetworkData.contracts[0].renExBalances,
-};
+});
 
-export const AtomicInfoContract: ContractDetails = {
-    ABI: require("./ABIs/AtomicInfo.json"),
+export const RenExAtomicInfo: RenExAtomicInfoArtifact = contract({
+    abi: require("./ABIs/RenExAtomicInfo.json"),
     address: "",
-};
+});

@@ -1,5 +1,5 @@
 import axios from "axios";
-import NodeRSA from "node-rsa";
+import * as NodeRSA from "node-rsa";
 import Web3 from "web3";
 
 import { BN } from "bn.js";
