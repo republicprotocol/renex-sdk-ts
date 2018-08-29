@@ -1,0 +1,46 @@
+{
+  "name": "renex-sdk-ts",
+  "version": "0.0.0",
+  "description": "The official RenEx Software Development Kit in typescript.",
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack --config webpack.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/republicprotocol/renex-sdk-ts.git"
+  },
+  "keywords": [
+    "renex",
+    "republic",
+    "republicprotocol",
+    "darkpool",
+    "sdk"
+  ],
+  "author": "Republic Protocol",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/republicprotocol/renex-sdk-ts/issues"
+  },
+  "dependencies": {
+    "@types/bignumber.js": "^5.0.0",
+    "@types/bs58": "^3.0.30",
+    "@types/node-fetch": "^2.1.2",
+    "bn.js": "^4.11.8",
+    "immutable": "^3.8.2",
+    "renex-sol": "git://github.com/republicprotocol/renex-sol.git#master",
+    "web3": "^1.0.0-beta.34"
+  },
+  "homepage": "https://github.com/republicprotocol/renex-sdk-ts#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/mocha": "^5.2.5",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/node": "^10.0.4",
+    "ts-loader": "^4.5.0",
+    "typescript": "^3.0.1",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0"
+  }
+}
