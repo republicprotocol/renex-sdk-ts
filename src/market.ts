@@ -29,21 +29,21 @@ export interface PairDetails {
 }
 
 export enum Pair {
-    BTCETH = 0x0000000000000001,
-    ETHDGX = 0x0000000100000100,
-    ETHREN = 0x0000000100010000,
-    ETHABC = 0x0000000100010001,
-    ETHXYZ = 0x0000000100010002,
+    BTC_ETH = 0x0000000000000001,
+    ETH_DGX = 0x0000000100000100,
+    ETH_REN = 0x0000000100010000,
+    ETH_ABC = 0x0000000100010001,
+    ETH_XYZ = 0x0000000100010002,
 }
 
 export const Pairs: OrderedMap<Pair, PairDetails> = OrderedMap<Pair, PairDetails>()
     // RenExAtomic:
-    .set(Pair.BTCETH, { code: Pair.BTCETH, orderSettlement: OrderSettlement.RenExAtomic, left: Token.BTC, right: Token.ETH, category: Token.ETH })
+    .set(Pair.BTC_ETH, { code: Pair.BTC_ETH, orderSettlement: OrderSettlement.RenExAtomic, left: Token.BTC, right: Token.ETH, category: Token.ETH })
     // RenEx:
-    .set(Pair.ETHDGX, { code: Pair.ETHDGX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.DGX })
-    .set(Pair.ETHREN, { code: Pair.ETHREN, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.REN })
-    .set(Pair.ETHABC, { code: Pair.ETHABC, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.ABC })
-    .set(Pair.ETHXYZ, { code: Pair.ETHXYZ, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.XYZ });
+    .set(Pair.ETH_DGX, { code: Pair.ETH_DGX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.DGX })
+    .set(Pair.ETH_REN, { code: Pair.ETH_REN, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.REN })
+    .set(Pair.ETH_ABC, { code: Pair.ETH_ABC, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.ABC })
+    .set(Pair.ETH_XYZ, { code: Pair.ETH_XYZ, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.XYZ });
 
 export interface TokenDetail {
     name: string;
@@ -77,11 +77,11 @@ TokenDetails = TokenDetails.set(Token.ETH, {
     icon: "eth.svg",
     address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     pairs: OrderedMap<Token, Pair>()
-        .set(Token.BTC, Pair.BTCETH)
-        .set(Token.DGX, Pair.ETHDGX)
-        .set(Token.REN, Pair.ETHREN)
-        .set(Token.ABC, Pair.ETHABC)
-        .set(Token.XYZ, Pair.ETHXYZ)
+        .set(Token.BTC, Pair.BTC_ETH)
+        .set(Token.DGX, Pair.ETH_DGX)
+        .set(Token.REN, Pair.ETH_REN)
+        .set(Token.ABC, Pair.ETH_ABC)
+        .set(Token.XYZ, Pair.ETH_XYZ)
     ,
     digits: 18,
     cmcID: 1027,

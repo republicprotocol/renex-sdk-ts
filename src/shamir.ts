@@ -46,16 +46,16 @@ export function split(n: number, k: number, secret: BN): List<Share> {
     const shares = new Array(k);
     for (let x = 1; x <= n; x++) {
 
-        let accum = coefficients[0];
+        let accumulator = coefficients[0];
         const base = new BN(x);
         let exp = base.mod(PRIME);
 
         for (let j = 1; j < coefficients.length; j++) {
             const co = coefficients[j].mul(exp).mod(PRIME);
-            accum = accum.add(co).mod(PRIME);
+            accumulator = accumulator.add(co).mod(PRIME);
             exp = exp.mul(base).mod(PRIME);
         }
-        shares[x - 1] = new Share(x, accum);
+        shares[x - 1] = new Share(x, accumulator);
     }
 
     const shareList = List(shares);

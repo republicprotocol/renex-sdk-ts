@@ -32,7 +32,7 @@ export function Record<T>(data: Pick<T, keyof T>) {
         new(inner?: Partial<T>): Props & Methods;
     }
 
-    // The returned class inherits from the Immutbale.Record class, using the
+    // The returned class inherits from the Immutable.Record class, using the
     // data argument to specify the default property values.
     return class extends Immutable.Record(data as any) {
         public constructor(inner?: Partial<T>) {
@@ -67,10 +67,10 @@ export function Record<T>(data: Pick<T, keyof T>) {
         /**
          * A type safe merge.
          * 
-         * @param inner An object of properties, and associted values, that will
+         * @param inner An object of properties, and associated values, that will
          *              be set.
          * 
-         * @return A new instance that has all of the propert values of the 
+         * @return A new instance that has all of the property values of the 
          *         original instance, except for the property values that were 
          *         merged.
          */

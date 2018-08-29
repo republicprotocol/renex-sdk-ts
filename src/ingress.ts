@@ -75,7 +75,7 @@ export class Pool extends Record({
     orderFragments: List<OrderFragment>(),
 }) { }
 
-export function ramdomNonce(randomBN: () => BN): BN {
+export function randomNonce(randomBN: () => BN): BN {
     let nonce = randomBN();
     while (nonce.gte(shamir.PRIME)) {
         nonce = randomBN();
@@ -104,9 +104,9 @@ export function ramdomNonce(randomBN: () => BN): BN {
 //     }
 
 //     const buff = signature.toBuffer();
-//     // Normalise v to be 0 or 1 (NOTE: Orderbook contract expects either format,
+//     // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
 //     // but for future compatibility, we stick to one format)
-//     // Metamask gives v as 27 or 28, Ledger gives v as 0 or 1
+//     // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
 //     if (buff[64] === 27 || buff[64] === 28) {
 //         buff[64] = buff[64] - 27;
 //     }
@@ -220,7 +220,7 @@ export function ramdomNonce(randomBN: () => BN): BN {
 //             console.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58()}...`);
 
 //             // Retrieve darknode RSA public key from Darknode contract
-//             const darknodeKey = await getDarknodePublickey(darknodeRegistryContract, darknode);
+//             const darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
 
 //             let orderFragment = new OrderFragment({
 //                 orderSignature: order.signature,
@@ -267,7 +267,7 @@ export function ramdomNonce(randomBN: () => BN): BN {
 //     return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
 // }
 
-// async function getDarknodePublickey(
+// async function getDarknodePublicKey(
 //     darknodeRegistryContract: DarknodeRegistryContractType, darknode: string
 // ): Promise<NodeRSA | null> {
 //     const darknodeKeyHex = await darknodeRegistryContract.methods.getPublicKey(darknode).call();

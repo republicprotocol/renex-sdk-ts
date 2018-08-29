@@ -1,57 +1,44 @@
-[
-    {
+[{
         "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "",
+            "type": "bytes32"
+        }],
         "name": "getOwnerAddress",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "bytes"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "",
+            "type": "bytes32"
+        }],
         "name": "ownerAddressTimestamp",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "",
+            "type": "bytes32"
+        }],
         "name": "swapDetailsTimestamp",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -67,8 +54,7 @@
     },
     {
         "constant": true,
-        "inputs": [
-            {
+        "inputs": [{
                 "name": "",
                 "type": "address"
             },
@@ -77,13 +63,11 @@
                 "type": "address"
             }
         ],
-        "name": "authorisedSwapper",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
+        "name": "authorizedSwapper",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -92,31 +76,25 @@
         "constant": true,
         "inputs": [],
         "name": "owner",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "",
+            "type": "bytes32"
+        }],
         "name": "swapDetails",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "bytes"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -125,24 +103,20 @@
         "constant": true,
         "inputs": [],
         "name": "orderbookContract",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_newOwner",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "name": "_newOwner",
+            "type": "address"
+        }],
         "name": "transferOwnership",
         "outputs": [],
         "payable": false,
@@ -150,20 +124,17 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "name": "_orderbookContract",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderbookContract",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "nonpayable",
         "type": "constructor"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "previousOrderbook",
                 "type": "address"
@@ -179,20 +150,17 @@
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "name": "previousOwner",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "indexed": true,
+            "name": "previousOwner",
+            "type": "address"
+        }],
         "name": "OwnershipRenounced",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": true,
                 "name": "previousOwner",
                 "type": "address"
@@ -208,12 +176,10 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_newOrderbookContract",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "name": "_newOrderbookContract",
+            "type": "address"
+        }],
         "name": "updateOrderbook",
         "outputs": [],
         "payable": false,
@@ -222,13 +188,11 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_swapper",
-                "type": "address"
-            }
-        ],
-        "name": "authoriseSwapper",
+        "inputs": [{
+            "name": "_swapper",
+            "type": "address"
+        }],
+        "name": "authorizeSwapper",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -236,13 +200,11 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_swapper",
-                "type": "address"
-            }
-        ],
-        "name": "deauthoriseSwapper",
+        "inputs": [{
+            "name": "_swapper",
+            "type": "address"
+        }],
+        "name": "deauthorizeSwapper",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -250,8 +212,7 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "name": "_orderID",
                 "type": "bytes32"
             },
@@ -268,8 +229,7 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "name": "_orderID",
                 "type": "bytes32"
             },
