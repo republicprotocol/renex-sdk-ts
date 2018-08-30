@@ -3,7 +3,7 @@ import { Provider } from "web3/types";
 import { BN } from "bn.js";
 
 import { RenExSettlement } from "./contracts";
-import { RenExSettlementContract } from "./bindings/ren_ex_settlement";
+import { RenExSettlementContract } from "@Bindings/ren_ex_settlement";
 
 // Types not implemented yet
 export type IdempotentKey = null;

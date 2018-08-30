@@ -28,6 +28,7 @@
     "@types/bs58": "^3.0.30",
     "@types/node-fetch": "^2.1.2",
     "@types/node-rsa": "^0.4.3",
+    "@types/underscore": "^1.8.9",
     "axios": "^0.18.0",
     "bn.js": "^4.11.8",
     "immutable": "^3.8.2",

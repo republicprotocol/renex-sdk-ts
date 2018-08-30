@@ -1,17 +1,27 @@
 {
     "compilerOptions": {
+        "paths": {
+            "@ABIs/*": [
+                "contracts/ABIs/*"
+            ],
+            "@Bindings/*": [
+                "contracts/bindings/*"
+            ],
+        },
         "baseUrl": "src",
-        "rootDir": "src",
+        "rootDir": "./",
         "moduleResolution": "node",
         "outDir": "./dist/",
         "noImplicitAny": true,
-        "module": "esnext",
-        "target": "es5",
         "lib": [
             "es2015",
             "es2017"
         ],
         "allowJs": true,
-        "esModuleInterop": true
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "module": "commonjs",
+        "resolveJsonModule": true,
+        "target": "es6"
     }
 }
