@@ -1,20 +1,18 @@
+import { BN } from "bn.js";
 import Web3 from "web3";
 import { Provider } from "web3/types";
-import { BN } from "bn.js";
 
 import { RenExSettlementContract } from "@Bindings/ren_ex_settlement";
-import { settled, status } from "@Methods/settlementMethods";
-import { listOrdersByStatus, listOrdersByTrader, cancelOrder, openOrder } from "@Methods/orderbookMethods";
-import { deposit, withdraw, usableBalance, balance } from "@Methods/balancesMethods";
+import { balance, deposit, usableBalance, withdraw } from "@Methods/balancesMethods";
 import { address, transfer } from "@Methods/generalMethods";
+import { cancelOrder, listOrdersByStatus, listOrdersByTrader, openOrder } from "@Methods/orderbookMethods";
+import { settled, status } from "@Methods/settlementMethods";
 
 // Types not implemented yet
 export type IdempotentKey = null;
 export type OrderID = null;
 export type Order = null;
 export enum OrderStatus { }
-
-declare var self:any;
 
 /**
  * This is the interface that the SDK exposes.
@@ -49,7 +47,7 @@ class RenExSDK implements RenExSDK {
     } = {};
 
     /**
-     *Creates an instance of RenExSDK.
+     * Creates an instance of RenExSDK.
      * @param {Provider} provider
      * @memberof RenExSDK
      */
@@ -58,17 +56,19 @@ class RenExSDK implements RenExSDK {
     }
 
     public address = (): string => address(this);
-    public transfer = (address: string, token: number, value: BN): Promise<void> => transfer(this, address, token, value);
+    // tslint:disable-next-line:max-line-length
+    public transfer = (addr: string, token: number, value: BN): Promise<void> => transfer(this, addr, token, value);
     public balance = (token: number): Promise<BN> => balance(this, token);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public deposit = (token: number, value: BN): Promise<void> => deposit(this, token, value);
+    // tslint:disable-next-line:max-line-length
     public withdraw = (token: number, value: BN, forced: boolean, key: IdempotentKey): Promise<IdempotentKey> => withdraw(this, token, value, forced, key);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public settled = (orderID: OrderID): Promise<boolean> => settled(this, orderID);
     public openOrder = (order: Order): Promise<void> => openOrder(this, order);
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
-    public listOrdersByTrader = (address: string): Promise<OrderID[]> => listOrdersByTrader(this, address);
-    public listOrdersByStatus = (status: OrderStatus): Promise<OrderID[]> => listOrdersByStatus(this, status);
+    public listOrdersByTrader = (addr: string): Promise<OrderID[]> => listOrdersByTrader(this, addr);
+    public listOrdersByStatus = (statuss: OrderStatus): Promise<OrderID[]> => listOrdersByStatus(this, statuss);
 }
 
 export default RenExSDK;

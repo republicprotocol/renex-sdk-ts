@@ -2,19 +2,19 @@ import * as contract from "truffle-contract";
 
 import { NetworkData } from "@Lib/network";
 
-import { RenExSettlementArtifact } from "@Bindings/ren_ex_settlement";
-import { OrderbookArtifact } from "@Bindings/orderbook";
 import { DarknodeRegistryArtifact } from "@Bindings/darknode_registry";
-import { RenExBalancesArtifact } from "@Bindings/ren_ex_balances";
+import { OrderbookArtifact } from "@Bindings/orderbook";
 import { RenExAtomicInfoArtifact } from "@Bindings/ren_ex_atomic_info";
+import { RenExBalancesArtifact } from "@Bindings/ren_ex_balances";
+import { RenExSettlementArtifact } from "@Bindings/ren_ex_settlement";
 
 // Do not use any tsconfig paths here
 import DarknodeRegistryJSON from "./ABIs/DarknodeRegistry.json";
 import ERC20JSON from "./ABIs/ERC20.json";
 import OrderbookJSON from "./ABIs/Orderbook.json";
-import RenExSettlementJSON from "./ABIs/RenExSettlement.json";
-import RenExBalancesJSON from "./ABIs/RenExBalances.json";
 import RenExAtomicInfoJSON from "./ABIs/RenExAtomicInfo.json";
+import RenExBalancesJSON from "./ABIs/RenExBalances.json";
+import RenExSettlementJSON from "./ABIs/RenExSettlement.json";
 
 export const ERC20 = contract.default({
     abi: ERC20JSON,

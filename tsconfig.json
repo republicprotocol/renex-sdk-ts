@@ -1,37 +1,48 @@
 {
-    "compilerOptions": {
-        "paths": {
-            "@Root/*": [
-                "*"
-            ],
-            "@Bindings/*": [
-                "contracts/bindings/*"
-            ],
-            "@Contracts/*": [
-                "contracts/*"
-            ],
-            "@Lib/*": [
-                "lib/*"
-            ],
-            "@Methods/*": [
-                "methods/*"
-            ],
-        },
-        "baseUrl": "src",
-        "rootDir": "./",
-        "moduleResolution": "node",
-        "outDir": "./dist/",
-        "noImplicitAny": true,
-        "lib": [
-            "es2015",
-            "es2017"
-        ],
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "module": "commonjs",
-        "resolveJsonModule": true,
-        "target": "es5",
-        "sourceMap": true,
-        "declaration": true
-    }
+  "compilerOptions": {
+    "paths": {
+      "@Root/*": [
+        "*"
+      ],
+      "@Bindings/*": [
+        "contracts/bindings/*"
+      ],
+      "@Contracts/*": [
+        "contracts/*"
+      ],
+      "@Lib/*": [
+        "lib/*"
+      ],
+      "@Methods/*": [
+        "methods/*"
+      ],
+    },
+    "baseUrl": "src",
+    "rootDir": "src",
+    "noImplicitAny": true,
+    "lib": [
+      "es2015",
+      "es2017"
+    ],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    "target": "esnext",
+    "module": "commonjs",
+    "declaration": true,
+    "declarationDir": "./types",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDirs": ["./src", "./test"],
+    "strictPropertyInitialization": false,
+    "noUnusedLocals": false,
+    "moduleResolution": "node",
+  },
+  "include": [
+    "./src/**/*",
+    "./src/global.d.ts",
+    "node_modules/@types"
+  ],
+  "exclude": []
 }

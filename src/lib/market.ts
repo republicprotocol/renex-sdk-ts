@@ -1,5 +1,5 @@
 import { Map, OrderedMap } from "immutable";
-import * as fetch from 'node-fetch';
+import * as fetch from "node-fetch";
 
 import { NetworkData } from "@Lib/network";
 
@@ -19,7 +19,6 @@ export enum Token {
 
 // For iterating over Tokens
 export const Tokens: Token[] = [Token.BTC, Token.ETH, Token.REN, Token.DGX, Token.ABC, Token.XYZ];
-
 
 export interface PairDetails {
     code: Pair;

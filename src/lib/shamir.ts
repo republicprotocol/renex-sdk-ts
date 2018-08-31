@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
-import { List } from "immutable";
 import * as crypto from "crypto";
+import { List } from "immutable";
 
 export const PRIME: BN = new BN("17012364981921935471");
 

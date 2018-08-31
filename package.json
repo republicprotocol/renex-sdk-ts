@@ -2,13 +2,6 @@
   "name": "renex-sdk-ts",
   "version": "0.0.0",
   "description": "The official RenEx Software Development Kit in typescript.",
-  "main": "dist/bundle.js",
-  "module": "dist/bundle.js",
-  "typings": "dist/src/index.d.ts",
-  "scripts": {
-    "start": "webpack --config webpack.config.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/republicprotocol/renex-sdk-ts.git"
@@ -25,30 +18,57 @@
   "bugs": {
     "url": "https://github.com/republicprotocol/renex-sdk-ts/issues"
   },
+  "main": "./lib/index.js",
+  "module": "dist/bundle.js",
+  "types": "./lib/types/index.d.ts",
+  "typings": "./lib/types/index.d.ts",
+  "scripts": {
+    "lint": "tslint --project ./",
+    "build:dev": "cross-env NODE_ENV=development webpack --mode development --display-error-details --progress --color",
+    "build:prod": "cross-env NODE_ENV=production webpack --mode production --progress --color",
+    "prepublish": "npm run lint && npm run build:dev"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@types/chai": "^4.1.4",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/crypto-js": "^3.1.43",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.0.4",
+    "awesome-typescript-loader": "^5.2.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-stage-3": "^6.24.1",
+    "clean-webpack-plugin": "^0.1.19",
+    "cross-env": "^5.2.0",
+    "ts-loader": "^4.5.0",
+    "tslint": "^5.11.0",
+    "tslint-config-prettier": "^1.15.0",
+    "tslint-config-standard": "^7.1.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "tslint-react": "^3.6.0",
+    "typedoc": "^0.12.0",
+    "typedoc-webpack-plugin": "^1.1.4",
+    "typescript": "^3.0.3",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0",
+    "webpack-node-externals": "^1.7.2"
+  },
   "dependencies": {
-    "@types/bignumber.js": "^5.0.0",
     "@types/bs58": "^3.0.30",
     "@types/node-fetch": "^2.1.2",
     "@types/node-rsa": "^0.4.3",
     "@types/underscore": "^1.8.9",
     "axios": "^0.18.0",
+    "bignumber.js": "^7.2.1",
     "bn.js": "^4.11.8",
     "immutable": "^3.8.2",
+    "node-fetch": "^2.2.0",
     "node-rsa": "^1.0.1",
     "renex-sol": "git://github.com/republicprotocol/renex-sol.git#master",
     "truffle-contract": "^3.0.6",
-    "web3": "^1.0.0-beta.34"
-  },
-  "homepage": "https://github.com/republicprotocol/renex-sdk-ts#readme",
-  "devDependencies": {
-    "@types/chai": "^4.1.4",
-    "@types/chai-as-promised": "^7.1.0",
-    "@types/mocha": "^5.2.5",
-    "@types/node": "^10.0.4",
-    "awesome-typescript-loader": "^5.2.0",
-    "ts-loader": "^4.5.0",
-    "typescript": "^3.0.1",
-    "webpack": "^4.17.1",
-    "webpack-cli": "^3.1.0"
+    "web3": "^1.0.0-beta.35"
   }
 }

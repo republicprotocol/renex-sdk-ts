@@ -11,11 +11,11 @@ import { List, Map } from "immutable";
 
 import * as shamir from "@Lib/shamir";
 
+import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
 import { Record } from "@Lib/record";
-import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
 
 export const ErrorCanceledByUser = "Canceled by user";
 export const ErrorNoAccount = "Cannot retrieve wallet account";
@@ -150,7 +150,7 @@ export async function submitOrderFragments(
 
 export async function cancelOrder(web3: Web3, address: string, orderId64: string): Promise<{}> {
     // Hexadecimal encoding of orderId64 (without 0x prefix)
-    const orderIdHex: string = new Buffer(orderId64, "base64").toString("hex");
+    const orderIdHex: string = Buffer.from(orderId64, "base64").toString("hex");
     const prefix: string = web3.utils.toHex("Republic Protocol: cancel: ");
     const hashForSigning: string = prefix + orderIdHex;
 
@@ -196,7 +196,7 @@ export function getOrderID(web3: Web3, order: Order): string {
         new BN(order.volume.q).toArrayLike(Buffer, "be", 8),
         new BN(order.minimumVolume.c).toArrayLike(Buffer, "be", 8),
         new BN(order.minimumVolume.q).toArrayLike(Buffer, "be", 8),
-        new Buffer(web3.utils.keccak256(`0x${order.nonce.toArrayLike(Buffer, "be", 8).toString("hex")}`).slice(2), "hex"),
+        Buffer.from(web3.utils.keccak256(`0x${order.nonce.toArrayLike(Buffer, "be", 8).toString("hex")}`).slice(2), "hex"),
     ]);
     return web3.utils.keccak256(`0x${bytes.toString("hex")}`);
 }
@@ -205,60 +205,61 @@ export async function buildOrderFragmentsForPods(
     web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: Order
 ): Promise<Map<string, List<OrderFragment>>> {
     const pods = await getPods(web3, darknodeRegistryContract);
-    const fragmentPromises = (pods).map(async (pool: Pool): Promise<Pool> => {
-        const n = pool.darknodes.size;
-        const k = Math.floor((2 * (n + 1)) / 3);
+    const fragmentPromises = (pods)
+        .map(async (pool: Pool): Promise<Pool> => {
+            const n = pool.darknodes.size;
+            const k = Math.floor((2 * (n + 1)) / 3);
 
-        const tokenShares = shamir.split(n, k, new BN(order.tokens));
-        const priceCoShares = shamir.split(n, k, new BN(order.price.c));
-        const priceExpShares = shamir.split(n, k, new BN(order.price.q));
-        const volumeCoShares = shamir.split(n, k, new BN(order.volume.c));
-        const volumeExpShares = shamir.split(n, k, new BN(order.volume.q));
-        const minimumVolumeCoShares = shamir.split(n, k, new BN(order.minimumVolume.c));
-        const minimumVolumeExpShares = shamir.split(n, k, new BN(order.minimumVolume.q));
-        const nonceShares = shamir.split(n, k, order.nonce);
+            const tokenShares = shamir.split(n, k, new BN(order.tokens));
+            const priceCoShares = shamir.split(n, k, new BN(order.price.c));
+            const priceExpShares = shamir.split(n, k, new BN(order.price.q));
+            const volumeCoShares = shamir.split(n, k, new BN(order.volume.c));
+            const volumeExpShares = shamir.split(n, k, new BN(order.volume.q));
+            const minimumVolumeCoShares = shamir.split(n, k, new BN(order.minimumVolume.c));
+            const minimumVolumeExpShares = shamir.split(n, k, new BN(order.minimumVolume.q));
+            const nonceShares = shamir.split(n, k, order.nonce);
 
-        let orderFragments = List<OrderFragment>();
+            let orderFragments = List<OrderFragment>();
 
-        // Loop through each darknode in the pool
-        for (let i = 0; i < n; i++) {
-            const darknode = pool.darknodes.get(i);
-            console.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58()}...`);
+            // Loop through each darknode in the pool
+            for (let i = 0; i < n; i++) {
+                const darknode = pool.darknodes.get(i);
+                console.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58()}...`);
 
-            // Retrieve darknode RSA public key from Darknode contract
-            const darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
+                // Retrieve darknode RSA public key from Darknode contract
+                const darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
 
-            let orderFragment = new OrderFragment({
-                orderSignature: order.signature,
-                orderId: order.id,
-                orderType: order.type,
-                orderParity: order.parity,
-                orderSettlement: order.orderSettlement,
-                orderExpiry: order.expiry,
-                tokens: encryptForDarknode(darknodeKey, tokenShares.get(i), 8).toBase64(),
-                price: [
-                    encryptForDarknode(darknodeKey, priceCoShares.get(i), 8).toBase64(),
-                    encryptForDarknode(darknodeKey, priceExpShares.get(i), 8).toBase64()
-                ],
-                volume: [
-                    encryptForDarknode(darknodeKey, volumeCoShares.get(i), 8).toBase64(),
-                    encryptForDarknode(darknodeKey, volumeExpShares.get(i), 8).toBase64()
-                ],
-                minimumVolume: [
-                    encryptForDarknode(darknodeKey, minimumVolumeCoShares.get(i), 8).toBase64(),
-                    encryptForDarknode(darknodeKey, minimumVolumeExpShares.get(i), 8).toBase64()
-                ],
-                nonce: encryptForDarknode(darknodeKey, nonceShares.get(i), 8).toBase64(),
-                index: i + 1,
-            });
-            orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
-            orderFragments = orderFragments.push(orderFragment);
-        }
-        return pool.set("orderFragments", orderFragments);
-    });
+                let orderFragment = new OrderFragment({
+                    orderSignature: order.signature,
+                    orderId: order.id,
+                    orderType: order.type,
+                    orderParity: order.parity,
+                    orderSettlement: order.orderSettlement,
+                    orderExpiry: order.expiry,
+                    tokens: encryptForDarknode(darknodeKey, tokenShares.get(i), 8).toBase64(),
+                    price: [
+                        encryptForDarknode(darknodeKey, priceCoShares.get(i), 8).toBase64(),
+                        encryptForDarknode(darknodeKey, priceExpShares.get(i), 8).toBase64()
+                    ],
+                    volume: [
+                        encryptForDarknode(darknodeKey, volumeCoShares.get(i), 8).toBase64(),
+                        encryptForDarknode(darknodeKey, volumeExpShares.get(i), 8).toBase64()
+                    ],
+                    minimumVolume: [
+                        encryptForDarknode(darknodeKey, minimumVolumeCoShares.get(i), 8).toBase64(),
+                        encryptForDarknode(darknodeKey, minimumVolumeExpShares.get(i), 8).toBase64()
+                    ],
+                    nonce: encryptForDarknode(darknodeKey, nonceShares.get(i), 8).toBase64(),
+                    index: i + 1,
+                });
+                orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
+                orderFragments = orderFragments.push(orderFragment);
+            }
+            return pool.set("orderFragments", orderFragments);
+        });
 
     // Reduce must happen serially
-    return await fragmentPromises.reduce(
+    return fragmentPromises.reduce(
         async (poolsPromise: Promise<Map<string, List<OrderFragment>>>, poolPromise: Promise<Pool>) => {
             const pools = await poolsPromise;
             const pool = await poolPromise;
@@ -283,7 +284,7 @@ async function getDarknodePublicKey(
         return null;
     }
 
-    const darknodeKey = new Buffer(darknodeKeyHex.slice(2), "hex");
+    const darknodeKey = Buffer.from(darknodeKeyHex.slice(2), "hex");
 
     // We require the exponent E to fit into 32 bytes.
     // Since it is stored at 64 bytes, we ignore the first 32 bytes.
@@ -327,7 +328,7 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
  */
 async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<List<Pool>> {
     const darknodes = await darknodeRegistryContract.getDarknodes(NULL, 100);
-    const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber()
+    const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
     const epoch = await darknodeRegistryContract.currentEpoch();
 
     if (!darknodes.length) {
@@ -376,7 +377,7 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
     for (let i = 0; i < pools.size; i++) {
         let hashData = List<Buffer>();
         for (const darknode of pools.get(i).darknodes.toArray()) {
-            hashData = hashData.push(new Buffer(darknode.substring(2), "hex"));
+            hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
         }
 
         const id = new EncodedData(web3.utils.keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
