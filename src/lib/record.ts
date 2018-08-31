@@ -1,4 +1,3 @@
-// tslint:disable
 import * as Immutable from "immutable";
 
 /**
@@ -13,74 +12,71 @@ import * as Immutable from "immutable";
  * @return A class that can be used to instantiate immutable objects.
  */
 export function Record<T>(data: Pick<T, keyof T>) {
-
-    // An interface of the properties that the class will have.
-    type Props = {
-        readonly [P in keyof T]: T[P];
-    }
-
-    // An interface of the methods that the class will have.
-    interface Methods {
-        get<K extends keyof T, V extends T[K]>(key: K): V;
-        set<K extends keyof T, V extends T[K]>(key: K, value: V): this;
-        merge<K extends keyof T, V extends T[K]>(inner: Partial<T> | { [key in K]: V }): this;
-        toJS(): any;
-    }
-
-    // An interface to which the return class will be cast.
-    interface Interface {
-        new(inner?: Partial<T>): Props & Methods;
-    }
-
     // The returned class inherits from the Immutable.Record class, using the
     // data argument to specify the default property values.
     return class extends Immutable.Record(data as any) {
         public constructor(inner?: Partial<T>) {
             super(Immutable.fromJS(inner || {}));
         }
-
         /**
          * A type safe getter.
-         * 
+         *
          * @param key The name of the property to get. It must be a property that
          *            exists in T.
-         * 
+         *
          * @return The value associated with the property.
          */
         public get<K extends string & keyof T, V extends T[K]>(key: K): V {
             return super.get(key);
         }
-
         /**
          * A type safe setter.
-         * 
+         *
          * @param key The name of the property to set. It must be a property that
          *            exists in T.
-         * 
-         * @return A new instance that has all of the property values of the 
+         *
+         * @return A new instance that has all of the property values of the
          *         original instance, except for the property value that was set.
          */
         public set<K extends string & keyof T, V extends T[K]>(key: K, value: V): this {
             return super.set(key, value) as this;
         }
-
         /**
          * A type safe merge.
-         * 
+         *
          * @param inner An object of properties, and associated values, that will
          *              be set.
-         * 
-         * @return A new instance that has all of the property values of the 
-         *         original instance, except for the property values that were 
+         *
+         * @return A new instance that has all of the property values of the
+         *         original instance, except for the property values that were
          *         merged.
          */
-        public merge<K extends keyof T, V extends T[K]>(inner: Partial<T> | { [key in K]: V }): this {
+        public merge<K extends keyof T, V extends T[K]>(inner: Partial<T> | {
+            [key in K]: V;
+        }): this {
             return super.merge(inner as any) as this;
         }
-
         public toJS(): any {
-            return super.toJS()
+            return super.toJS();
         }
+    } as any as Interface<T>;
+}
 
-    } as any as Interface;
+// An interface to which the return class will be cast.
+export interface Interface<T> {
+    new(inner?: Partial<T>): Props<T> & Methods<T>;
+}
+
+// An interface of the properties that the class will have.
+type Props<T> = {
+    readonly [P in keyof T]: T[P];
+};
+// An interface of the methods that the class will have.
+interface Methods<T> {
+    get<K extends keyof T, V extends T[K]>(key: K): V;
+    set<K extends keyof T, V extends T[K]>(key: K, value: V): this;
+    merge<K extends keyof T, V extends T[K]>(inner: Partial<T> | {
+        [key in K]: V;
+    }): this;
+    toJS(): any;
 }

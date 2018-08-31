@@ -1,11 +1,20 @@
 {
     "compilerOptions": {
         "paths": {
-            "@ABIs/*": [
-                "contracts/ABIs/*"
+            "@Root/*": [
+                "*"
             ],
             "@Bindings/*": [
                 "contracts/bindings/*"
+            ],
+            "@Contracts/*": [
+                "contracts/*"
+            ],
+            "@Lib/*": [
+                "lib/*"
+            ],
+            "@Methods/*": [
+                "methods/*"
             ],
         },
         "baseUrl": "src",
@@ -17,11 +26,12 @@
             "es2015",
             "es2017"
         ],
-        "allowJs": true,
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "module": "commonjs",
         "resolveJsonModule": true,
-        "target": "es6"
+        "target": "es5",
+        "sourceMap": true,
+        "declaration": true
     }
 }

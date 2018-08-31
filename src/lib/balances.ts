@@ -1,4 +1,4 @@
-import { Token, TokenDetails } from "./market";
+import { Token, TokenDetails } from "@Lib/market";
 import BigNumber from "bignumber.js";
 
 /**

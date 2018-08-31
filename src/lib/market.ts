@@ -1,6 +1,7 @@
 import { Map, OrderedMap } from "immutable";
-import { NetworkData } from "./network";
 import * as fetch from 'node-fetch';
+
+import { NetworkData } from "@Lib/network";
 
 export enum OrderSettlement {
     RenEx = 1,

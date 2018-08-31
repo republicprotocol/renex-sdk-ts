@@ -9,12 +9,12 @@ import Web3 from "web3";
 import { BN } from "bn.js";
 import { List, Map } from "immutable";
 
-import * as shamir from "./shamir";
+import * as shamir from "@Lib/shamir";
 
-import { EncodedData, Encodings } from "./encodedData";
-import { OrderSettlement } from "./market";
-import { NetworkData } from "./network";
-import { Record } from "./record";
+import { EncodedData, Encodings } from "@Lib/encodedData";
+import { OrderSettlement } from "@Lib/market";
+import { NetworkData } from "@Lib/network";
+import { Record } from "@Lib/record";
 import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
 
 export const ErrorCanceledByUser = "Canceled by user";
