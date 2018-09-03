@@ -29,6 +29,12 @@ interface RenExSDK {
 
 ## Developer Notes
 
+To build:
+
+```bash
+npm run build:dev
+```
+
 To update the typescript bindings in `src/contracts/bindings`, you need to clone `renex-sol` and run:
 
 ```bash
