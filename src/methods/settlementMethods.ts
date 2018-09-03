@@ -5,7 +5,9 @@ import { UNIMPLEMENTED } from "@Lib/errors";
 import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
 
 export const status = async (sdk: RenExSDK, orderID: OrderID): Promise<OrderStatus> => {
-    throw new Error(UNIMPLEMENTED);
+    sdk.contracts.renExSettlement = sdk.contracts.renExSettlement || await RenExSettlement.deployed();
+
+    return new BN(await sdk.contracts.renExSettlement.orderStatus(orderID));
 };
 
 export const settled = async (sdk: RenExSDK, orderID: OrderID): Promise<boolean> => {

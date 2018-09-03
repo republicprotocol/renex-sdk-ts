@@ -7,6 +7,7 @@ import { OrderbookArtifact } from "@Bindings/orderbook";
 import { RenExAtomicInfoArtifact } from "@Bindings/ren_ex_atomic_info";
 import { RenExBalancesArtifact } from "@Bindings/ren_ex_balances";
 import { RenExSettlementArtifact } from "@Bindings/ren_ex_settlement";
+import { RenExTokensArtifact } from "@Bindings/ren_ex_tokens";
 
 // Do not use any tsconfig paths here
 import DarknodeRegistryJSON from "./ABIs/DarknodeRegistry.json";
@@ -15,6 +16,9 @@ import OrderbookJSON from "./ABIs/Orderbook.json";
 import RenExAtomicInfoJSON from "./ABIs/RenExAtomicInfo.json";
 import RenExBalancesJSON from "./ABIs/RenExBalances.json";
 import RenExSettlementJSON from "./ABIs/RenExSettlement.json";
+import RenExTokensJSON from "./ABIs/RenExTokens.json";
+
+export const ETH_CODE = 1;
 
 export const ERC20 = contract.default({
     abi: ERC20JSON,
@@ -39,6 +43,11 @@ export const RenExSettlement: RenExSettlementArtifact = contract.default({
 export const RenExBalances: RenExBalancesArtifact = contract.default({
     abi: RenExBalancesJSON,
     address: NetworkData.contracts[0].renExBalances,
+});
+
+export const RenExTokens: RenExTokensArtifact = contract.default({
+    abi: RenExTokensJSON,
+    address: "",
 });
 
 export const RenExAtomicInfo: RenExAtomicInfoArtifact = contract.default({
