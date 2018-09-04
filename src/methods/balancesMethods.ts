@@ -3,7 +3,7 @@ import RenExSDK, { IdempotentKey, IntInput } from "@Root/index";
 import { BN } from "bn.js";
 
 import { RenExBalances, RenExTokens } from "@Contracts/contracts";
-import BigNumber from "bignumber.js";
+import { requestWithdrawalSignature } from "@Lib/ingress";
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await RenExBalances.deployed();
@@ -15,11 +15,25 @@ export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
 };
 
 export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    throw new Error(UNIMPLEMENTED);
+    // TODO: Subtract balances locked up in orders
+    return balance(sdk, token);
 };
 
 export const withdraw = async (
-    sdk: RenExSDK, token: number, value: IntInput, forced: boolean, key: IdempotentKey
-): Promise<IdempotentKey> => {
-    throw new Error(UNIMPLEMENTED);
+    sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean, key?: IdempotentKey
+): Promise<IdempotentKey | void> => {
+
+    // Trustless withdrawals are not implemented yet
+    if (withoutIngressSignature === true || key !== undefined) {
+        throw new Error(UNIMPLEMENTED);
+    }
+
+    sdk.contracts.renExBalances = sdk.contracts.renExBalances || await RenExBalances.deployed();
+
+    const tokenString = (await sdk.contracts.renExTokens.tokens(token)).addr;
+
+    // TODO: Check balance
+
+    const signature = await requestWithdrawalSignature(sdk.address, token);
+    await sdk.contracts.renExBalances.withdraw(tokenString, value, signature);
 };

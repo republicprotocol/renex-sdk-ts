@@ -59,6 +59,11 @@ export class OpenOrderRequest extends Record({
     orderFragmentMappings: Array<Map<string, List<OrderFragment>>>()
 }) { }
 
+export class WithdrawRequest extends Record({
+    address: "",
+    tokenID: 0,
+}) { }
+
 export class OrderFragment extends Record({
     id: "",
     orderSignature: "",
@@ -139,6 +144,21 @@ export async function submitOrderFragments(
     } catch (error) {
         return Promise.reject(error);
     }
+}
+
+export async function requestWithdrawalSignature(address: string, tokenID: number): Promise<string> {
+    const request = new WithdrawRequest({
+        address,
+        tokenID,
+    });
+
+    const resp = await axios.post(`${NetworkData.ingress}/withdrawals`, request.toJS());
+    if (resp.status !== 201) {
+        throw new Error("Unexpected status code: " + resp.status);
+    }
+
+    const signature: string = resp.data;
+    return signature;
 }
 
 export async function cancelOrder(web3: Web3, address: string, orderId64: string): Promise<{}> {
