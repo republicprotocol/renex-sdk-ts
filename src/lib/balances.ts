@@ -1,15 +1,22 @@
 import { Token, TokenDetails } from "@Lib/market";
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
+import { FloatInput, IntInput } from "index";
 
-export const adjustDecimals = (value: BN, fromDecimals: number | BN, toDecimals: number | BN): BN => {
-    fromDecimals = new BN(fromDecimals);
-    toDecimals = new BN(toDecimals);
+export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: string | number | BN, toDecimals: string | number | BN): BN => {
+    fromDecimals = new BN(fromDecimals).toNumber();
+    toDecimals = new BN(toDecimals).toNumber();
 
-    if (fromDecimals.lt(toDecimals)) {
-        return value.mul(new BN(10).pow(toDecimals.sub(fromDecimals)));
+    if ((value as any).toFixed) {
+        value = new BigNumber((value as any).toFixed());
     } else {
-        return value.div(new BN(10).pow(fromDecimals.sub(toDecimals)));
+        value = new BigNumber(value.toString());
+    }
+
+    if (fromDecimals < toDecimals) {
+        return new BN(value.multipliedBy(new BigNumber(10).exponentiatedBy(toDecimals - fromDecimals)).toFixed());
+    } else {
+        return new BN(value.dividedBy(new BigNumber(10).exponentiatedBy(fromDecimals - toDecimals)).toFixed());
     }
 };
 

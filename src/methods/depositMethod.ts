@@ -3,7 +3,7 @@ import Web3 from "web3";
 
 import { BN } from "bn.js";
 
-import RenExSDK from "@Root/index";
+import RenExSDK, { IntInput } from "@Root/index";
 
 import { ERC20, RenExTokens } from "@Contracts/contracts";
 import { UNIMPLEMENTED } from "@Lib/errors";
@@ -24,12 +24,8 @@ export const readableToBalance = async (sdk: RenExSDK, readable: BigNumber, toke
     return new BN(readable.times(e).toFixed());
 };
 
-export const deposit = async (sdk: RenExSDK, token: number, valueBig: BigNumber): Promise<void> => {
-
-    const amountBN = await readableToBalance(sdk, valueBig, token);
-    if (amountBN.lt(new BN(1))) {
-        throw new Error("invalid amount");
-    }
+export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<void> => {
+    value = new BN(value);
 
     const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
 
@@ -49,7 +45,7 @@ export const deposit = async (sdk: RenExSDK, token: number, valueBig: BigNumber)
         // }
 
         transactions.push({
-            call: () => sdk.contracts.renExBalances.deposit(tokenDetails.addr, amountBN),
+            call: () => sdk.contracts.renExBalances.deposit(tokenDetails.addr, value),
             name: "Deposit",
         });
     } else {
@@ -62,21 +58,21 @@ export const deposit = async (sdk: RenExSDK, token: number, valueBig: BigNumber)
         // There's no way to check pending state - alternative is to see
         // if there are any pending deposits for the same token
         const allowance = await tokenContract.methods.allowance(sdk.account, sdk.contracts.renExBalances.address).call();
-        if (new BN(allowance).lt(amountBN)) {
+        if (new BN(allowance).lt(value)) {
             transactions.push({
-                call: () => tokenContract.methods.approve(sdk.contracts.renExBalances.address, amountBN).send({ from: sdk.account }),
+                call: () => tokenContract.methods.approve(sdk.contracts.renExBalances.address, value).send({ from: sdk.account }),
                 name: "Approve",
             });
         }
         transactions.push({
             call: () => sdk.contracts.renExBalances.deposit(
                 tokenDetails.addr,
-                amountBN, {
+                value, {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
                     from: sdk.account,
                     gas: "150000",
-                    value: amountBN.toNumber(),
+                    value: value.toString(),
                 }),
             name: "Deposit",
         });
