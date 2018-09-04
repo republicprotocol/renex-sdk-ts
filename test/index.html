@@ -3,8 +3,10 @@
 <body>
     <script src="../lib/browser.js"></script>
     <script>
-        const sdk = new RenExSDK(window.Web3.currentProvider, "");
-        console.log(sdk);
+        const sdk = new RenExSDK(window.web3.currentProvider, "0x797522fb74d42bb9fbf6b76dea24d01a538d5d66");
+        sdk.deposit(1, 1)
+            .then(console.log)
+            .catch(console.error);
     </script>
     <p>Open console</p>
 </body>

@@ -6,11 +6,12 @@ import * as ingress from "@Lib/ingress";
 
 import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
 
-import { Orderbook } from "@Contracts/contracts";
+import { Orderbook, withProvider } from "@Contracts/contracts";
 import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { UNIMPLEMENTED } from "@Lib/errors";
 import { OrderSettlement } from "@Lib/market";
+import { NetworkData } from "@Lib/network";
 import { TokenPairToNumber } from "@Lib/tokens";
 
 export interface Order {
@@ -66,7 +67,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
-    sdk.contracts.orderbook = sdk.contracts.orderbook || await Orderbook.deployed();
+    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
 
     await sdk.contracts.orderbook.cancelOrder(orderID);
 };
