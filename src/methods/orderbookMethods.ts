@@ -1,33 +1,43 @@
+import BigNumber from "bignumber.js";
+
 import { BN } from "bn.js";
 
+import * as ingress from "@Lib/ingress";
+
+import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
+
+import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { UNIMPLEMENTED } from "@Lib/errors";
-import * as ingress from "@Lib/ingress";
 import { OrderSettlement } from "@Lib/market";
 import { TokenPairToNumber } from "@Lib/tokens";
-import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
-import BigNumber from "bignumber.js";
 
 export interface Order {
     orderSettlement?: OrderSettlement;
     sellToken: BigNumber;
     buyToken: BigNumber;
     price: BigNumber;
-    volume: BigNumber;
-    minimumVolume: BigNumber;
+    volume: BN;
+    minimumVolume: BN;
 }
+
+// TODO: Read these from the contract
+const PRICE_OFFSET = new BN(12);
+const VOLUME_OFFSET = new BN(12);
 
 export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
-    const tokenDecimals = new BN((await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken.toFixed()))).decimals);
-    const price = new BN(orderObj.price.toFixed()).mul(tokenDecimals);
+    const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken.toFixed()));
+    const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
-    // We convert the volume and minimumVolume to 10^8
-    const volume = new BN(orderObj.volume.toFixed()).div(new BN(10).pow(new BN(10)));
-    const minimumVolume = new BN(orderObj.minimumVolume.toFixed()).div(new BN(10).pow(new BN(10)));
-    const order = {
-        signature: "",
-        id: "",
+    const price = adjustDecimals(new BN(orderObj.price.toFixed()), 0, PRICE_OFFSET);
+
+    // We convert the volume and minimumVolume to 10^12
+    const buyTokenDecimals = new BN(buyToken.decimals);
+    const volume = adjustDecimals(orderObj.volume, buyTokenDecimals, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyTokenDecimals, VOLUME_OFFSET);
+
+    let ingressOrder = new ingress.Order({
         type: ingress.OrderType.LIMIT,
         parity: ingress.OrderParity.BUY,
         orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
@@ -37,9 +47,8 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
         volume,
         minimumVolume,
         nonce: ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex")),
-    };
+    });
 
-    let ingressOrder = new ingress.Order(order);
     ingressOrder = ingressOrder.set("id", ingress.getOrderID(sdk.web3, ingressOrder));
 
     // Create order fragment mapping

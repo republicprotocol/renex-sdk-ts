@@ -1,5 +1,17 @@
 import { Token, TokenDetails } from "@Lib/market";
 import BigNumber from "bignumber.js";
+import { BN } from "bn.js";
+
+export const adjustDecimals = (value: BN, fromDecimals: number | BN, toDecimals: number | BN): BN => {
+    fromDecimals = new BN(fromDecimals);
+    toDecimals = new BN(toDecimals);
+
+    if (fromDecimals.lt(toDecimals)) {
+        return value.mul(new BN(10).pow(toDecimals.sub(fromDecimals)));
+    } else {
+        return value.div(new BN(10).pow(fromDecimals.sub(toDecimals)));
+    }
+};
 
 /**
  * Convert a token amount to the readable amount using the token decimals.
