@@ -1,7 +1,6 @@
 import { BN } from "bn.js";
 
 import { RenExSettlement } from "@Contracts/contracts";
-import { UNIMPLEMENTED } from "@Lib/errors";
 import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
 
 export const status = async (sdk: RenExSDK, orderID: OrderID): Promise<OrderStatus> => {

@@ -1,17 +1,13 @@
 import BigNumber from "bignumber.js";
-
 import { BN } from "bn.js";
-
-import * as ingress from "@Lib/ingress";
-
-import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
 
 import { Orderbook } from "@Contracts/contracts";
 import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
-import { UNIMPLEMENTED } from "@Lib/errors";
+import * as ingress from "@Lib/ingress";
 import { OrderSettlement } from "@Lib/market";
 import { TokenPairToNumber } from "@Lib/tokens";
+import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
 
 export interface Order {
     orderSettlement?: OrderSettlement;

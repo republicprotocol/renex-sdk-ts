@@ -1,6 +1,7 @@
-import { Token, TokenDetails } from "@Lib/market";
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
+
+import { Token, TokenDetails } from "@Lib/market";
 import { FloatInput, IntInput } from "index";
 
 export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: string | number | BN, toDecimals: string | number | BN): BN => {

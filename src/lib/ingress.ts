@@ -6,21 +6,20 @@ const NodeRSA = require("node-rsa") as { new(...args: any[]): NodeRSAType };
 
 import Web3 from "web3";
 
-import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 import { List, Map } from "immutable";
 
 import * as shamir from "@Lib/shamir";
 
 import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
+import { OrderbookContract } from "@Bindings/orderbook";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "@Lib/errors";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
 import { priceToCoExp, volumeToCoExp } from "@Lib/order";
 import { Record } from "@Lib/record";
-import { OrderbookContract } from "@Bindings/orderbook";
-import { OrderStatus, OrderID } from "index";
+import { OrderID, OrderStatus } from "index";
 
 const NULL = "0x0000000000000000000000000000000000000000";
 

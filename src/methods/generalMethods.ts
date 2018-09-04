@@ -1,5 +1,3 @@
-import BigNumber from "bignumber.js";
-
 import { BN } from "bn.js";
 
 import { ERC20Contract } from "@Bindings/erc20";

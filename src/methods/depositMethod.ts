@@ -1,8 +1,7 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { IntInput } from "@Root/index";
-
 import { ERC20 } from "@Contracts/contracts";
+import RenExSDK, { IntInput } from "@Root/index";
 
 const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: boolean }) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
