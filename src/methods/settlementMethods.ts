@@ -13,7 +13,7 @@ export const status = async (sdk: RenExSDK, orderID: OrderID): Promise<OrderStat
 export const settled = async (sdk: RenExSDK, orderID: OrderID): Promise<boolean> => {
     sdk.contracts.renExSettlement = sdk.contracts.renExSettlement || await RenExSettlement.deployed();
 
-    const orderStatus = new BN(await sdk.contracts.renExSettlement.orderStatus("orderID"));
+    const orderStatus = new BN(await sdk.contracts.renExSettlement.orderStatus(orderID));
 
     return orderStatus.eq(new BN(2));
 };
