@@ -6,6 +6,7 @@ import * as ingress from "@Lib/ingress";
 
 import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
 
+import { Orderbook } from "@Contracts/contracts";
 import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { UNIMPLEMENTED } from "@Lib/errors";
@@ -65,7 +66,9 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
-    ingress.cancelOrder(sdk.web3, sdk.address, orderID);
+    sdk.contracts.orderbook = sdk.contracts.orderbook || await Orderbook.deployed();
+
+    await sdk.contracts.orderbook.cancelOrder(orderID);
 };
 
 export const listOrdersByTrader = async (sdk: RenExSDK, address: string): Promise<OrderID[]> => {

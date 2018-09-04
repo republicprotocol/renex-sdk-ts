@@ -162,31 +162,6 @@ export async function requestWithdrawalSignature(address: string, tokenID: numbe
     return signature;
 }
 
-export async function cancelOrder(web3: Web3, address: string, orderId64: string): Promise<{}> {
-    // Hexadecimal encoding of orderId64 (without 0x prefix)
-    const orderIdHex: string = Buffer.from(orderId64, "base64").toString("hex");
-    const prefix: string = web3.utils.toHex("Republic Protocol: cancel: ");
-    const hashForSigning: string = prefix + orderIdHex;
-
-    let signature: EncodedData;
-    try {
-        signature = new EncodedData(await web3.eth.sign(hashForSigning, address), Encodings.HEX);
-    } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrorCanceledByUser));
-        }
-        return Promise.reject(error);
-    }
-
-    try {
-        await axios.delete(`${NetworkData.ingress}/orders?id=${encodeURIComponent(orderId64)}&signature=${encodeURIComponent(signature.toBase64())}`);
-    } catch (error) {
-        return Promise.reject(new Error(error));
-    }
-
-    return {};
-}
-
 // export async function getOrder(wallet: Wallet, orderId: string): Promise<Order> {
 //     // FIXME: Unimplemented
 //     return Promise.resolve(new Order({}));
