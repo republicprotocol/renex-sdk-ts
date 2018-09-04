@@ -53,7 +53,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
     // Create order fragment mapping
     const req = new ingress.OpenOrderRequest({
         address: sdk.address,
-        orderFragmentMappings: [await ingress.buildOrderFragmentsForPods(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
+        orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
     });
     const resp = await ingress.submitOrderFragments(req);
     const sig = new EncodedData(resp, Encodings.BASE64);
