@@ -11,7 +11,7 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: number, value
 
     if (token === ETH_CODE) {
         sdk.web3.eth.sendTransaction({
-            from: sdk.account,
+            from: sdk.address,
             to: addr,
             value: new BN(valueBig).mul(new BN(10).pow(new BN(18))).toNumber(),
         });

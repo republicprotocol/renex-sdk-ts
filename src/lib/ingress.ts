@@ -63,6 +63,11 @@ export class OpenOrderRequest extends Record({
     orderFragmentMappings: Array<Map<string, List<OrderFragment>>>()
 }) { }
 
+export class WithdrawRequest extends Record({
+    address: "",
+    tokenID: 0,
+}) { }
+
 export class OrderFragment extends Record({
     id: "",
     orderId: "",
@@ -144,29 +149,19 @@ export async function submitOrderFragments(
     }
 }
 
-export async function cancelOrder(web3: Web3, address: string, orderId64: string): Promise<{}> {
-    // Hexadecimal encoding of orderId64 (without 0x prefix)
-    const orderIdHex: string = Buffer.from(orderId64, "base64").toString("hex");
-    const prefix: string = web3.utils.toHex("Republic Protocol: cancel: ");
-    const hashForSigning: string = prefix + orderIdHex;
+export async function requestWithdrawalSignature(address: string, tokenID: number): Promise<string> {
+    const request = new WithdrawRequest({
+        address,
+        tokenID,
+    });
 
-    let signature: EncodedData;
-    try {
-        signature = new EncodedData(await web3.eth.sign(hashForSigning, address), Encodings.HEX);
-    } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrorCanceledByUser));
-        }
-        return Promise.reject(error);
+    const resp = await axios.post(`${NetworkData.ingress}/withdrawals`, request.toJS());
+    if (resp.status !== 201) {
+        throw new Error("Unexpected status code: " + resp.status);
     }
 
-    try {
-        await axios.delete(`${NetworkData.ingress}/orders?id=${encodeURIComponent(orderId64)}&signature=${encodeURIComponent(signature.toBase64())}`);
-    } catch (error) {
-        return Promise.reject(new Error(error));
-    }
-
-    return {};
+    const signature: string = resp.data;
+    return signature;
 }
 
 async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
