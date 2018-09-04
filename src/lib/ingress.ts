@@ -185,18 +185,21 @@ export async function cancelOrder(web3: Web3, address: string, orderId64: string
 
 export function getOrderID(web3: Web3, order: Order): string {
     const bytes = Buffer.concat([
+        // Prefix hash
         new BN(order.type).toArrayLike(Buffer, "be", 1),
-        new BN(order.parity).toArrayLike(Buffer, "be", 1),
-        new BN(order.orderSettlement).toArrayLike(Buffer, "be", 4),
         new BN(order.expiry).toArrayLike(Buffer, "be", 8),
-        new BN(order.tokens).toArrayLike(Buffer, "be", 8),
-        new BN(order.price.c).toArrayLike(Buffer, "be", 8),
-        new BN(order.price.q).toArrayLike(Buffer, "be", 8),
-        new BN(order.volume.c).toArrayLike(Buffer, "be", 8),
-        new BN(order.volume.q).toArrayLike(Buffer, "be", 8),
-        new BN(order.minimumVolume.c).toArrayLike(Buffer, "be", 8),
-        new BN(order.minimumVolume.q).toArrayLike(Buffer, "be", 8),
-        Buffer.from(web3.utils.keccak256(`0x${order.nonce.toArrayLike(Buffer, "be", 8).toString("hex")}`).slice(2), "hex"),
+        order.nonce.toArrayLike(Buffer, "be", 8),
+
+        new BN(order.orderSettlement).toArrayLike(Buffer, "be", 8),
+        (
+            order.parity === OrderParity.BUY ?
+                new BN(order.tokens).toArrayLike(Buffer, "be", 8)
+                :
+                new BN(order.tokens).shln(32).or(new BN(order.tokens).shrn(32)).toArrayLike(Buffer, "be", 8)
+        ),
+        new BN(order.price).toArrayLike(Buffer, "be", 32),
+        new BN(order.volume).toArrayLike(Buffer, "be", 32),
+        new BN(order.minimumVolume).toArrayLike(Buffer, "be", 32),
     ]);
     return web3.utils.keccak256(`0x${bytes.toString("hex")}`);
 }
