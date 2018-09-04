@@ -3,7 +3,6 @@ import RenExSDK, { IdempotentKey, IntInput } from "@Root/index";
 import { BN } from "bn.js";
 
 import { RenExBalances, RenExTokens } from "@Contracts/contracts";
-import BigNumber from "bignumber.js";
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await RenExBalances.deployed();
