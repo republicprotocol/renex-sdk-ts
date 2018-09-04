@@ -61,7 +61,6 @@ export class OpenOrderRequest extends Record({
 
 export class OrderFragment extends Record({
     id: "",
-    orderSignature: "",
     orderId: "",
     orderType: OrderType.LIMIT,
     orderParity: OrderParity.BUY,
@@ -226,7 +225,6 @@ export async function buildOrderFragmentsForPods(
                 const darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
 
                 let orderFragment = new OrderFragment({
-                    orderSignature: order.signature,
                     orderId: order.id,
                     orderType: order.type,
                     orderParity: order.parity,
