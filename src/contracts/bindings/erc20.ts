@@ -1,5 +1,5 @@
 import { BN } from "bn.js";
-import { Log, TransactionReceipt, Tx } from "web3/types";
+import { Log, Provider, TransactionReceipt, Tx } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
 
@@ -21,6 +21,7 @@ export interface ERC20Artifact {
     "new"(options?: Tx): Promise<ERC20Contract>;
     at(address: string): Promise<ERC20Contract>;
     deployed(): Promise<ERC20Contract>;
+    setProvider(provider: Provider): void;
 }
 
 // tslint:enable:max-line-length
