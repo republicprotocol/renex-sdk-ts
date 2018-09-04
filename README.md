@@ -9,6 +9,8 @@ See the [RenEx SDK Docs](https://republicprotocol.github.io/renex-sdk-docs).
 To build:
 
 ```bash
+npm run watch
+# or
 npm run build:dev
 ```
 
