@@ -1,4 +1,4 @@
-import { UNIMPLEMENTED } from "@Lib/errors";
+import { ErrUnimplemented } from "@Lib/errors";
 import RenExSDK, { IdempotentKey, IntInput } from "@Root/index";
 import { BN } from "bn.js";
 
@@ -25,7 +25,7 @@ export const withdraw = async (
 
     // Trustless withdrawals are not implemented yet
     if (withoutIngressSignature === true || key !== undefined) {
-        throw new Error(UNIMPLEMENTED);
+        throw new Error(ErrUnimplemented);
     }
 
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await RenExBalances.deployed();

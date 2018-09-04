@@ -14,18 +14,13 @@ import * as shamir from "@Lib/shamir";
 
 import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
 import { EncodedData, Encodings } from "@Lib/encodedData";
+import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "@Lib/errors";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
 import { priceToCoExp, volumeToCoExp } from "@Lib/order";
 import { Record } from "@Lib/record";
 import { OrderbookContract } from "@Bindings/orderbook";
 import { OrderStatus, OrderID } from "index";
-
-export const ErrorCanceledByUser = "Canceled by user";
-export const ErrorNoAccount = "Cannot retrieve wallet account";
-export const ErrorNoWeb3 = "Cannot retrieve web3 object";
-export const ErrorUnsignedTransaction = "Unable to sign transaction";
-export const ErrorInvalidOrderDetails = "Something went wrong while encoding order";
 
 const NULL = "0x0000000000000000000000000000000000000000";
 
@@ -100,7 +95,7 @@ export function randomNonce(randomBN: () => BN): BN {
 export async function openOrder(web3: Web3, address: string, order: Order): Promise<Order> {
     // Verify order details
     if (!verifyOrder(order)) {
-        return Promise.reject(new Error(ErrorInvalidOrderDetails));
+        return Promise.reject(new Error(ErrInvalidOrderDetails));
     }
 
     const id: EncodedData = new EncodedData(getOrderID(web3, order), Encodings.HEX);
@@ -112,9 +107,9 @@ export async function openOrder(web3: Web3, address: string, order: Order): Prom
         signature = new EncodedData(await web3.eth.sign(hashForSigning, address));
     } catch (error) {
         if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrorCanceledByUser));
+            return Promise.reject(new Error(ErrCanceledByUser));
         }
-        return Promise.reject(new Error(ErrorUnsignedTransaction));
+        return Promise.reject(new Error(ErrUnsignedTransaction));
     }
 
     const buff = signature.toBuffer();
