@@ -18,6 +18,8 @@ import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
 import { priceToCoExp, volumeToCoExp } from "@Lib/order";
 import { Record } from "@Lib/record";
+import { OrderbookContract } from "@Bindings/orderbook";
+import { OrderStatus, OrderID } from "index";
 
 export const ErrorCanceledByUser = "Canceled by user";
 export const ErrorNoAccount = "Cannot retrieve wallet account";
@@ -165,6 +167,41 @@ export async function cancelOrder(web3: Web3, address: string, orderId64: string
     }
 
     return {};
+}
+
+async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
+    const orders = await orderbook.getOrders(offset, limit);
+    const orderIDs = orders[0];
+    const tradersAddrs = orders[1];
+    const orderStatuses = orders[2];
+
+    let ordersList = List<[OrderID, OrderStatus, string]>();
+    for (let i = 0; i++; i < orderIDs.length) {
+        const status = new BN(orderStatuses[i]);
+        ordersList = ordersList.push([orderIDs[i], status, tradersAddrs[i]]);
+    }
+    return ordersList;
+}
+
+export async function listOrders(orderbook: OrderbookContract): Promise<List<[OrderID, OrderStatus, string]>> {
+    const numOrders = await orderbook.ordersCount();
+    const orderCount = new BN(numOrders).toNumber();
+
+    let start = 0;
+    const limit = 500;
+    if (orderCount < limit) {
+        return ordersBatch(orderbook, 0, orderCount);
+    }
+
+    let ordersList = List<[OrderID, OrderStatus, string]>();
+    while (true) {
+        if (orderCount - start < 0) {
+            return ordersList;
+        }
+        const batch = await ordersBatch(orderbook, start, limit);
+        ordersList = ordersList.concat(batch).toList();
+        start += limit;
+    }
 }
 
 // export async function getOrder(wallet: Wallet, orderId: string): Promise<Order> {
