@@ -48,14 +48,14 @@ export class Order extends Record({
     orderSettlement: OrderSettlement.RenEx,
     expiry: Math.round((new Date()).getTime() / 1000),
     tokens: 0x00010008,
-    price: new Tuple(),
-    volume: new Tuple(),
-    minimumVolume: new Tuple(),
+    price: new BN(0),
+    volume: new BN(0),
+    minimumVolume: new BN(0),
     nonce: new BN(0),
 }) { }
 
-export class OrderFragments extends Record({
-    signature: "",
+export class OpenOrderRequest extends Record({
+    address: "",
     orderFragmentMappings: Array<Map<string, List<OrderFragment>>>()
 }) { }
 
@@ -123,26 +123,19 @@ export async function openOrder(web3: Web3, address: string, order: Order): Prom
 }
 
 function verifyOrder(order: Order) {
-    const VALID_PRICE =
-        order.price.c >= 0 && order.price.c <= 1999 &&
-        order.price.q >= 0 && order.price.q <= 52;
-
-    const VALID_VOLUME =
-        order.volume.c >= 0 && order.volume.c <= 49 &&
-        order.volume.q >= 0 && order.volume.q <= 52;
-
-    const VALID_MINIMUM_VOLUME =
-        order.minimumVolume.c >= 0 && order.minimumVolume.c <= 49 &&
-        order.minimumVolume.q >= 0 && order.minimumVolume.q <= 52;
-
-    return VALID_PRICE && VALID_VOLUME && VALID_MINIMUM_VOLUME;
+    // FIXME: check order price and volume correctness
+    return true;
 }
 
 export async function submitOrderFragments(
-    orderFragments: OrderFragments,
-): Promise<void> {
+    request: OpenOrderRequest,
+): Promise<string> {
     try {
-        await axios.post(`${NetworkData.ingress}/orders`, orderFragments.toJS());
+        const resp = await axios.post(`${NetworkData.ingress}/orders`, request.toJS());
+        if (resp.status !== 201) {
+            throw new Error("Unexpected status code: " + resp.status);
+        }
+        return resp.data;
     } catch (error) {
         return Promise.reject(error);
     }

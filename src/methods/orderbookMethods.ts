@@ -1,77 +1,59 @@
+import { BN } from "bn.js";
+
+import { EncodedData, Encodings } from "@Lib/encodedData";
 import { UNIMPLEMENTED } from "@Lib/errors";
 import * as ingress from "@Lib/ingress";
+import { OrderSettlement } from "@Lib/market";
+import { TokenPairToNumber } from "@Lib/tokens";
 import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
+import BigNumber from "bignumber.js";
 
-export const openOrder = async (sdk: RenExSDK, order: ingress.Order): Promise<void> => {
-    throw new Error(UNIMPLEMENTED);
+export interface Order {
+    orderSettlement?: OrderSettlement;
+    sellToken: BigNumber;
+    buyToken: BigNumber;
+    price: BigNumber;
+    volume: BigNumber;
+    minimumVolume: BigNumber;
+}
 
-    // const ingressOrder = ingress.openOrder(sdk.web3, sdk.account, order);
+export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
+    // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
+    const tokenDecimals = new BN((await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken.toFixed()))).decimals);
+    const price = new BN(orderObj.price.toFixed()).mul(tokenDecimals);
 
-    // let signedOrder;
-    // try {
-    //     signedOrder = await ingress.openOrder(web3, walletDetails, address, order);
-    // } catch (err) {
-    //     if (err.message === ingress.ErrorCanceledByUser) {
-    //         throw err;
-    //     } else if (err.message === ingress.ErrorInvalidOrderDetails) {
-    //         throw err;
-    //     }
-    //     console.error(err);
-    //     throw new Error(ErrorUnableToOpen);
-    // }
+    // We convert the volume and minimumVolume to 10^8
+    const volume = new BN(orderObj.volume.toFixed()).div(new BN(10).pow(new BN(10)));
+    const minimumVolume = new BN(orderObj.minimumVolume.toFixed()).div(new BN(10).pow(new BN(10)));
+    const order = {
+        signature: "",
+        id: "",
+        type: ingress.OrderType.LIMIT,
+        parity: ingress.OrderParity.BUY,
+        orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
+        expiry: Math.round(new Date().getTime() / 1000) + (60 * 60 * 24),
+        tokens: TokenPairToNumber(orderObj.buyToken, orderObj.sellToken),
+        price,
+        volume,
+        minimumVolume,
+        nonce: ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex")),
+    };
 
-    // order = order.set("id", signedOrder.id);
+    let ingressOrder = new ingress.Order(order);
+    ingressOrder = ingressOrder.set("id", ingress.getOrderID(sdk.web3, ingressOrder));
 
-    // const fstCode = Pairs.get(market).left;
-    // const sndCode = Pairs.get(market).right;
+    // Create order fragment mapping
+    const req = new ingress.OpenOrderRequest({
+        address: sdk.account,
+        orderFragmentMappings: [await ingress.buildOrderFragmentsForPods(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
+    });
+    const resp = await ingress.submitOrderFragments(req);
+    const sig = new EncodedData(resp, Encodings.BASE64);
 
-    // // Construct new TraderOrder object. This will be used to showcase
-    // // order details to trader.
-    // const traderOrder = new TraderOrder({
-    //     id: signedOrder.id, // Base64
-    //     parity: signedOrder.parity,
-    //     fstCode,
-    //     sndCode,
-    //     price: pricepointBN.toFixed(),
-    //     volume: volumeBN.toFixed(),
-    //     minimumVolume: minimumVolumeBN.toFixed(),
-    //     expiry: signedOrder.expiry,
-    //     date: Date.now(),
-    //     trader: address,
-    //     pending: true,
-    //     orderSettlement: signedOrder.orderSettlement,
-    // });
+    // Submit order and the signature to the orderbook
+    const tx = await sdk.contracts.orderbook.openOrder(1, sig.toString(), ingressOrder.id);
 
-    // await syncLocalStorage(dispatch);
-    // dispatch(addOrder({ traderOrder }));
-
-    // // Manually update usable balance so user cannot submit orders in quick succession.
-    // const primaryCode = traderOrder.parity === ingress.OrderParity.BUY ? fstCode : sndCode;
-    // const usableBalance = usableBalances.get(primaryCode).minus(readableToBalance(volume, primaryCode));
-    // usableBalances = usableBalances.set(primaryCode, usableBalance);
-    // dispatch(updateUsableBalance({ usableBalances }));
-
-    // // If settlement is RenExAtomic
-    // if (order.orderSettlement === OrderSettlement.RenExAtomic) {
-    //     try {
-    //         await atomic.submitOrder(signedOrder);
-    //     } catch (err) {
-    //         throw err;
-    //     }
-    // }
-
-    // console.log(`Opening order: ${JSON.stringify(order.toJS())}`);
-
-    // const orderFragments = new ingress.OrderFragments({
-    //     signature: signedOrder.signature,
-    //     orderFragmentMappings: [await ingress.buildOrderFragmentsForPods(sdk.web3, sdk.contracts.darknodeRegistry, order)]
-    // });
-
-    // try {
-    //     await ingress.submitOrderFragments(orderFragments);
-    // } catch (error) {
-    //     throw error;
-    // }
+    console.log(`Opening order: ${JSON.stringify(ingressOrder.toJS())}. Transaction: ${tx.tx.toString()}`);
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
