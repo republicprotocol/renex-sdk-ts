@@ -1,31 +1,8 @@
 # RenEx TypeScript / JavaScript SDK
 
-## Usage
+## Docs
 
-Importing:
-
-```js
-import SDK from "./renex-sdk.js";
-```
-
-The library exposes the following interface:
-
-```ts
-interface RenExSDK {
-    address(): string;
-    transfer(address: string, token: number, value: BN): Promise<void>;
-    balance(token: number): Promise<BN>;
-    usableBalance(token: number): Promise<BN>;
-    deposit(token: number, value: BN): Promise<void>;
-    withdraw(token: number, value: BN, forced: boolean, key: IdempotentKey): Promise<IdempotentKey>;
-    status(orderID: OrderID): Promise<OrderStatus>;
-    settled(orderID: OrderID): Promise<boolean>;
-    openOrder(order: Order): Promise<void>;
-    cancelOrder(orderID: OrderID): Promise<void>;
-    listOrdersByTrader(address: string): Promise<OrderID[]>;
-    listOrdersByStatus(status: OrderStatus): Promise<OrderID[]>;
-}
-```
+See the [RenEx SDK Docs](https://republicprotocol.github.io/renex-sdk-docs).
 
 ## Developer Notes
 
