@@ -4,7 +4,7 @@ import { BN } from "bn.js";
 
 import * as ingress from "@Lib/ingress";
 
-import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
+import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
 
 import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
@@ -16,26 +16,25 @@ export interface Order {
     orderSettlement?: OrderSettlement;
     sellToken: BigNumber;
     buyToken: BigNumber;
-    price: BigNumber;
-    volume: BN;
-    minimumVolume: BN;
+    price: FloatInput;
+    volume: IntInput;
+    minimumVolume: IntInput;
 }
 
 // TODO: Read these from the contract
-const PRICE_OFFSET = new BN(12);
-const VOLUME_OFFSET = new BN(12);
+const PRICE_OFFSET = 12;
+const VOLUME_OFFSET = 12;
 
 export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
     const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken.toFixed()));
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
-    const price = adjustDecimals(new BN(orderObj.price.toFixed()), 0, PRICE_OFFSET);
+    const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
 
     // We convert the volume and minimumVolume to 10^12
-    const buyTokenDecimals = new BN(buyToken.decimals);
-    const volume = adjustDecimals(orderObj.volume, buyTokenDecimals, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyTokenDecimals, VOLUME_OFFSET);
+    const volume = adjustDecimals(orderObj.volume, buyToken.decimals, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyToken.decimals, VOLUME_OFFSET);
 
     let ingressOrder = new ingress.Order({
         type: ingress.OrderType.LIMIT,
