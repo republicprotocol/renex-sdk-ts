@@ -2,7 +2,7 @@ node_modules
 /.project
 /.settings/
 
-lib/
+/lib
 
 # Logs
 *.log
