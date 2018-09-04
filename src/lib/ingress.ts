@@ -6,6 +6,7 @@ const NodeRSA = require("node-rsa") as { new(...args: any[]): NodeRSAType };
 
 import Web3 from "web3";
 
+import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 import { List, Map } from "immutable";
 
@@ -15,6 +16,7 @@ import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
+import { priceToCoExp, volumeToCoExp } from "@Lib/order";
 import { Record } from "@Lib/record";
 
 export const ErrorCanceledByUser = "Canceled by user";
@@ -196,22 +198,26 @@ export function getOrderID(web3: Web3, order: Order): string {
     return web3.utils.keccak256(`0x${bytes.toString("hex")}`);
 }
 
-export async function buildOrderFragmentsForPods(
+export async function buildOrderMapping(
     web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: Order
 ): Promise<Map<string, List<OrderFragment>>> {
     const pods = await getPods(web3, darknodeRegistryContract);
+
     const fragmentPromises = (pods)
         .map(async (pool: Pool): Promise<Pool> => {
             const n = pool.darknodes.size;
             const k = Math.floor((2 * (n + 1)) / 3);
 
+            const priceCoExp = priceToCoExp(order.price);
+            const volumeCoExp = volumeToCoExp(order.volume);
+            const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
             const tokenShares = shamir.split(n, k, new BN(order.tokens));
-            const priceCoShares = shamir.split(n, k, new BN(order.price.c));
-            const priceExpShares = shamir.split(n, k, new BN(order.price.q));
-            const volumeCoShares = shamir.split(n, k, new BN(order.volume.c));
-            const volumeExpShares = shamir.split(n, k, new BN(order.volume.q));
-            const minimumVolumeCoShares = shamir.split(n, k, new BN(order.minimumVolume.c));
-            const minimumVolumeExpShares = shamir.split(n, k, new BN(order.minimumVolume.q));
+            const priceCoShares = shamir.split(n, k, new BN(priceCoExp.co));
+            const priceExpShares = shamir.split(n, k, new BN(priceCoExp.exp));
+            const volumeCoShares = shamir.split(n, k, new BN(volumeCoExp.co));
+            const volumeExpShares = shamir.split(n, k, new BN(volumeCoExp.exp));
+            const minimumVolumeCoShares = shamir.split(n, k, new BN(minVolumeCoExp.co));
+            const minimumVolumeExpShares = shamir.split(n, k, new BN(minVolumeCoExp.exp));
             const nonceShares = shamir.split(n, k, order.nonce);
 
             let orderFragments = List<OrderFragment>();
