@@ -1,5 +1,5 @@
 import { BN } from "bn.js";
-import { Log, TransactionReceipt, Tx } from "web3/types";
+import { Log, Provider, TransactionReceipt, Tx } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
 
@@ -30,6 +30,7 @@ export interface RenExAtomicInfoArtifact {
     "new"(_VERSION: string, _orderbookContract: string, options?: Tx): Promise<RenExAtomicInfoContract>;
     at(address: string): Promise<RenExAtomicInfoContract>;
     deployed(): Promise<RenExAtomicInfoContract>;
+    setProvider(provider: Provider): void;
 }
 
 // tslint:enable:max-line-length

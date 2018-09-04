@@ -24,6 +24,7 @@
   "typings": "./lib/types/index.d.ts",
   "scripts": {
     "lint": "tslint --project ./",
+    "watch": "cross-env NODE_ENV=development webpack --watch --mode development --display-error-details --progress --color",
     "build:dev": "cross-env NODE_ENV=development webpack --mode development --display-error-details --progress --color",
     "build:prod": "cross-env NODE_ENV=production webpack --mode production --progress --color",
     "prepublish": "npm run lint && npm run build:dev"
@@ -69,7 +70,7 @@
     "node-fetch": "^2.2.0",
     "node-rsa": "^1.0.1",
     "renex-sol": "git://github.com/republicprotocol/renex-sol.git#master",
-    "truffle-contract": "^3.0.6",
+    "truffle-contract": "^4.0.0-next.0",
     "web3": "^1.0.0-beta.35"
   }
 }

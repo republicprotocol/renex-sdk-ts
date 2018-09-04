@@ -1,7 +1,9 @@
 import { BN } from "bn.js";
 
-import { ERC20 } from "@Contracts/contracts";
 import RenExSDK, { IntInput } from "@Root/index";
+
+import { ERC20, RenExBalances, RenExTokens, withProvider } from "@Contracts/contracts";
+import { NetworkData } from "@Lib/network";
 
 const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: boolean }) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -9,27 +11,33 @@ const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: 
 };
 
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<void> => {
+    console.log(sdk.address);
+    console.log(sdk.web3.eth.getAccounts(console.log));
+
     value = new BN(value);
 
+    sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
+    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
     const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
 
+    console.log(tokenDetails);
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            sdk.contracts.renExBalances.deposit(tokenDetails.addr, value);
+            sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
         } else {
             // ERC20 token
-            const tokenContract = ERC20.at(tokenDetails.addr);
+            const tokenContract = await ERC20.at(tokenDetails.addr);
 
             // If allowance is less than amount, user must first approve
             // TODO: This may cause the transaction to fail if the user call this
             // twice in a row rapidly (after already having an allowance set)
             // There's no way to check pending state - alternative is to see
             // if there are any pending deposits for the same token
-            const allowance = await tokenContract.methods.allowance(sdk.address, sdk.contracts.renExBalances.address).call();
-            if (new BN(allowance).lt(value)) {
-                tokenContract.methods.approve(sdk.contracts.renExBalances.address, value).send({ from: sdk.address });
+            const allowance = new BN(await tokenContract.allowance(sdk.address, sdk.contracts.renExBalances.address, { from: sdk.address }));
+            if (allowance.lt(value)) {
+                await tokenContract.approve(sdk.contracts.renExBalances.address, value, { from: sdk.address });
             }
-            sdk.contracts.renExBalances.deposit(
+            await sdk.contracts.renExBalances.deposit(
                 tokenDetails.addr,
                 value,
                 {
