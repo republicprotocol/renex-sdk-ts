@@ -52,7 +52,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 
     // Create order fragment mapping
     const req = new ingress.OpenOrderRequest({
-        address: sdk.account,
+        address: sdk.address,
         orderFragmentMappings: [await ingress.buildOrderFragmentsForPods(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
     });
     const resp = await ingress.submitOrderFragments(req);
@@ -65,7 +65,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
-    ingress.cancelOrder(sdk.web3, sdk.account, orderID);
+    ingress.cancelOrder(sdk.web3, sdk.address, orderID);
 };
 
 export const listOrdersByTrader = async (sdk: RenExSDK, address: string): Promise<OrderID[]> => {

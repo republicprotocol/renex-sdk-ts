@@ -53,7 +53,7 @@ interface RenExSDK {
  */
 class RenExSDK implements RenExSDK {
     public web3: Web3;
-    public account: string;
+    public address: string;
     public contracts: {
         renExSettlement?: RenExSettlementContract,
         renExTokens?: RenExTokensContract,
@@ -67,9 +67,9 @@ class RenExSDK implements RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, account: string) {
+    constructor(provider: Provider, address: string) {
         this.web3 = new Web3(provider);
-        this.account = account;
+        this.address = address;
     }
 
     // tslint:disable-next-line:max-line-length

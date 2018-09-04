@@ -33,7 +33,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
 
     if (token === 1) {
         // const params = {
-        //     from: sdk.account,
+        //     from: sdk.address,
         //     value: amountBN.toNumber(),
         //     gas: undefined as number | undefined,
         // };
@@ -57,10 +57,10 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         // twice in a row rapidly (after already having an allowance set)
         // There's no way to check pending state - alternative is to see
         // if there are any pending deposits for the same token
-        const allowance = await tokenContract.methods.allowance(sdk.account, sdk.contracts.renExBalances.address).call();
+        const allowance = await tokenContract.methods.allowance(sdk.address, sdk.contracts.renExBalances.address).call();
         if (new BN(allowance).lt(value)) {
             transactions.push({
-                call: () => tokenContract.methods.approve(sdk.contracts.renExBalances.address, value).send({ from: sdk.account }),
+                call: () => tokenContract.methods.approve(sdk.contracts.renExBalances.address, value).send({ from: sdk.address }),
                 name: "Approve",
             });
         }
@@ -70,7 +70,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 value, {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
-                    from: sdk.account,
+                    from: sdk.address,
                     gas: "150000",
                     value: value.toString(),
                 }),
