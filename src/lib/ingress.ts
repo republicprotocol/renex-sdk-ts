@@ -359,14 +359,10 @@ async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContrac
     const batchSize = 10;
 
     const allDarknodes = [];
-    let darknodes = await darknodeRegistryContract.getDarknodes(NULL, batchSize);
-    let lastDarknode;
+    let lastDarknode = NULL;
     do {
-        [lastDarknode] = darknodes.slice(-1);
-        allDarknodes.push(...darknodes.filter(addr => addr !== NULL));
-        darknodes = await darknodeRegistryContract.getDarknodes(lastDarknode, batchSize);
-        // Remove the last darknode we passed in
-        darknodes = darknodes.slice(1);
+        const darknodes = await darknodeRegistryContract.getDarknodes(lastDarknode, batchSize);
+        allDarknodes.push(...darknodes.filter(addr => addr !== NULL && addr !== lastDarknode));
         [lastDarknode] = darknodes.slice(-1);
     } while (lastDarknode !== NULL);
 
