@@ -8,7 +8,7 @@ export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: strin
     fromDecimals = new BN(fromDecimals).toNumber();
     toDecimals = new BN(toDecimals).toNumber();
 
-    if ((value as any).toFixed) {
+    if ((value as any)._isBigNumber) {
         value = new BigNumber((value as any).toFixed());
     } else {
         value = new BigNumber(value.toString());
