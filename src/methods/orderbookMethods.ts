@@ -5,7 +5,7 @@ import * as ingress from "@Lib/ingress";
 
 import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
 
-import { Orderbook, withProvider } from "@Contracts/contracts";
+import { Orderbook, RenExTokens, withProvider } from "@Contracts/contracts";
 import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { OrderSettlement } from "@Lib/market";
@@ -27,6 +27,8 @@ const VOLUME_OFFSET = 12;
 
 export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
+
+    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
     const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
