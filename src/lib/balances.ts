@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
+import { ErrNumericalPrecision } from "@Lib/errors";
 import { Token, TokenDetails } from "@Lib/market";
 import { FloatInput, IntInput } from "index";
 
@@ -17,7 +18,13 @@ export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: strin
     if (fromDecimals < toDecimals) {
         return new BN(value.multipliedBy(new BigNumber(10).exponentiatedBy(toDecimals - fromDecimals)).toFixed());
     } else {
-        return new BN(value.dividedBy(new BigNumber(10).exponentiatedBy(fromDecimals - toDecimals)).toFixed());
+        const v = value.dividedBy(new BigNumber(10).exponentiatedBy(fromDecimals - toDecimals));
+        if (!v.integerValue().eq(v)) {
+            // We have a floating point number which can't be converted to BN.
+            // This usually happens when the value passed in is too small.
+            throw new Error(ErrNumericalPrecision);
+        }
+        return new BN(v.toFixed());
     }
 };
 
