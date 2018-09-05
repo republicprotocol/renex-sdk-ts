@@ -17,7 +17,7 @@ import { EncodedData, Encodings } from "@Lib/encodedData";
 import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "@Lib/errors";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
-import { priceToCoExp, volumeToCoExp } from "@Lib/order";
+import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "@Lib/order";
 import { Record } from "@Lib/record";
 import { OrderID, OrderStatus } from "index";
 
@@ -165,7 +165,7 @@ async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: 
 
     let ordersList = List<[OrderID, OrderStatus, string]>();
     for (let i = 0; i < orderIDs.length; i++) {
-        const status = new BN(orderStatuses[i]);
+        const status = orderbookStateToOrderStatus(new BN(orderStatuses[i]).toNumber());
         ordersList = ordersList.push([orderIDs[i], status, tradersAddrs[i]]);
     }
     return ordersList;

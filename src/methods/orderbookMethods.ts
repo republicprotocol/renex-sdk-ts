@@ -7,7 +7,7 @@ import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/inde
 
 import { DarknodeRegistry, Orderbook, RenExTokens, withProvider } from "@Contracts/contracts";
 import { adjustDecimals } from "@Lib/balances";
-import { EncodedData, Encodings } from "@Lib/encodedData";
+import { ErrUnsupportedFilterStatus } from "@Lib/errors";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
 import { GenerateTokenPairing } from "@Lib/tokens";
@@ -82,8 +82,13 @@ export const listOrdersByTrader = async (sdk: RenExSDK, address: string): Promis
 };
 
 export const listOrdersByStatus = async (sdk: RenExSDK, status: OrderStatus): Promise<OrderID[]> => {
+    const filterableStatuses = [OrderStatus.NOTSUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
+    if (!filterableStatuses.includes(status)) {
+        throw new Error(ErrUnsupportedFilterStatus);
+    }
+
     sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
 
     const orders = await ingress.listOrders(sdk.contracts.orderbook);
-    return orders.filter(order => order[1].eq(status)).map(order => order[0]).toArray();
+    return orders.filter(order => status === order[1]).map(order => order[0]).toArray();
 };

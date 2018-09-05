@@ -24,7 +24,13 @@ export type FloatInput = number | string | BigNumber;
 
 export type IdempotentKey = string;
 export type OrderID = string;
-export type OrderStatus = BN; // TODO: Use enum
+export enum OrderStatus {
+    NOTSUBMITTED = "not submitted",
+    OPEN = "open",
+    CONFIRMED = "confirmed",
+    SETTLED = "settled",
+    SLASHED = "slashed",
+}
 
 /**
  * This is the interface that the SDK exposes.
@@ -57,6 +63,7 @@ class RenExSDK implements RenExSDK {
     public address: string;
     // TODO: Make it possible to loop through all tokens (without the reverse lookup duplicates)
     public tokens = Token;
+    public orderStatus = OrderStatus;
     public contracts: {
         renExSettlement?: RenExSettlementContract,
         renExTokens?: RenExTokensContract,
