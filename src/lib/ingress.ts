@@ -349,10 +349,35 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
 }
 
 /*
+ * Retreive all the darknodes in the darknode registry contract.
+ * The getDarknodes() function will always return an array of {count} with empty
+ * values being the NULL address. These addresses must be filtered out.
+ * When the {start} value is not the NULL address, it is always returned as the
+ * first entry so it should not be re-added to the list of all darknodes.
+ */
+async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContract): Promise<string[]> {
+    const batchSize = 10;
+
+    const allDarknodes = [];
+    let darknodes = await darknodeRegistryContract.getDarknodes(NULL, batchSize);
+    let lastDarknode;
+    do {
+        [lastDarknode] = darknodes.slice(-1);
+        allDarknodes.push(...darknodes.filter(addr => addr !== NULL));
+        darknodes = await darknodeRegistryContract.getDarknodes(lastDarknode, batchSize);
+        // Remove the last darknode we passed in
+        darknodes = darknodes.slice(1);
+        [lastDarknode] = darknodes.slice(-1);
+    } while (lastDarknode !== NULL);
+
+    return allDarknodes;
+}
+
+/*
  * Calculate pod arrangement based on current epoch
  */
 async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<List<Pool>> {
-    const darknodes = await darknodeRegistryContract.getDarknodes(NULL, 100);
+    const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
     const epoch = await darknodeRegistryContract.currentEpoch();
 
