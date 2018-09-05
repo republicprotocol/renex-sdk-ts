@@ -10,14 +10,6 @@ export enum Encodings {
     UNKNOWN = "unknown"
 }
 
-// type EncodedDataInner = {
-//     value: string;
-//     encoding: Encodings.AUTO | Encodings.HEX | Encodings.BASE64;
-// } | {
-//     value: Buffer;
-//     encoding: Encodings.AUTO | Encodings.BUFFER;
-// };
-
 const DefaultEncodedData = {
     value: "" as string | Buffer,
     encoding: Encodings.AUTO,

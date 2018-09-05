@@ -9,19 +9,26 @@ export enum Token {
     XYZ = 65538,
 }
 
-export function GenerateTokenPairing(buyToken: number, sellToken: number): BN {
-    let lowP;
-    let highP;
+/**
+ * Combine buy and sell tokens into a single 64-bit number
+ *
+ * @param {number} buyToken 32-bit buy token identifier
+ * @param {number} sellToken 32-bit sell token identifier
+ * @returns {BN} 64-bit market identifier
+ */
+export function generateTokenPairing(buyToken: number, sellToken: number): BN {
+    let lowPriority;
+    let highPriority;
     if (buyToken < sellToken) {
-        lowP = buyToken;
-        highP = sellToken;
+        lowPriority = buyToken;
+        highPriority = sellToken;
     } else {
-        lowP = sellToken;
-        highP = buyToken;
+        lowPriority = sellToken;
+        highPriority = buyToken;
     }
     // Convert individual tokens to 32 bit numbers
-    const lowTok = new BN(lowP).toArrayLike(Buffer, "be", 4);
-    const highTok = new BN(highP).toArrayLike(Buffer, "be", 4);
+    const lowPriorityToken = new BN(lowPriority).toArrayLike(Buffer, "be", 4);
+    const highPriorityToken = new BN(highPriority).toArrayLike(Buffer, "be", 4);
     // Return the token pair as a 64 bit number
-    return new BN(Buffer.concat([highTok, lowTok], 8).toString("hex"), 2);
+    return new BN(Buffer.concat([highPriorityToken, lowPriorityToken], 8).toString("hex"), 2);
 }

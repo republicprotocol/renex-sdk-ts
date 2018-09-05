@@ -3,6 +3,7 @@ import { BN } from "bn.js";
 import RenExSDK, { IntInput } from "@Root/index";
 
 import { ERC20, RenExBalances, RenExTokens, withProvider } from "@Contracts/contracts";
+import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "@Lib/errors";
 import { NetworkData } from "@Lib/network";
 
 const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: boolean }) => {
@@ -52,12 +53,12 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         }
     } catch (error) {
         if (error.message.match("Insufficient funds")) {
-            throw new Error("InsufficientFundsError");
+            throw new Error(ErrInsufficientFunds);
         }
         if (error.message.match("User denied transaction signature")) {
-            throw new Error("ErrorCanceledByUser");
+            throw new Error(ErrCanceledByUser);
         }
         console.error(error);
-        throw new Error("FailedDepositError");
+        throw new Error(ErrFailedDeposit);
     }
 };

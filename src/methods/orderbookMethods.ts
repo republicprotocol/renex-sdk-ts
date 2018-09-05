@@ -10,7 +10,7 @@ import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
-import { GenerateTokenPairing } from "@Lib/tokens";
+import { generateTokenPairing } from "@Lib/tokens";
 
 export interface Order {
     orderSettlement?: OrderSettlement;
@@ -28,7 +28,7 @@ const VOLUME_OFFSET = 12;
 export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
-    // Initialise required contracts
+    // Initialize required contracts
     sdk.contracts.darknodeRegistry = sdk.contracts.darknodeRegistry || await withProvider(sdk.web3, DarknodeRegistry).at(NetworkData.contracts[0].darknodeRegistry);
     sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
     sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
@@ -45,7 +45,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
         parity: orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.BUY : ingress.OrderParity.SELL,
         orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
         expiry: Math.round(new Date().getTime() / 1000) + (60 * 60 * 24),
-        tokens: GenerateTokenPairing(orderObj.buyToken, orderObj.sellToken),
+        tokens: generateTokenPairing(orderObj.buyToken, orderObj.sellToken),
         price,
         volume,
         minimumVolume,

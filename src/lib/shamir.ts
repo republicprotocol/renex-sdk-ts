@@ -16,10 +16,10 @@ export class Share {
 /**
  * Split a secret into shares using the finite field defined by the PRIME
  * constant. The secret must be less than, or equal to, the PRIME constant.
- * @param n The number of shares that the secret will be split into.
- * @param k The number of shares required to reconstruct the secret.
- * @param secret The secret number that will be split into shares.
- * @returns An immutable list of shares.
+ * @param {number} n The number of shares that the secret will be split into.
+ * @param {number} k The number of shares required to reconstruct the secret.
+ * @param {BN} secret The secret number that will be split into shares.
+ * @returns {List<Share>} An immutable list of shares.
  */
 export function split(n: number, k: number, secret: BN): List<Share> {
     if (n < k) {
@@ -66,9 +66,9 @@ export function split(n: number, k: number, secret: BN): List<Share> {
  * Join shares into a secret using the finite field defined by the PRIME
  * constant. This function cannot determine the minimum number of shares
  * required.
- * @param shares An immutable list of shares that will be used to reconstruct
- *               the secret.
- * @returns The reconstructed secret, or meaningless garbage when an
+ * @param {List<Share>} shares An immutable list of shares that will be used to
+ *        reconstruct the secret.
+ * @returns {BN} The reconstructed secret, or meaningless garbage when an
  *          insufficient number of shares is provided.
  */
 export function join(shares: List<Share>): BN {
