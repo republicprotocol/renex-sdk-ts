@@ -1,7 +1,9 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
+import { ErrUnknownOrderStatus } from "@Lib/errors";
 import { Record } from "@Lib/record";
+import { OrderStatus } from "@Root/index";
 
 export class CoExp extends Record({
     co: 0,
@@ -86,4 +88,34 @@ export function volumeFloatToCoExp(volume: BigNumber): CoExp {
         co: _try.toNumber(),
         exp: 12,
     });
+}
+
+export function orderbookStateToOrderStatus(state: number): OrderStatus {
+    switch (state) {
+        case 0:
+            return OrderStatus.NOTSUBMITTED;
+        case 1:
+            return OrderStatus.OPEN;
+        case 2:
+            return OrderStatus.CONFIRMED;
+        default:
+            throw new Error(ErrUnknownOrderStatus);
+    }
+}
+
+export function settlementStatusToOrderStatus(status: number): OrderStatus {
+    switch (status) {
+        case 0:
+            // Order has not yet been submitted to settlement
+            return OrderStatus.CONFIRMED;
+        case 1:
+            // Order info has been staged for settlement but has not settled
+            return OrderStatus.CONFIRMED;
+        case 2:
+            return OrderStatus.SETTLED;
+        case 3:
+            return OrderStatus.SLASHED;
+        default:
+            throw new Error(ErrUnknownOrderStatus);
+    }
 }
