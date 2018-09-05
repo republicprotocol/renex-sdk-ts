@@ -45,7 +45,7 @@ export class Order extends Record({
     parity: OrderParity.BUY,
     orderSettlement: OrderSettlement.RenEx,
     expiry: Math.round((new Date()).getTime() / 1000),
-    tokens: 0x00010008,
+    tokens: new BN(0),
     price: new BN(0),
     volume: new BN(0),
     minimumVolume: new BN(0),
