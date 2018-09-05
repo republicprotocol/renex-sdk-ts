@@ -30,11 +30,12 @@ export const withdraw = async (
     }
 
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
+    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
 
     const tokenString = (await sdk.contracts.renExTokens.tokens(token)).addr;
 
     // TODO: Check balance
 
     const signature = await requestWithdrawalSignature(sdk.address, token);
-    await sdk.contracts.renExBalances.withdraw(tokenString, value, signature);
+    await sdk.contracts.renExBalances.withdraw(tokenString, value, signature.toHex(), { from: sdk.address });
 };

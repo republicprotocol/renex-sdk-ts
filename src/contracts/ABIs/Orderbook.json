@@ -1,154 +1,45 @@
-[
-    {
+[{
         "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
         "name": "orderConfirmer",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_index",
-                "type": "uint256"
-            }
-        ],
-        "name": "buyOrder",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            },
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "buyOrders",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_signature",
-                "type": "bytes"
-            },
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
-        "name": "openSellOrder",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "sellOrders",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_signature",
-                "type": "bytes"
-            },
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
-        "name": "openBuyOrder",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_signature",
-                "type": "bytes"
-            },
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
-        "name": "cancelOrder",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_orderId",
+        "inputs": [{
+                "name": "_orderID",
                 "type": "bytes32"
             },
             {
-                "name": "_orderMatches",
-                "type": "bytes32[]"
+                "name": "_matchedOrderID",
+                "type": "bytes32"
             }
         ],
         "name": "confirmOrder",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "ordersCount",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -161,20 +52,28 @@
         "type": "function"
     },
     {
+        "constant": false,
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
+        "name": "cancelOrder",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
         "name": "orderBlockNumber",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -183,12 +82,10 @@
         "constant": true,
         "inputs": [],
         "name": "ren",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -197,20 +94,17 @@
         "constant": true,
         "inputs": [],
         "name": "owner",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
+        "inputs": [{
                 "name": "_offset",
                 "type": "uint256"
             },
@@ -220,8 +114,7 @@
             }
         ],
         "name": "getOrders",
-        "outputs": [
-            {
+        "outputs": [{
                 "name": "",
                 "type": "bytes32[]"
             },
@@ -239,36 +132,39 @@
         "type": "function"
     },
     {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_newFee",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateFee",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_index",
-                "type": "uint256"
-            }
-        ],
-        "name": "sellOrder",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes32"
+        "inputs": [{
+            "name": "",
+            "type": "bytes32"
+        }],
+        "name": "orders",
+        "outputs": [{
+                "name": "state",
+                "type": "uint8"
             },
             {
-                "name": "",
-                "type": "bool"
+                "name": "trader",
+                "type": "address"
+            },
+            {
+                "name": "confirmer",
+                "type": "address"
+            },
+            {
+                "name": "settlementID",
+                "type": "uint64"
+            },
+            {
+                "name": "priority",
+                "type": "uint256"
+            },
+            {
+                "name": "blockNumber",
+                "type": "uint256"
+            },
+            {
+                "name": "matchedOrder",
+                "type": "bytes32"
             }
         ],
         "payable": false,
@@ -279,81 +175,71 @@
         "constant": true,
         "inputs": [],
         "name": "darknodeRegistry",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
         "name": "orderDepth",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
-        "name": "orderBroker",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
-        "name": "orderState",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint8"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
+        "inputs": [{
+                "name": "_settlementID",
+                "type": "uint64"
+            },
             {
-                "name": "_newDarknodeRegistry",
-                "type": "address"
+                "name": "_signature",
+                "type": "bytes"
+            },
+            {
+                "name": "_orderID",
+                "type": "bytes32"
             }
         ],
+        "name": "openOrder",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
+        "name": "orderState",
+        "outputs": [{
+            "name": "",
+            "type": "uint8"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_newDarknodeRegistry",
+            "type": "address"
+        }],
         "name": "updateDarknodeRegistry",
         "outputs": [],
         "payable": false,
@@ -362,57 +248,45 @@
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
         "name": "orderMatch",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes32[]"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "bytes32"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
         "name": "orderTrader",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_orderId",
-                "type": "bytes32"
-            }
-        ],
+        "inputs": [{
+            "name": "_orderID",
+            "type": "bytes32"
+        }],
         "name": "orderPriority",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -420,62 +294,21 @@
     {
         "constant": true,
         "inputs": [],
-        "name": "getOrdersCount",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_index",
-                "type": "uint256"
-            }
-        ],
-        "name": "getOrder",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes32"
-            },
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "fee",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "name": "settlementRegistry",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_newOwner",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "name": "_newOwner",
+            "type": "address"
+        }],
         "name": "transferOwnership",
         "outputs": [],
         "payable": false,
@@ -483,10 +316,21 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "name": "_fee",
-                "type": "uint256"
+        "constant": true,
+        "inputs": [],
+        "name": "VERSION",
+        "outputs": [{
+            "name": "",
+            "type": "string"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{
+                "name": "_VERSION",
+                "type": "string"
             },
             {
                 "name": "_renAddress",
@@ -494,6 +338,10 @@
             },
             {
                 "name": "_darknodeRegistry",
+                "type": "address"
+            },
+            {
+                "name": "_settlementRegistry",
                 "type": "address"
             }
         ],
@@ -503,8 +351,7 @@
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "previousFee",
                 "type": "uint256"
@@ -515,13 +362,12 @@
                 "type": "uint256"
             }
         ],
-        "name": "FeeUpdated",
+        "name": "LogFeeUpdated",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "previousDarknodeRegistry",
                 "type": "address"
@@ -532,25 +378,22 @@
                 "type": "address"
             }
         ],
-        "name": "DarknodeRegistryUpdated",
+        "name": "LogDarknodeRegistryUpdated",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "name": "previousOwner",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "indexed": true,
+            "name": "previousOwner",
+            "type": "address"
+        }],
         "name": "OwnershipRenounced",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": true,
                 "name": "previousOwner",
                 "type": "address"

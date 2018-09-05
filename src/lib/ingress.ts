@@ -131,21 +131,21 @@ function verifyOrder(order: Order) {
 
 export async function submitOrderFragments(
     request: OpenOrderRequest,
-): Promise<string> {
+): Promise<EncodedData> {
     try {
         const resp = await axios.post(`${NetworkData.ingress}/orders`, request.toJS());
         if (resp.status !== 201) {
             throw new Error("Unexpected status code: " + resp.status);
         }
-        return resp.data;
+        return new EncodedData(resp.data.signature, Encodings.BASE64);
     } catch (error) {
         return Promise.reject(error);
     }
 }
 
-export async function requestWithdrawalSignature(address: string, tokenID: number): Promise<string> {
+export async function requestWithdrawalSignature(address: string, tokenID: number): Promise<EncodedData> {
     const request = new WithdrawRequest({
-        address,
+        address: address.slice(2),
         tokenID,
     });
 
@@ -154,8 +154,7 @@ export async function requestWithdrawalSignature(address: string, tokenID: numbe
         throw new Error("Unexpected status code: " + resp.status);
     }
 
-    const signature: string = resp.data;
-    return signature;
+    return new EncodedData(resp.data.signature, Encodings.BASE64);
 }
 
 async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {

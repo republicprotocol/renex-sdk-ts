@@ -1,109 +1,35 @@
-[
+[{
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isPendingRegistration",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
     {
         "constant": true,
         "inputs": [],
         "name": "numDarknodesNextEpoch",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_nextMinimumBond",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateMinimumBond",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "numDarknodes",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
+        "inputs": [{
                 "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "isDeregistered",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "canDeregister",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "getPublicKey",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
+                "type": "address"
             },
             {
                 "name": "_publicKey",
@@ -121,80 +47,12 @@
         "type": "function"
     },
     {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "getDarknodeOwner",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "nextMinimumEpochInterval",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "isRegistered",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "minimumEpochInterval",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "refund",
+        "inputs": [{
+            "name": "_nextMinimumBond",
+            "type": "uint256"
+        }],
+        "name": "updateMinimumBond",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -203,29 +61,147 @@
     {
         "constant": true,
         "inputs": [],
-        "name": "nextMinimumBond",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "name": "numDarknodes",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": true,
-        "inputs": [
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "getDarknodeOwner",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "nextSlasher",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isPendingDeregistration",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+                "name": "_start",
+                "type": "address"
+            },
             {
-                "name": "_darknodeID",
-                "type": "bytes20"
+                "name": "_count",
+                "type": "uint256"
             }
         ],
-        "name": "getBond",
-        "outputs": [
+        "name": "getPreviousDarknodes",
+        "outputs": [{
+            "name": "",
+            "type": "address[]"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "nextMinimumEpochInterval",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "minimumEpochInterval",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+                "name": "_prover",
+                "type": "address"
+            },
             {
-                "name": "",
+                "name": "_challenger1",
+                "type": "address"
+            },
+            {
+                "name": "_challenger2",
+                "type": "address"
+            }
+        ],
+        "name": "slash",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isRefundable",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "previousEpoch",
+        "outputs": [{
+                "name": "epochhash",
+                "type": "uint256"
+            },
+            {
+                "name": "blocknumber",
                 "type": "uint256"
             }
         ],
@@ -236,13 +212,35 @@
     {
         "constant": true,
         "inputs": [],
+        "name": "nextMinimumBond",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_nextMinimumEpochInterval",
+            "type": "uint256"
+        }],
+        "name": "updateMinimumEpochInterval",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
         "name": "nextMinimumPodSize",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -259,9 +257,20 @@
     {
         "constant": true,
         "inputs": [],
+        "name": "numDarknodesPreviousEpoch",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
         "name": "currentEpoch",
-        "outputs": [
-            {
+        "outputs": [{
                 "name": "epochhash",
                 "type": "uint256"
             },
@@ -275,13 +284,41 @@
         "type": "function"
     },
     {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isRegisteredInPreviousEpoch",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isDeregistered",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_nextMinimumPodSize",
-                "type": "uint256"
-            }
-        ],
+        "inputs": [{
+            "name": "_nextMinimumPodSize",
+            "type": "uint256"
+        }],
         "name": "updateMinimumPodSize",
         "outputs": [],
         "payable": false,
@@ -290,13 +327,11 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_nextMinimumEpochInterval",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateEpochInterval",
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "deregister",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -304,14 +339,39 @@
     },
     {
         "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "getDarknodePublicKey",
+        "outputs": [{
+            "name": "",
+            "type": "bytes"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "ren",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
         "inputs": [],
         "name": "owner",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -328,13 +388,89 @@
     {
         "constant": true,
         "inputs": [],
+        "name": "store",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
         "name": "minimumBond",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "slasher",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_slasher",
+            "type": "address"
+        }],
+        "name": "updateSlasher",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "getDarknodeBond",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_newOwner",
+            "type": "address"
+        }],
+        "name": "transferStoreOwnership",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isRegistered",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
@@ -343,71 +479,55 @@
         "constant": true,
         "inputs": [],
         "name": "minimumPodSize",
-        "outputs": [
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isDeregisterable",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+                "name": "_start",
+                "type": "address"
+            },
             {
-                "name": "",
+                "name": "_count",
                 "type": "uint256"
             }
         ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
         "name": "getDarknodes",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bytes20[]"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "isUnregistered",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
+        "outputs": [{
+            "name": "",
+            "type": "address[]"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "deregister",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_newOwner",
-                "type": "address"
-            }
-        ],
+        "inputs": [{
+            "name": "_newOwner",
+            "type": "address"
+        }],
         "name": "transferOwnership",
         "outputs": [],
         "payable": false,
@@ -415,9 +535,55 @@
         "type": "function"
     },
     {
-        "inputs": [
+        "constant": false,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "refund",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "VERSION",
+        "outputs": [{
+            "name": "",
+            "type": "string"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "isRefunded",
+        "outputs": [{
+            "name": "",
+            "type": "bool"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{
+                "name": "_VERSION",
+                "type": "string"
+            },
             {
                 "name": "_renAddress",
+                "type": "address"
+            },
+            {
+                "name": "_storeAddress",
                 "type": "address"
             },
             {
@@ -439,11 +605,10 @@
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "_darknodeID",
-                "type": "bytes20"
+                "type": "address"
             },
             {
                 "indexed": false,
@@ -451,25 +616,22 @@
                 "type": "uint256"
             }
         ],
-        "name": "DarknodeRegistered",
+        "name": "LogDarknodeRegistered",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "name": "_darknodeID",
-                "type": "bytes20"
-            }
-        ],
-        "name": "DarknodeDeregistered",
+        "inputs": [{
+            "indexed": false,
+            "name": "_darknodeID",
+            "type": "address"
+        }],
+        "name": "LogDarknodeDeregistered",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "_owner",
                 "type": "address"
@@ -480,19 +642,18 @@
                 "type": "uint256"
             }
         ],
-        "name": "DarknodeOwnerRefunded",
+        "name": "LogDarknodeOwnerRefunded",
         "type": "event"
     },
     {
         "anonymous": false,
         "inputs": [],
-        "name": "NewEpoch",
+        "name": "LogNewEpoch",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "previousMinimumBond",
                 "type": "uint256"
@@ -503,13 +664,12 @@
                 "type": "uint256"
             }
         ],
-        "name": "MinimumBondUpdated",
+        "name": "LogMinimumBondUpdated",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "previousMinimumPodSize",
                 "type": "uint256"
@@ -520,13 +680,12 @@
                 "type": "uint256"
             }
         ],
-        "name": "MinimumPodSizeUpdated",
+        "name": "LogMinimumPodSizeUpdated",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": false,
                 "name": "previousMinimumEpochInterval",
                 "type": "uint256"
@@ -537,25 +696,38 @@
                 "type": "uint256"
             }
         ],
-        "name": "MinimumEpochIntervalUpdated",
+        "name": "LogMinimumEpochIntervalUpdated",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
+        "inputs": [{
+                "indexed": false,
+                "name": "previousSlasher",
+                "type": "address"
+            },
             {
-                "indexed": true,
-                "name": "previousOwner",
+                "indexed": false,
+                "name": "nextSlasher",
                 "type": "address"
             }
         ],
+        "name": "LogSlasherUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+            "indexed": true,
+            "name": "previousOwner",
+            "type": "address"
+        }],
         "name": "OwnershipRenounced",
         "type": "event"
     },
     {
         "anonymous": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "indexed": true,
                 "name": "previousOwner",
                 "type": "address"

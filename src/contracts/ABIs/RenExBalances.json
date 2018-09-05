@@ -1,185 +1,55 @@
-[
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "address"
-            },
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "traderTokens",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
+[{
         "constant": true,
         "inputs": [],
-        "name": "owner",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [
-            {
-                "name": "",
-                "type": "address"
-            },
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "traderBalances",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "settlementContract",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address"
-            }
-        ],
+        "name": "brokerVerifierContract",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "transferOwnership",
+        "inputs": [{
+            "name": "_newSettlementContract",
+            "type": "address"
+        }],
+        "name": "updateRenExSettlementContract",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
+        "constant": true,
         "inputs": [],
+        "name": "rewardVaultContract",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "name": "trader",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "name": "token",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "BalanceDecreased",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "name": "trader",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "name": "token",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "BalanceIncreased",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "name": "previousOwner",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "RenExSettlementContractChanged",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "name": "previousOwner",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "OwnershipTransferred",
-        "type": "event"
+        "stateMutability": "view",
+        "type": "function"
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_newSettlementContract",
+        "inputs": [{
+                "name": "_token",
                 "type": "address"
+            },
+            {
+                "name": "_value",
+                "type": "uint256"
+            },
+            {
+                "name": "_signature",
+                "type": "bytes"
             }
         ],
-        "name": "setRenExSettlementContract",
+        "name": "withdraw",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -187,9 +57,12 @@
     },
     {
         "constant": false,
-        "inputs": [
+        "inputs": [{
+                "name": "_traderFrom",
+                "type": "address"
+            },
             {
-                "name": "_trader",
+                "name": "_traderTo",
                 "type": "address"
             },
             {
@@ -199,31 +72,17 @@
             {
                 "name": "_value",
                 "type": "uint256"
-            }
-        ],
-        "name": "incrementBalance",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_trader",
-                "type": "address"
             },
             {
-                "name": "_token",
-                "type": "address"
-            },
-            {
-                "name": "_value",
+                "name": "_fee",
                 "type": "uint256"
+            },
+            {
+                "name": "_feePayee",
+                "type": "address"
             }
         ],
-        "name": "decrementBalance",
+        "name": "transferBalanceWithFee",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -231,8 +90,7 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
+        "inputs": [{
                 "name": "_token",
                 "type": "address"
             },
@@ -249,17 +107,20 @@
     },
     {
         "constant": false,
-        "inputs": [
-            {
-                "name": "_token",
-                "type": "address"
-            },
-            {
-                "name": "_value",
-                "type": "uint256"
-            }
-        ],
-        "name": "withdraw",
+        "inputs": [{
+            "name": "_newBrokerVerifierContract",
+            "type": "address"
+        }],
+        "name": "updateBrokerVerifierContract",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [],
+        "name": "renounceOwnership",
         "outputs": [],
         "payable": false,
         "stateMutability": "nonpayable",
@@ -267,25 +128,272 @@
     },
     {
         "constant": true,
-        "inputs": [
-            {
-                "name": "_trader",
-                "type": "address"
-            }
-        ],
-        "name": "getBalances",
-        "outputs": [
-            {
-                "name": "",
-                "type": "address[]"
-            },
-            {
-                "name": "",
-                "type": "uint256[]"
-            }
-        ],
+        "inputs": [],
+        "name": "owner",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_token",
+            "type": "address"
+        }],
+        "name": "signalBackupWithdraw",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+                "name": "",
+                "type": "address"
+            },
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "traderBalances",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "SIGNAL_DELAY",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_newRewardVaultContract",
+            "type": "address"
+        }],
+        "name": "updateRewardVaultContract",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "settlementContract",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{
+            "name": "_newOwner",
+            "type": "address"
+        }],
+        "name": "transferOwnership",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "ETHEREUM",
+        "outputs": [{
+            "name": "",
+            "type": "address"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{
+                "name": "",
+                "type": "address"
+            },
+            {
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "traderWithdrawalSignals",
+        "outputs": [{
+            "name": "",
+            "type": "uint256"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "VERSION",
+        "outputs": [{
+            "name": "",
+            "type": "string"
+        }],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{
+                "name": "_VERSION",
+                "type": "string"
+            },
+            {
+                "name": "_rewardVaultContract",
+                "type": "address"
+            },
+            {
+                "name": "_brokerVerifierContract",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+                "indexed": false,
+                "name": "trader",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "LogBalanceDecreased",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+                "indexed": false,
+                "name": "trader",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "LogBalanceIncreased",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+                "indexed": false,
+                "name": "previousRenExSettlementContract",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "newRenExSettlementContract",
+                "type": "address"
+            }
+        ],
+        "name": "LogRenExSettlementContractUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+                "indexed": false,
+                "name": "previousRewardVaultContract",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "newRewardVaultContract",
+                "type": "address"
+            }
+        ],
+        "name": "LogRewardVaultContractUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+                "indexed": false,
+                "name": "previousBrokerVerifierContract",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "name": "newBrokerVerifierContract",
+                "type": "address"
+            }
+        ],
+        "name": "LogBrokerVerifierContractUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+            "indexed": true,
+            "name": "previousOwner",
+            "type": "address"
+        }],
+        "name": "OwnershipRenounced",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [{
+                "indexed": true,
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
     }
 ]

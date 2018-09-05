@@ -51,15 +51,14 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
     ingressOrder = ingressOrder.set("id", ingress.getOrderID(sdk.web3, ingressOrder));
 
     // Create order fragment mapping
-    const req = new ingress.OpenOrderRequest({
+    const request = new ingress.OpenOrderRequest({
         address: sdk.address,
         orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
     });
-    const resp = await ingress.submitOrderFragments(req);
-    const sig = new EncodedData(resp, Encodings.BASE64);
+    const signature = await ingress.submitOrderFragments(request);
 
     // Submit order and the signature to the orderbook
-    const tx = await sdk.contracts.orderbook.openOrder(1, sig.toString(), ingressOrder.id);
+    const tx = await sdk.contracts.orderbook.openOrder(1, signature.toString(), ingressOrder.id);
 
     console.log(`Opening order: ${JSON.stringify(ingressOrder.toJS())}. Transaction: ${tx.tx.toString()}`);
 };
