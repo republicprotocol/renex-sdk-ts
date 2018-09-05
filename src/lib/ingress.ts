@@ -202,7 +202,7 @@ export async function listOrders(orderbook: OrderbookContract): Promise<List<[Or
 //     return Promise.resolve(List<Order>());
 // }
 
-export function getOrderID(web3: Web3, order: Order): string {
+export function getOrderID(web3: Web3, order: Order): EncodedData {
     const bytes = Buffer.concat([
         // Prefix hash
         new BN(order.type).toArrayLike(Buffer, "be", 1),
@@ -220,7 +220,7 @@ export function getOrderID(web3: Web3, order: Order): string {
         new BN(order.volume).toArrayLike(Buffer, "be", 32),
         new BN(order.minimumVolume).toArrayLike(Buffer, "be", 32),
     ]);
-    return web3.utils.keccak256(`0x${bytes.toString("hex")}`);
+    return new EncodedData(web3.utils.keccak256(`0x${bytes.toString("hex")}`), Encodings.HEX);
 }
 
 export async function buildOrderMapping(
