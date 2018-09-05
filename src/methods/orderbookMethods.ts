@@ -38,7 +38,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 
     let ingressOrder = new ingress.Order({
         type: ingress.OrderType.LIMIT,
-        parity: ingress.OrderParity.BUY,
+        parity: orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.BUY : ingress.OrderParity.SELL,
         orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
         expiry: Math.round(new Date().getTime() / 1000) + (60 * 60 * 24),
         tokens: TokenPairToNumber(orderObj.buyToken, orderObj.sellToken),
