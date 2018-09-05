@@ -30,6 +30,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 
     // Initialise required contracts
     sdk.contracts.darknodeRegistry = sdk.contracts.darknodeRegistry || await withProvider(sdk.web3, DarknodeRegistry).at(NetworkData.contracts[0].darknodeRegistry);
+    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
     sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
@@ -56,7 +57,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 
     // Create order fragment mapping
     const request = new ingress.OpenOrderRequest({
-        address: sdk.address,
+        address: sdk.address.slice(2),
         orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
     });
     const signature = await ingress.submitOrderFragments(request);
