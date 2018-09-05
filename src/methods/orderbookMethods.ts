@@ -10,12 +10,12 @@ import { adjustDecimals } from "@Lib/balances";
 import { EncodedData, Encodings } from "@Lib/encodedData";
 import { OrderSettlement } from "@Lib/market";
 import { NetworkData } from "@Lib/network";
-import { TokenPairToNumber } from "@Lib/tokens";
+import { GenerateTokenPairing } from "@Lib/tokens";
 
 export interface Order {
     orderSettlement?: OrderSettlement;
-    sellToken: BigNumber;
-    buyToken: BigNumber;
+    sellToken: number;
+    buyToken: number;
     price: FloatInput;
     volume: IntInput;
     minimumVolume: IntInput;
@@ -27,7 +27,6 @@ const VOLUME_OFFSET = 12;
 
 export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
-    const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken.toFixed()));
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
     const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
@@ -41,7 +40,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
         parity: orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.BUY : ingress.OrderParity.SELL,
         orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
         expiry: Math.round(new Date().getTime() / 1000) + (60 * 60 * 24),
-        tokens: TokenPairToNumber(orderObj.buyToken, orderObj.sellToken),
+        tokens: GenerateTokenPairing(orderObj.buyToken, orderObj.sellToken),
         price,
         volume,
         minimumVolume,
