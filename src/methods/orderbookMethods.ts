@@ -75,11 +75,15 @@ export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void
 };
 
 export const listOrdersByTrader = async (sdk: RenExSDK, address: string): Promise<OrderID[]> => {
+    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
+
     const orders = await ingress.listOrders(sdk.contracts.orderbook);
     return orders.filter(order => order[2] === address).map(order => order[0]).toArray();
 };
 
 export const listOrdersByStatus = async (sdk: RenExSDK, status: OrderStatus): Promise<OrderID[]> => {
+    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
+
     const orders = await ingress.listOrders(sdk.contracts.orderbook);
     return orders.filter(order => order[1] === status).map(order => order[0]).toArray();
 };

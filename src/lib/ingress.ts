@@ -164,7 +164,7 @@ async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: 
     const orderStatuses = orders[2];
 
     let ordersList = List<[OrderID, OrderStatus, string]>();
-    for (let i = 0; i++; i < orderIDs.length) {
+    for (let i = 0; i < orderIDs.length; i++) {
         const status = new BN(orderStatuses[i]);
         ordersList = ordersList.push([orderIDs[i], status, tradersAddrs[i]]);
     }
