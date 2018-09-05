@@ -1,3 +1,16 @@
+/**
+ * EncodedData is a wrapper type that can contain and format bytes in various
+ * encodings (hex, base64, base58, node's buffer).
+ *
+ * Usage:
+ *
+ * new EncodedData("0x1234")
+ * new EncodedData("1234", Encodings.HEX)
+ *
+ * new EncodedData(buffer).toBase58()
+ *
+ */
+
 import * as bs58 from "bs58";
 
 import { Record } from "@Lib/record";
@@ -83,6 +96,13 @@ const parse = (param: string | Buffer | typeof DefaultEncodedData, encoding?: En
 };
 
 export class EncodedData extends Record(DefaultEncodedData) {
+
+    /**
+     * Creates an instance of EncodedData.
+     * @param {string | Buffer} param The encoded data
+     * @param {Encodings} [encoding] One of "hex", "base64", "buffer"
+     * @memberof EncodedData
+     */
     constructor(param: EncodedData | string | Buffer | typeof DefaultEncodedData, encoding?: Encodings) {
         if (param instanceof EncodedData) {
             param = { value: param.value, encoding: param.encoding };
