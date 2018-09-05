@@ -10,6 +10,7 @@ import { RenExBalancesContract } from "@Bindings/ren_ex_balances";
 import { RenExSettlementContract } from "@Bindings/ren_ex_settlement";
 import { RenExTokensContract } from "@Bindings/ren_ex_tokens";
 
+import { Token } from "@Lib/tokens";
 import { balance, usableBalance, withdraw } from "@Methods/balancesMethods";
 import { deposit } from "@Methods/depositMethod";
 import { transfer } from "@Methods/generalMethods";
@@ -54,6 +55,8 @@ interface RenExSDK {
 class RenExSDK implements RenExSDK {
     public web3: Web3;
     public address: string;
+    // TODO: Make it possible to loop through all tokens (without the reverse lookup duplicates)
+    public tokens = Token;
     public contracts: {
         renExSettlement?: RenExSettlementContract,
         renExTokens?: RenExTokensContract,
