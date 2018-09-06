@@ -89,7 +89,17 @@ export function volumeFloatToCoExp(volume: BigNumber): CoExp {
         exp: 12,
     });
 }
-
+/**
+ * Convert order state returned from the Orderbook contract into an OrderStatus enum.
+ *
+ * The state returned by the Orderbook does not provide settlement status information.
+ * A separate call to the RenExSettlement contract is needed to determine the order status
+ * during settlement.
+ *
+ * @throws {ErrUnknownOrderStatus} Will throw when the state is neither 0, 1, or 2.
+ * @param {number} state The state of the order returned from the Orderbook.
+ * @returns {OrderStatus} The order status.
+ */
 export function orderbookStateToOrderStatus(state: number): OrderStatus {
     switch (state) {
         case 0:
@@ -103,13 +113,24 @@ export function orderbookStateToOrderStatus(state: number): OrderStatus {
     }
 }
 
+/**
+ * Convert settlement status returned from the RenExSettlement contract into an OrderStatus enum.
+ *
+ * The RenExSettlement contract can return 4 different values: 0, 1, 2, and 3.
+ * Status 0 means that the order has not yet been submitted for settlement.
+ * Status 1 means that the order has been submitted for settlement but has not yet been settled.
+ * Status 2 means the order has been settled.
+ * Status 3 means the order has been slashed.
+ *
+ * @throws {ErrUnknownOrderStatus} Will throw when the state is neither 1, 2, or 3.
+ * @param {number} status The status of the order returned from the RenExSettlement contract.
+ * @returns {OrderStatus} The order status.
+ */
 export function settlementStatusToOrderStatus(status: number): OrderStatus {
     switch (status) {
         case 0:
-            // Order has not been submitted for settlement so we know nothing about it
             throw new Error(ErrUnknownOrderStatus);
         case 1:
-            // Order info has been staged for settlement but has not settled
             return OrderStatus.CONFIRMED;
         case 2:
             return OrderStatus.SETTLED;
