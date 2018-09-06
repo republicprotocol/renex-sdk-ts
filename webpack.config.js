@@ -20,14 +20,6 @@ let common = {
   ],
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
-    alias: {
-      // These must be configured in tsconfig.json as well
-      "@Root": path.resolve(__dirname, 'src/'),
-      "@Bindings": path.resolve(__dirname, 'src/contracts/bindings'),
-      "@Contracts": path.resolve(__dirname, 'src/contracts'),
-      "@Lib": path.resolve(__dirname, 'src/lib'),
-      "@Methods": path.resolve(__dirname, 'src/methods'),
-    }
   }
 };
 

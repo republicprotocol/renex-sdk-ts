@@ -1,16 +1,16 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import * as ingress from "@Lib/ingress";
+import * as ingress from "../lib/ingress";
 
-import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "@Root/index";
+import RenExSDK, { FloatInput, IntInput, OrderID, OrderStatus } from "../index";
 
-import { DarknodeRegistry, Orderbook, RenExTokens, withProvider } from "@Contracts/contracts";
-import { adjustDecimals } from "@Lib/balances";
-import { ErrUnsupportedFilterStatus } from "@Lib/errors";
-import { OrderSettlement } from "@Lib/market";
-import { NetworkData } from "@Lib/network";
-import { generateTokenPairing } from "@Lib/tokens";
+import { DarknodeRegistry, Orderbook, RenExTokens, withProvider } from "../contracts/contracts";
+import { adjustDecimals } from "../lib/balances";
+import { ErrUnsupportedFilterStatus } from "../lib/errors";
+import { OrderSettlement } from "../lib/market";
+import { NetworkData } from "../lib/network";
+import { generateTokenPairing } from "../lib/tokens";
 
 export interface Order {
     orderSettlement?: OrderSettlement;

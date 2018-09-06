@@ -1,9 +1,9 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import { ErrUnknownOrderStatus } from "@Lib/errors";
-import { Record } from "@Lib/record";
-import { OrderStatus } from "@Root/index";
+import { OrderStatus } from "../index";
+import { ErrUnknownOrderStatus } from "./errors";
+import { Record } from "./record";
 
 export class CoExp extends Record({
     co: 0,

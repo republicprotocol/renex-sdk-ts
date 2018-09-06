@@ -1,10 +1,10 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { IntInput } from "@Root/index";
+import RenExSDK, { IntInput } from "../index";
 
-import { ERC20, RenExBalances, RenExTokens, withProvider } from "@Contracts/contracts";
-import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "@Lib/errors";
-import { NetworkData } from "@Lib/network";
+import { ERC20, RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
+import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "../lib/errors";
+import { NetworkData } from "../lib/network";
 
 const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: boolean }) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";

@@ -9,17 +9,17 @@ import Web3 from "web3";
 import { BN } from "bn.js";
 import { List, Map } from "immutable";
 
-import * as shamir from "@Lib/shamir";
+import * as shamir from "./shamir";
 
-import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
-import { OrderbookContract } from "@Bindings/orderbook";
-import { EncodedData, Encodings } from "@Lib/encodedData";
-import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "@Lib/errors";
-import { OrderSettlement } from "@Lib/market";
-import { NetworkData } from "@Lib/network";
-import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "@Lib/order";
-import { Record } from "@Lib/record";
-import { OrderID, OrderStatus } from "index";
+import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
+import { OrderbookContract } from "../contracts/bindings/orderbook";
+import { OrderID, OrderStatus } from "../index";
+import { EncodedData, Encodings } from "./encodedData";
+import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "./errors";
+import { OrderSettlement } from "./market";
+import { NetworkData } from "./network";
+import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
+import { Record } from "./record";
 
 const NULL = "0x0000000000000000000000000000000000000000";
 

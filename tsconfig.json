@@ -1,22 +1,5 @@
 {
   "compilerOptions": {
-    "paths": {
-      "@Root/*": [
-        "*"
-      ],
-      "@Bindings/*": [
-        "contracts/bindings/*"
-      ],
-      "@Contracts/*": [
-        "contracts/*"
-      ],
-      "@Lib/*": [
-        "lib/*"
-      ],
-      "@Methods/*": [
-        "methods/*"
-      ],
-    },
     "baseUrl": "src",
     "rootDir": "src",
     "noImplicitAny": true,

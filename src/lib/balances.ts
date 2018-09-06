@@ -1,9 +1,9 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import { ErrNumericalPrecision } from "@Lib/errors";
-import { Token, TokenDetails } from "@Lib/market";
-import { FloatInput, IntInput } from "index";
+import { FloatInput, IntInput } from "../index";
+import { ErrNumericalPrecision } from "./errors";
+import { Token, TokenDetails } from "./market";
 
 export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: string | number | BN, toDecimals: string | number | BN): BN => {
     fromDecimals = new BN(fromDecimals).toNumber();

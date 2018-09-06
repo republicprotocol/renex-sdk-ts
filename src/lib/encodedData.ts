@@ -13,7 +13,7 @@
 
 import * as bs58 from "bs58";
 
-import { Record } from "@Lib/record";
+import { Record } from "./record";
 
 export enum Encodings {
     AUTO = "auto",

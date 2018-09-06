@@ -1,11 +1,10 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { OrderID, OrderStatus } from "@Root/index";
+import RenExSDK, { OrderID, OrderStatus } from "..//index";
 
-import { Orderbook, RenExSettlement, withProvider } from "@Contracts/contracts";
-import { ErrUnknownOrderStatus } from "@Lib/errors";
-import { NetworkData } from "@Lib/network";
-import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "@Lib/order";
+import { Orderbook, RenExSettlement, withProvider } from "../contracts/contracts";
+import { NetworkData } from "../lib/network";
+import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
 
 export const status = async (sdk: RenExSDK, orderID: OrderID): Promise<OrderStatus> => {
     sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);

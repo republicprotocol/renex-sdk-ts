@@ -1,10 +1,11 @@
 import { BN } from "bn.js";
 
-import { RenExBalances, RenExTokens, withProvider } from "@Contracts/contracts";
-import { ErrUnimplemented } from "@Lib/errors";
-import { requestWithdrawalSignature } from "@Lib/ingress";
-import { NetworkData } from "@Lib/network";
-import RenExSDK, { IdempotentKey, IntInput } from "@Root/index";
+import RenExSDK, { IdempotentKey, IntInput } from "../index";
+
+import { RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
+import { ErrUnimplemented } from "../lib/errors";
+import { requestWithdrawalSignature } from "../lib/ingress";
+import { NetworkData } from "../lib/network";
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);

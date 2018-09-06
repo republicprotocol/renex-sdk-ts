@@ -1,9 +1,10 @@
 import { BN } from "bn.js";
 
-import { ERC20Contract } from "@Bindings/erc20";
-import { ERC20, ETH_CODE, RenExTokens, withProvider } from "@Contracts/contracts";
-import { NetworkData } from "@Lib/network";
-import RenExSDK, { IntInput } from "@Root/index";
+import RenExSDK, { IntInput } from "../index";
+
+import { ERC20Contract } from "../contracts/bindings/erc20";
+import { ERC20, ETH_CODE, RenExTokens, withProvider } from "../contracts/contracts";
+import { NetworkData } from "../lib/network";
 
 export const transfer = async (sdk: RenExSDK, addr: string, token: number, valueBig: IntInput): Promise<void> => {
     sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);

@@ -4,18 +4,18 @@ import Web3 from "web3";
 import { BN } from "bn.js";
 import { Provider } from "web3/types";
 
-import { DarknodeRegistryContract } from "@Bindings/darknode_registry";
-import { OrderbookContract } from "@Bindings/orderbook";
-import { RenExBalancesContract } from "@Bindings/ren_ex_balances";
-import { RenExSettlementContract } from "@Bindings/ren_ex_settlement";
-import { RenExTokensContract } from "@Bindings/ren_ex_tokens";
+import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
+import { OrderbookContract } from "./contracts/bindings/orderbook";
+import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
+import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
+import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 
-import { Token } from "@Lib/tokens";
-import { balance, usableBalance, withdraw } from "@Methods/balancesMethods";
-import { deposit } from "@Methods/depositMethod";
-import { transfer } from "@Methods/generalMethods";
-import { cancelOrder, listOrdersByStatus, listOrdersByTrader, openOrder, Order } from "@Methods/orderbookMethods";
-import { settled, status } from "@Methods/settlementMethods";
+import { Token } from "./lib/tokens";
+import { balance, usableBalance, withdraw } from "./methods/balancesMethods";
+import { deposit } from "./methods/depositMethod";
+import { transfer } from "./methods/generalMethods";
+import { cancelOrder, listOrdersByStatus, listOrdersByTrader, openOrder, Order } from "./methods/orderbookMethods";
+import { settled, status } from "./methods/settlementMethods";
 
 // These are temporary types to ensure that all user inputs are converted
 // correctly.
@@ -40,8 +40,8 @@ export enum OrderStatus {
 interface RenExSDK {
     address: string;
     transfer(address: string, token: number, value: IntInput): Promise<void>;
-    balance(token: number): Promise<IntInput>;
-    usableBalance(token: number): Promise<IntInput>;
+    balance(token: number): Promise<BN>;
+    usableBalance(token: number): Promise<BN>;
     deposit(token: number, value: IntInput): Promise<void>;
     withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void>;
     status(orderID: OrderID): Promise<OrderStatus>;
@@ -84,8 +84,8 @@ class RenExSDK implements RenExSDK {
 
     // tslint:disable-next-line:max-line-length
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
-    public balance = (token: number): Promise<IntInput> => balance(this, token);
-    public usableBalance = (token: number): Promise<IntInput> => usableBalance(this, token);
+    public balance = (token: number): Promise<BN> => balance(this, token);
+    public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public deposit = (token: number, value: IntInput): Promise<void> => deposit(this, token, value);
     // tslint:disable-next-line:max-line-length
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void> => withdraw(this, token, value, withoutIngressSignature, key);

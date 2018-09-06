@@ -5,15 +5,15 @@ import Web3 from "web3";
 import { Provider } from "web3/types";
 
 // Bindings
-import { DarknodeRegistryArtifact } from "@Bindings/darknode_registry";
-import { ERC20Artifact } from "@Bindings/erc20";
-import { OrderbookArtifact } from "@Bindings/orderbook";
-import { RenExAtomicInfoArtifact } from "@Bindings/ren_ex_atomic_info";
-import { RenExBalancesArtifact } from "@Bindings/ren_ex_balances";
-import { RenExSettlementArtifact } from "@Bindings/ren_ex_settlement";
-import { RenExTokensArtifact } from "@Bindings/ren_ex_tokens";
+import { DarknodeRegistryArtifact } from "./bindings/darknode_registry";
+import { ERC20Artifact } from "./bindings/erc20";
+import { OrderbookArtifact } from "./bindings/orderbook";
+import { RenExAtomicInfoArtifact } from "./bindings/ren_ex_atomic_info";
+import { RenExBalancesArtifact } from "./bindings/ren_ex_balances";
+import { RenExSettlementArtifact } from "./bindings/ren_ex_settlement";
+import { RenExTokensArtifact } from "./bindings/ren_ex_tokens";
 
-// ABIs (Do not use any tsconfig paths here)
+// ABIs
 import DarknodeRegistryJSON from "./ABIs/DarknodeRegistry.json";
 import ERC20JSON from "./ABIs/ERC20.json";
 import OrderbookJSON from "./ABIs/Orderbook.json";
