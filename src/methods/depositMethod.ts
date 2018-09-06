@@ -24,7 +24,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
     console.log(tokenDetails);
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
+            await sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
         } else {
             // ERC20 token
             const tokenContract = await ERC20.at(tokenDetails.addr);
