@@ -1,4 +1,3 @@
-import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
 import * as ingress from "../lib/ingress";
