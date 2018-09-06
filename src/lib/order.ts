@@ -106,8 +106,8 @@ export function orderbookStateToOrderStatus(state: number): OrderStatus {
 export function settlementStatusToOrderStatus(status: number): OrderStatus {
     switch (status) {
         case 0:
-            // Order has not yet been submitted to settlement
-            return OrderStatus.CONFIRMED;
+            // Order has not been submitted for settlement so we know nothing about it
+            throw new Error(ErrUnknownOrderStatus);
         case 1:
             // Order info has been staged for settlement but has not settled
             return OrderStatus.CONFIRMED;
