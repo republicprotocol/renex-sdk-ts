@@ -160,35 +160,46 @@ export async function requestWithdrawalSignature(address: string, tokenID: numbe
 async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
     const orders = await orderbook.getOrders(offset, limit);
     const orderIDs = orders[0];
-    const tradersAddrs = orders[1];
+    const tradersAddresses = orders[1];
     const orderStatuses = orders[2];
 
     let ordersList = List<[OrderID, OrderStatus, string]>();
     for (let i = 0; i < orderIDs.length; i++) {
         const status = orderbookStateToOrderStatus(new BN(orderStatuses[i]).toNumber());
-        ordersList = ordersList.push([orderIDs[i], status, tradersAddrs[i]]);
+        ordersList = ordersList.push([orderIDs[i], status, tradersAddresses[i]]);
     }
     return ordersList;
 }
 
-export async function listOrders(orderbook: OrderbookContract): Promise<List<[OrderID, OrderStatus, string]>> {
-    const numOrders = await orderbook.ordersCount();
-    const orderCount = new BN(numOrders).toNumber();
+export async function listOrders(orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
+    const orderCount = new BN(await orderbook.ordersCount()).toNumber();
 
-    let start = 0;
-    const limit = 500;
-    if (orderCount < limit) {
-        return ordersBatch(orderbook, 0, orderCount);
-    }
+    // If limit is 0 then we treat is as no limit
+    const limit = limitIn || orderCount - (startIn || 0);
+
+    // Start can be 0 so we compare against undefined instead
+    let start = startIn !== undefined ? startIn : orderCount - limit;
+
+    // We only get at most 500 orders per batch
+    let batchLimit = Math.min(limit, 500);
+
+    // Indicates where to stop (non-inclusive)
+    const stop = limit ? start + limit : orderCount;
 
     let ordersList = List<[OrderID, OrderStatus, string]>();
     while (true) {
-        if (orderCount - start < 0) {
+        // Check if the limit has been reached
+        if (start >= stop) {
             return ordersList;
         }
-        const batch = await ordersBatch(orderbook, start, limit);
+
+        // Don't get more than required
+        batchLimit = Math.min(batchLimit, stop - start);
+
+        // Retrieve batch of orders and increment start
+        const batch = await ordersBatch(orderbook, start, batchLimit);
         ordersList = ordersList.concat(batch).toList();
-        start += limit;
+        start += batchLimit;
     }
 }
 

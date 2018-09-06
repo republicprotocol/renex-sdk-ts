@@ -93,7 +93,7 @@ export function volumeFloatToCoExp(volume: BigNumber): CoExp {
 export function orderbookStateToOrderStatus(state: number): OrderStatus {
     switch (state) {
         case 0:
-            return OrderStatus.NOTSUBMITTED;
+            return OrderStatus.NOT_SUBMITTED;
         case 1:
             return OrderStatus.OPEN;
         case 2:

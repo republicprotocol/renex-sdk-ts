@@ -10,11 +10,12 @@ import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
 import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
 import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 
+import { OrderSettlement } from "./lib/market";
 import { Token } from "./lib/tokens";
-import { balance, usableBalance, withdraw } from "./methods/balancesMethods";
+import { balance, nondepositedBalance, usableBalance, withdraw } from "./methods/balancesMethods";
 import { deposit } from "./methods/depositMethod";
 import { transfer } from "./methods/generalMethods";
-import { cancelOrder, listOrdersByStatus, listOrdersByTrader, openOrder, Order } from "./methods/orderbookMethods";
+import { cancelOrder, listOrders, openOrder, verifyOrder } from "./methods/orderbookMethods";
 import { settled, status } from "./methods/settlementMethods";
 
 // These are temporary types to ensure that all user inputs are converted
@@ -25,11 +26,39 @@ export type FloatInput = number | string | BigNumber;
 export type IdempotentKey = string;
 export type OrderID = string;
 export enum OrderStatus {
-    NOTSUBMITTED = "not submitted",
+    NOT_SUBMITTED = "not submitted",
     OPEN = "open",
     CONFIRMED = "confirmed",
+    CANCELED = "canceled",
     SETTLED = "settled",
     SLASHED = "slashed",
+}
+
+export { OrderSettlement } from "./lib/market";
+
+export interface Order {
+    sellToken: number;
+    buyToken: number;
+    price: FloatInput;
+    volume: IntInput;
+    minimumVolume: IntInput;
+    orderSettlement?: OrderSettlement;
+    nonce?: BN;
+    id?: string;
+    expiry?: number;
+}
+
+export interface HiddenOrder {
+    orderID: string;
+    status: OrderStatus;
+    trader: string;
+}
+
+export interface ListOrdersFilter {
+    address?: string;
+    status?: OrderStatus;
+    limit?: number;
+    start?: number;
 }
 
 /**
@@ -41,15 +70,16 @@ interface RenExSDK {
     address: string;
     transfer(address: string, token: number, value: IntInput): Promise<void>;
     balance(token: number): Promise<BN>;
+    nondepositedBalance(token: number): Promise<BN>;
     usableBalance(token: number): Promise<BN>;
     deposit(token: number, value: IntInput): Promise<void>;
     withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void>;
     status(orderID: OrderID): Promise<OrderStatus>;
     settled(orderID: OrderID): Promise<boolean>;
+    verifyOrder(order: Order): Promise<Order>;
     openOrder(order: Order): Promise<void>;
     cancelOrder(orderID: OrderID): Promise<void>;
-    listOrdersByTrader(address: string): Promise<OrderID[]>;
-    listOrdersByStatus(status: OrderStatus): Promise<OrderID[]>;
+    listOrders(filter: ListOrdersFilter): Promise<HiddenOrder[]>;
 }
 
 /**
@@ -78,12 +108,16 @@ class RenExSDK implements RenExSDK {
      * @memberof RenExSDK
      */
     constructor(provider: Provider, address: string) {
+        if (address === null) {
+            throw new Error("invalid address");
+        }
         this.web3 = new Web3(provider);
         this.address = address;
     }
 
     // tslint:disable-next-line:max-line-length
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
+    public nondepositedBalance = (token: number): Promise<BN> => nondepositedBalance(this, token);
     public balance = (token: number): Promise<BN> => balance(this, token);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public deposit = (token: number, value: IntInput): Promise<void> => deposit(this, token, value);
@@ -91,10 +125,17 @@ class RenExSDK implements RenExSDK {
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void> => withdraw(this, token, value, withoutIngressSignature, key);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public settled = (orderID: OrderID): Promise<boolean> => settled(this, orderID);
+    public verifyOrder = (order: Order): Promise<Order> => verifyOrder(this, order);
     public openOrder = (order: Order): Promise<void> => openOrder(this, order);
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
-    public listOrdersByTrader = (addr: string): Promise<OrderID[]> => listOrdersByTrader(this, addr);
-    public listOrdersByStatus = (orderStatus: OrderStatus): Promise<OrderID[]> => listOrdersByStatus(this, orderStatus);
+    public listOrders = (filter: ListOrdersFilter): Promise<HiddenOrder[]> => listOrders(this, filter);
+
+    public updateProvider(provider: Provider): void {
+        this.web3 = new Web3(provider);
+    }
+    public updateAddress(address: string): void {
+        this.address = address;
+    }
 }
 
 export default RenExSDK;

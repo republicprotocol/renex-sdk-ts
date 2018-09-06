@@ -2,10 +2,23 @@ import { BN } from "bn.js";
 
 import RenExSDK, { IdempotentKey, IntInput } from "../index";
 
-import { RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
+import { ERC20Contract } from "contracts/bindings/erc20";
+import { ERC20, RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
 import { ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { NetworkData } from "../lib/network";
+
+export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
+
+    if (token === 1) {
+        return new BN(await sdk.web3.eth.getBalance(sdk.address));
+    } else {
+        const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
+        const tokenContract: ERC20Contract = await withProvider(sdk.web3, ERC20).at(tokenDetails.addr);
+        return new BN(await tokenContract.balanceOf(sdk.address));
+    }
+};
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
