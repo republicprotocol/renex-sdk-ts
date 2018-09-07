@@ -5,7 +5,7 @@ import { BN } from "bn.js";
 import { Provider } from "web3/types";
 
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
-import { ERC20Contract } from "./contracts/bindings/erc20";
+import { ERC20Contract, Transaction } from "./contracts/bindings/erc20";
 import { OrderbookContract } from "./contracts/bindings/orderbook";
 import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
 import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
@@ -74,7 +74,7 @@ interface RenExSDK {
     balances(tokens: number[]): Promise<BN[]>;
     nondepositedBalance(token: number): Promise<BN>;
     usableBalance(token: number): Promise<BN>;
-    deposit(token: number, value: IntInput): Promise<void>;
+    deposit(token: number, value: IntInput): Promise<Transaction>;
     withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void>;
     status(orderID: OrderID): Promise<OrderStatus>;
     settled(orderID: OrderID): Promise<boolean>;
@@ -128,7 +128,7 @@ class RenExSDK implements RenExSDK {
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
-    public deposit = (token: number, value: IntInput): Promise<void> => deposit(this, token, value);
+    public deposit = (token: number, value: IntInput): Promise<Transaction> => deposit(this, token, value);
     // tslint:disable-next-line:max-line-length
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void> => withdraw(this, token, value, withoutIngressSignature, key);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);

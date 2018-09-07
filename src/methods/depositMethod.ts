@@ -2,7 +2,7 @@ import { BN } from "bn.js";
 
 import RenExSDK, { IntInput } from "../index";
 
-import { ERC20Contract } from "../contracts/bindings/erc20";
+import { ERC20Contract, Transaction } from "../contracts/bindings/erc20";
 import { ERC20, RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "../lib/errors";
 import { NetworkData } from "../lib/network";
@@ -12,7 +12,7 @@ const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: 
     return token.addr.toLowerCase() === ETH_ADDR.toLowerCase();
 };
 
-export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<void> => {
+export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<Transaction> => {
     console.log(sdk.address);
     console.log(sdk.web3.eth.getAccounts(console.log));
 
@@ -45,7 +45,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             if (allowance.lt(value)) {
                 await tokenContract.approve(sdk.contracts.renExBalances.address, value, { from: sdk.address });
             }
-            await sdk.contracts.renExBalances.deposit(
+            const tx: Transaction = await sdk.contracts.renExBalances.deposit(
                 tokenDetails.addr,
                 value,
                 {
@@ -55,6 +55,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                     gas: "150000",
                 }
             );
+            return tx;
             // See https://github.com/MetaMask/metamask-extension/issues/3425
         }
     } catch (error) {
