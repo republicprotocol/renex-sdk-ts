@@ -36,6 +36,7 @@ export const ERC20: ERC20Artifact = contract.default({
 export const DarknodeRegistry: DarknodeRegistryArtifact = contract.default({
     abi: DarknodeRegistryJSON,
 });
+console.log(new (DarknodeRegistry)("0x8a31d477267A5af1bc5142904ef0AfA31D326E03"));
 
 export const Orderbook: OrderbookArtifact = contract.default({
     abi: OrderbookJSON,

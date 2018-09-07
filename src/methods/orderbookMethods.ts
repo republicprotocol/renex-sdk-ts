@@ -4,7 +4,6 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK, { HiddenOrder, ListOrdersFilter, Order, OrderID, OrderStatus } from "../index";
 
-import { DarknodeRegistry, Orderbook, RenExTokens, withProvider } from "../contracts/contracts";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrUnsupportedFilterStatus } from "../lib/errors";
@@ -19,10 +18,6 @@ const VOLUME_OFFSET = 12;
 export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
-    // Initialize required contracts
-    sdk.contracts.darknodeRegistry = sdk.contracts.darknodeRegistry || await withProvider(sdk.web3, DarknodeRegistry).at(NetworkData.contracts[0].darknodeRegistry);
-    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
-    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
     if (orderObj.nonce === undefined) {
@@ -71,9 +66,6 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
     orderObj = await verifyOrder(sdk, orderObj);
 
     // Initialize required contracts
-    sdk.contracts.darknodeRegistry = sdk.contracts.darknodeRegistry || await withProvider(sdk.web3, DarknodeRegistry).at(NetworkData.contracts[0].darknodeRegistry);
-    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
-    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken.toFixed()));
 
     const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
@@ -111,8 +103,6 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
-    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
-
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 
     await sdk.contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address });
@@ -123,8 +113,6 @@ export const listOrders = async (sdk: RenExSDK, filter: ListOrdersFilter): Promi
     if (filter.status && !filterableStatuses.includes(filter.status)) {
         throw new Error(ErrUnsupportedFilterStatus);
     }
-
-    sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
 
     let orders = await ingress.listOrders(sdk.contracts.orderbook, filter.start, filter.limit);
 

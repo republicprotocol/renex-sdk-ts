@@ -11,7 +11,9 @@ import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
 import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
 import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 
+import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider } from "./contracts/contracts";
 import { OrderSettlement } from "./lib/market";
+import { NetworkData } from "./lib/network";
 import { Token } from "./lib/tokens";
 import { balance, balances, nondepositedBalance, nondepositedBalances, usableBalance, usableBalances, withdraw } from "./methods/balancesMethods";
 import { deposit } from "./methods/depositMethod";
@@ -118,6 +120,12 @@ class RenExSDK implements RenExSDK {
         }
         this.web3 = new Web3(provider);
         this.address = address;
+
+        this.contracts.renExSettlement = new (withProvider(this.web3, RenExSettlement))(NetworkData.contracts[0].renExTokens);
+        this.contracts.renExBalances = new (withProvider(this.web3, RenExBalances))(NetworkData.contracts[0].renExBalances);
+        this.contracts.orderbook = new (withProvider(this.web3, Orderbook))(NetworkData.contracts[0].orderbook);
+        this.contracts.darknodeRegistry = new (withProvider(this.web3, DarknodeRegistry))(NetworkData.contracts[0].darknodeRegistry);
+        this.contracts.renExTokens = new (withProvider(this.web3, RenExTokens))(NetworkData.contracts[0].renExTokens);
     }
 
     // tslint:disable-next-line:max-line-length

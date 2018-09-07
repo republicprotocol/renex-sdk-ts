@@ -3,21 +3,18 @@ import { BN } from "bn.js";
 import RenExSDK, { IdempotentKey, IntInput } from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
-import { ERC20, RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
+import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
-import { NetworkData } from "../lib/network";
 
 export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
-
     if (token === 1) {
         return new BN(await sdk.web3.eth.getBalance(sdk.address));
     } else {
         const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
         let tokenContract: ERC20Contract;
         if (!sdk.contracts.erc20.has(token)) {
-            tokenContract = await withProvider(sdk.web3, ERC20).at(tokenDetails.addr);
+            tokenContract = new (withProvider(sdk.web3, ERC20))(tokenDetails.addr);
             sdk.contracts.erc20.set(token, tokenContract);
         } else {
             tokenContract = sdk.contracts.erc20.get(token);
@@ -31,18 +28,12 @@ export const nondepositedBalances = async (sdk: RenExSDK, tokens: number[]): Pro
 };
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
-    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
-
     const tokenString = (await sdk.contracts.renExTokens.tokens(token)).addr;
 
     return new BN(await sdk.contracts.renExBalances.traderBalances(sdk.address, tokenString));
 };
 
 export const balances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
-    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
-
     const tokenInfoPromises = tokens.map(token => sdk.contracts.renExTokens.tokens(token));
     const infos = await Promise.all(tokenInfoPromises);
     const balancePromises = infos.map(info => sdk.contracts.renExBalances.traderBalances(sdk.address, info.addr));
@@ -68,9 +59,6 @@ export const withdraw = async (
     if (withoutIngressSignature === true || key !== undefined) {
         throw new Error(ErrUnimplemented);
     }
-
-    sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
-    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
 
     const tokenString = (await sdk.contracts.renExTokens.tokens(token)).addr;
 
