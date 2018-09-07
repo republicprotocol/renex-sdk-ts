@@ -29,6 +29,17 @@ export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     return new BN(await sdk.contracts.renExBalances.traderBalances(sdk.address, tokenString));
 };
 
+export const balances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+    sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
+    sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
+
+    const tokenInfoPromises = tokens.map(token => sdk.contracts.renExTokens.tokens(token));
+    const infos = await Promise.all(tokenInfoPromises);
+    const balancePromises = infos.map(info => sdk.contracts.renExBalances.traderBalances(sdk.address, info.addr));
+    const tokenBalances = await Promise.all(balancePromises);
+    return tokenBalances.map(tokenBalance => new BN(tokenBalance));
+};
+
 export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     // TODO: Subtract balances locked up in orders
     return balance(sdk, token);

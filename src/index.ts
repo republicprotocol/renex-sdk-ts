@@ -12,7 +12,7 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 
 import { OrderSettlement } from "./lib/market";
 import { Token } from "./lib/tokens";
-import { balance, nondepositedBalance, usableBalance, withdraw } from "./methods/balancesMethods";
+import { balance, balances, nondepositedBalance, usableBalance, withdraw } from "./methods/balancesMethods";
 import { deposit } from "./methods/depositMethod";
 import { transfer } from "./methods/generalMethods";
 import { cancelOrder, listOrders, openOrder, verifyOrder } from "./methods/orderbookMethods";
@@ -70,6 +70,7 @@ interface RenExSDK {
     address: string;
     transfer(address: string, token: number, value: IntInput): Promise<void>;
     balance(token: number): Promise<BN>;
+    balances(tokens: number[]): Promise<BN[]>;
     nondepositedBalance(token: number): Promise<BN>;
     usableBalance(token: number): Promise<BN>;
     deposit(token: number, value: IntInput): Promise<void>;
@@ -119,6 +120,7 @@ class RenExSDK implements RenExSDK {
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
     public nondepositedBalance = (token: number): Promise<BN> => nondepositedBalance(this, token);
     public balance = (token: number): Promise<BN> => balance(this, token);
+    public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public deposit = (token: number, value: IntInput): Promise<void> => deposit(this, token, value);
     // tslint:disable-next-line:max-line-length
