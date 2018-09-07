@@ -45,7 +45,7 @@ module.exports = [
       path: path.resolve(__dirname, 'lib'),
       filename: 'index.js',
       libraryTarget: 'commonjs2',
-      libraryExport: 'default'
+      // libraryExport: 'default'
     },
     externals: [nodeExternals()]
   })
