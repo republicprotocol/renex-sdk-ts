@@ -6,6 +6,7 @@ import RenExSDK, { HiddenOrder, ListOrdersFilter, Order, OrderID, OrderStatus } 
 
 import { DarknodeRegistry, Orderbook, RenExTokens, withProvider } from "../contracts/contracts";
 import { adjustDecimals } from "../lib/balances";
+import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrUnsupportedFilterStatus } from "../lib/errors";
 import { OrderSettlement } from "../lib/market";
 import { NetworkData } from "../lib/network";
@@ -111,7 +112,10 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
     sdk.contracts.orderbook = sdk.contracts.orderbook || await withProvider(sdk.web3, Orderbook).at(NetworkData.contracts[0].orderbook);
-    await sdk.contracts.orderbook.cancelOrder(orderID);
+
+    const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
+
+    await sdk.contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address });
 };
 
 export const listOrders = async (sdk: RenExSDK, filter: ListOrdersFilter): Promise<HiddenOrder[]> => {

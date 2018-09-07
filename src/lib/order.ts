@@ -91,8 +91,10 @@ export function orderbookStateToOrderStatus(state: number): OrderStatus {
             return OrderStatus.OPEN;
         case 2:
             return OrderStatus.CONFIRMED;
+        case 3:
+            return OrderStatus.CANCELED;
         default:
-            throw new Error(ErrUnknownOrderStatus);
+            throw new Error(`${ErrUnknownOrderStatus}: ${state}`);
     }
 }
 
@@ -120,6 +122,6 @@ export function settlementStatusToOrderStatus(status: number): OrderStatus {
         case 3:
             return OrderStatus.SLASHED;
         default:
-            throw new Error(ErrUnknownOrderStatus);
+            throw new Error(`${ErrUnknownOrderStatus}: ${status}`);
     }
 }
