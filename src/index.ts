@@ -5,6 +5,7 @@ import { BN } from "bn.js";
 import { Provider } from "web3/types";
 
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
+import { ERC20Contract } from "./contracts/bindings/erc20";
 import { OrderbookContract } from "./contracts/bindings/orderbook";
 import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
 import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
@@ -101,7 +102,10 @@ class RenExSDK implements RenExSDK {
         renExBalances?: RenExBalancesContract,
         orderbook?: OrderbookContract,
         darknodeRegistry?: DarknodeRegistryContract,
-    } = {};
+        erc20: Map<number, ERC20Contract>,
+    } = {
+            erc20: new Map<number, ERC20Contract>()
+        };
 
     /**
      * Creates an instance of RenExSDK.

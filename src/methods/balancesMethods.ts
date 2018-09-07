@@ -15,7 +15,13 @@ export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise
         return new BN(await sdk.web3.eth.getBalance(sdk.address));
     } else {
         const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
-        const tokenContract: ERC20Contract = await withProvider(sdk.web3, ERC20).at(tokenDetails.addr);
+        let tokenContract: ERC20Contract;
+        if (!sdk.contracts.erc20.has(token)) {
+            tokenContract = await withProvider(sdk.web3, ERC20).at(tokenDetails.addr);
+            sdk.contracts.erc20.set(token, tokenContract);
+        } else {
+            tokenContract = sdk.contracts.erc20.get(token);
+        }
         return new BN(await tokenContract.balanceOf(sdk.address));
     }
 };
