@@ -2,6 +2,7 @@ import { BN } from "bn.js";
 
 import RenExSDK, { IntInput } from "../index";
 
+import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, RenExBalances, RenExTokens, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "../lib/errors";
 import { NetworkData } from "../lib/network";
@@ -27,7 +28,13 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             await sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
         } else {
             // ERC20 token
-            const tokenContract = await ERC20.at(tokenDetails.addr);
+            let tokenContract: ERC20Contract;
+            if (!sdk.contracts.erc20.has(token)) {
+                tokenContract = await withProvider(sdk.web3, ERC20).at(tokenDetails.addr);
+                sdk.contracts.erc20.set(token, tokenContract);
+            } else {
+                tokenContract = sdk.contracts.erc20.get(token);
+            }
 
             // If allowance is less than amount, user must first approve
             // TODO: This may cause the transaction to fail if the user call this
