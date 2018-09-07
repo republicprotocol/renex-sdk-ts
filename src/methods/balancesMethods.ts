@@ -45,6 +45,11 @@ export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> =
     return balance(sdk, token);
 };
 
+export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+    // TODO: Subtract balances locked up in orders
+    return balances(sdk, tokens);
+};
+
 export const withdraw = async (
     sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean, key?: IdempotentKey
 ): Promise<IdempotentKey | void> => {

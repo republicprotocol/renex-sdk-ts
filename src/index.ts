@@ -12,7 +12,7 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 
 import { OrderSettlement } from "./lib/market";
 import { Token } from "./lib/tokens";
-import { balance, balances, nondepositedBalance, usableBalance, withdraw } from "./methods/balancesMethods";
+import { balance, balances, nondepositedBalance, usableBalance, usableBalances, withdraw } from "./methods/balancesMethods";
 import { deposit } from "./methods/depositMethod";
 import { transfer } from "./methods/generalMethods";
 import { cancelOrder, listOrders, openOrder, verifyOrder } from "./methods/orderbookMethods";
@@ -122,6 +122,7 @@ class RenExSDK implements RenExSDK {
     public balance = (token: number): Promise<BN> => balance(this, token);
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
+    public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
     public deposit = (token: number, value: IntInput): Promise<void> => deposit(this, token, value);
     // tslint:disable-next-line:max-line-length
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void> => withdraw(this, token, value, withoutIngressSignature, key);
