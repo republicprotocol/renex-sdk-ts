@@ -53,7 +53,6 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                     // if the ethereum node hasn't seen the previous transaction
                     from: sdk.address,
                     gas: "150000",
-                    value: value.toString(),
                 }
             );
             // See https://github.com/MetaMask/metamask-extension/issues/3425
