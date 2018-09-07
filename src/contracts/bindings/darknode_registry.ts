@@ -1,3 +1,5 @@
+// tslint:disable
+
 import { BN } from "bn.js";
 import { Log, Provider, TransactionReceipt, Tx } from "web3/types";
 
@@ -5,7 +7,6 @@ export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Lo
 
 type BigNumber = string | number | BN;
 
-// tslint:disable:max-line-length
 export interface DarknodeRegistryContract {
     numDarknodesNextEpoch(options?: Tx): Promise<BigNumber>;
     numDarknodes(options?: Tx): Promise<BigNumber>;
@@ -53,11 +54,10 @@ export interface DarknodeRegistryContract {
 }
 
 export interface DarknodeRegistryArtifact {
+    new(address: string): DarknodeRegistryContract;
     address: string;
     "new"(_VERSION: string, _renAddress: string, _storeAddress: string, _minimumBond: BigNumber, _minimumPodSize: BigNumber, _minimumEpochInterval: BigNumber, options?: Tx): Promise<DarknodeRegistryContract>;
     at(address: string): Promise<DarknodeRegistryContract>;
     deployed(): Promise<DarknodeRegistryContract>;
     setProvider(provider: Provider): void;
 }
-
-// tslint:enable:max-line-length

@@ -1,3 +1,5 @@
+// tslint:disable
+
 import { BN } from "bn.js";
 import { Log, Provider, TransactionReceipt, Tx } from "web3/types";
 
@@ -5,7 +7,6 @@ export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Lo
 
 type BigNumber = string | number | BN;
 
-// tslint:disable:max-line-length
 export interface RenExAtomicInfoContract {
     getOwnerAddress(index_0: string, options?: Tx): Promise<string>;
     ownerAddressTimestamp(index_0: string, options?: Tx): Promise<BigNumber>;
@@ -26,11 +27,10 @@ export interface RenExAtomicInfoContract {
 }
 
 export interface RenExAtomicInfoArtifact {
+    new(address: string): RenExAtomicInfoContract;
     address: string;
     "new"(_VERSION: string, _orderbookContract: string, options?: Tx): Promise<RenExAtomicInfoContract>;
     at(address: string): Promise<RenExAtomicInfoContract>;
     deployed(): Promise<RenExAtomicInfoContract>;
     setProvider(provider: Provider): void;
 }
-
-// tslint:enable:max-line-length

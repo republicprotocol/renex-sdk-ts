@@ -1,3 +1,5 @@
+// tslint:disable
+
 import { BN } from "bn.js";
 import { Log, Provider, TransactionReceipt, Tx } from "web3/types";
 
@@ -5,7 +7,6 @@ export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Lo
 
 type BigNumber = string | number | BN;
 
-// tslint:disable:max-line-length
 export interface RenExSettlementContract {
     orderStatus(index_0: string, options?: Tx): Promise<BigNumber>;
     renExTokensContract(options?: Tx): Promise<string>;
@@ -38,11 +39,10 @@ export interface RenExSettlementContract {
 }
 
 export interface RenExSettlementArtifact {
+    new(address: string): RenExSettlementContract;
     address: string;
     "new"(_VERSION: string, _orderbookContract: string, _renExTokensContract: string, _renExBalancesContract: string, _slasherAddress: string, _submissionGasPriceLimit: BigNumber, options?: Tx): Promise<RenExSettlementContract>;
     at(address: string): Promise<RenExSettlementContract>;
     deployed(): Promise<RenExSettlementContract>;
     setProvider(provider: Provider): void;
 }
-
-// tslint:enable:max-line-length
