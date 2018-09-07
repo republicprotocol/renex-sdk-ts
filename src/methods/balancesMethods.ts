@@ -26,6 +26,10 @@ export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise
     }
 };
 
+export const nondepositedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+    return Promise.all(tokens.map(token => nondepositedBalance(sdk, token)));
+};
+
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     sdk.contracts.renExBalances = sdk.contracts.renExBalances || await withProvider(sdk.web3, RenExBalances).at(NetworkData.contracts[0].renExBalances);
     sdk.contracts.renExTokens = sdk.contracts.renExTokens || await withProvider(sdk.web3, RenExTokens).at(NetworkData.contracts[0].renExTokens);
