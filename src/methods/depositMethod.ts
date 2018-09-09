@@ -64,7 +64,6 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         if (error.message.match("User denied transaction signature")) {
             throw new Error(ErrCanceledByUser);
         }
-        console.error(error);
-        throw new Error(ErrFailedDeposit);
+        throw error;
     }
 };
