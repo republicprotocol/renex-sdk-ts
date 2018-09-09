@@ -1,8 +1,8 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { IntInput } from "../index";
+import RenExSDK, { IntInput, Transaction } from "../index";
 
-import { ERC20Contract, Transaction } from "../contracts/bindings/erc20";
+import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "../lib/errors";
 import { NetworkData } from "../lib/network";
@@ -23,7 +23,8 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
     console.log(tokenDetails);
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            await sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
+            const tx: Transaction = await sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
+            return tx;
         } else {
             // ERC20 token
             let tokenContract: ERC20Contract;

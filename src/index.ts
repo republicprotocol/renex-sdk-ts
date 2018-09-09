@@ -5,7 +5,7 @@ import { BN } from "bn.js";
 import { Provider } from "web3/types";
 
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
-import { ERC20Contract, Transaction } from "./contracts/bindings/erc20";
+import { ERC20Contract } from "./contracts/bindings/erc20";
 import { OrderbookContract } from "./contracts/bindings/orderbook";
 import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
 import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
@@ -25,6 +25,8 @@ import { settled, status } from "./methods/settlementMethods";
 // correctly.
 export type IntInput = number | string | BN;
 export type FloatInput = number | string | BigNumber;
+
+export interface Transaction { receipt: any; tx: string; logs: any[]; }
 
 export type IdempotentKey = string;
 export type OrderID = string;
