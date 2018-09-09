@@ -34,12 +34,17 @@ export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order
     const volume = adjustDecimals(orderObj.volume, buyToken.decimals, VOLUME_OFFSET);
     const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyToken.decimals, VOLUME_OFFSET);
 
+    const parity = orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
+    const tokens = parity === ingress.OrderParity.BUY ?
+        generateTokenPairing(orderObj.sellToken, orderObj.buyToken) :
+        generateTokenPairing(orderObj.buyToken, orderObj.sellToken);
+
     let ingressOrder = new ingress.Order({
         type: ingress.OrderType.LIMIT,
-        parity: orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY,
+        parity,
         orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
         expiry: orderObj.expiry,
-        tokens: generateTokenPairing(orderObj.buyToken, orderObj.sellToken),
+        tokens,
         price,
         volume,
         minimumVolume,
@@ -74,12 +79,17 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
     const volume = adjustDecimals(orderObj.volume, buyToken.decimals, VOLUME_OFFSET);
     const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyToken.decimals, VOLUME_OFFSET);
 
+    const parity = orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
+    const tokens = parity === ingress.OrderParity.BUY ?
+        generateTokenPairing(orderObj.sellToken, orderObj.buyToken) :
+        generateTokenPairing(orderObj.buyToken, orderObj.sellToken);
+
     let ingressOrder = new ingress.Order({
         type: ingress.OrderType.LIMIT,
-        parity: orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY,
+        parity,
         orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
         expiry: orderObj.expiry,
-        tokens: generateTokenPairing(orderObj.buyToken, orderObj.sellToken),
+        tokens,
         price,
         volume,
         minimumVolume,

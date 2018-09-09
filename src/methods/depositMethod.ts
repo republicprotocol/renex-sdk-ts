@@ -13,14 +13,10 @@ const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: 
 };
 
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<Transaction> => {
-    console.log(sdk.address);
-    console.log(sdk.web3.eth.getAccounts(console.log));
-
     value = new BN(value);
 
     const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
 
-    console.log(tokenDetails);
     try {
         if (tokenIsEthereum(tokenDetails)) {
             const tx: Transaction = await sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });

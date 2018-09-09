@@ -20,6 +20,7 @@ import { OrderSettlement } from "./market";
 import { NetworkData } from "./network";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
+import { generateTokenPairing, splitTokenPairing } from "./tokens";
 
 const NULL = "0x0000000000000000000000000000000000000000";
 
@@ -214,19 +215,16 @@ export async function listOrders(orderbook: OrderbookContract, startIn?: number,
 // }
 
 export function getOrderID(web3: Web3, order: Order): EncodedData {
+    const [leftToken, rightToken] = splitTokenPairing(order.tokens);
+    const adjustedTokens = order.parity === OrderParity.BUY ? order.tokens : generateTokenPairing(rightToken, leftToken);
+
     const bytes = Buffer.concat([
         // Prefix hash
         new BN(order.type).toArrayLike(Buffer, "be", 1),
         new BN(order.expiry).toArrayLike(Buffer, "be", 8),
         order.nonce.toArrayLike(Buffer, "be", 8),
-
         new BN(order.orderSettlement).toArrayLike(Buffer, "be", 8),
-        (
-            order.parity === OrderParity.BUY ?
-                new BN(order.tokens).toArrayLike(Buffer, "be", 8)
-                :
-                new BN(order.tokens).shln(32).or(new BN(order.tokens).shrn(32)).toArrayLike(Buffer, "be", 8)
-        ),
+        adjustedTokens.toArrayLike(Buffer, "be", 8),
         new BN(order.price).toArrayLike(Buffer, "be", 32),
         new BN(order.volume).toArrayLike(Buffer, "be", 32),
         new BN(order.minimumVolume).toArrayLike(Buffer, "be", 32),
