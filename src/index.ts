@@ -79,7 +79,7 @@ interface RenExSDK {
     nondepositedBalance(token: number): Promise<BN>;
     usableBalance(token: number): Promise<BN>;
     deposit(token: number, value: IntInput): Promise<Transaction>;
-    withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void>;
+    withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction>;
     status(orderID: OrderID): Promise<OrderStatus>;
     settled(orderID: OrderID): Promise<boolean>;
     verifyOrder(order: Order): Promise<Order>;
@@ -140,7 +140,7 @@ class RenExSDK implements RenExSDK {
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
     public deposit = (token: number, value: IntInput): Promise<Transaction> => deposit(this, token, value);
     // tslint:disable-next-line:max-line-length
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void> => withdraw(this, token, value, withoutIngressSignature, key);
+    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction> => withdraw(this, token, value, withoutIngressSignature, key);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public settled = (orderID: OrderID): Promise<boolean> => settled(this, orderID);
     public verifyOrder = (order: Order): Promise<Order> => verifyOrder(this, order);

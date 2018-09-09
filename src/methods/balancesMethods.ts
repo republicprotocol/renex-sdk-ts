@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { IdempotentKey, IntInput } from "../index";
+import RenExSDK, { IdempotentKey, IntInput, Transaction } from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
@@ -53,7 +53,7 @@ export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
 
 export const withdraw = async (
     sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean, key?: IdempotentKey
-): Promise<IdempotentKey | void> => {
+): Promise<Transaction> => {
 
     // Trustless withdrawals are not implemented yet
     if (withoutIngressSignature === true || key !== undefined) {
@@ -65,5 +65,6 @@ export const withdraw = async (
     // TODO: Check balance
 
     const signature = await requestWithdrawalSignature(sdk.address, token);
-    await sdk.contracts.renExBalances.withdraw(tokenString, value, signature.toHex(), { from: sdk.address });
+    const tx = await sdk.contracts.renExBalances.withdraw(tokenString, value, signature.toHex(), { from: sdk.address });
+    return tx;
 };
