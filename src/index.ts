@@ -19,7 +19,7 @@ import { balance, balances, nondepositedBalance, nondepositedBalances, usableBal
 import { deposit } from "./methods/depositMethod";
 import { transfer } from "./methods/generalMethods";
 import { cancelOrder, listOrders, openOrder, verifyOrder } from "./methods/orderbookMethods";
-import { settled, status } from "./methods/settlementMethods";
+import { matchDetails, status } from "./methods/settlementMethods";
 
 // These are temporary types to ensure that all user inputs are converted
 // correctly.
@@ -66,6 +66,17 @@ export interface ListOrdersFilter {
     start?: number;
 }
 
+export interface MatchDetails {
+    orderID: string;
+    matchedID: string;
+
+    receivedVolume: BN;
+    paidVolume: BN;
+    fee: BN;
+    receivedToken: number;
+    paidToken: number;
+}
+
 /**
  * This is the interface that the SDK exposes.
  *
@@ -81,7 +92,7 @@ interface RenExSDK {
     deposit(token: number, value: IntInput): Promise<Transaction>;
     withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void>;
     status(orderID: OrderID): Promise<OrderStatus>;
-    settled(orderID: OrderID): Promise<boolean>;
+    matchDetails(orderID: OrderID): Promise<MatchDetails>;
     verifyOrder(order: Order): Promise<Order>;
     openOrder(order: Order): Promise<void>;
     cancelOrder(orderID: OrderID): Promise<void>;
@@ -142,7 +153,7 @@ class RenExSDK implements RenExSDK {
     // tslint:disable-next-line:max-line-length
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<IdempotentKey | void> => withdraw(this, token, value, withoutIngressSignature, key);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
-    public settled = (orderID: OrderID): Promise<boolean> => settled(this, orderID);
+    public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public verifyOrder = (order: Order): Promise<Order> => verifyOrder(this, order);
     public openOrder = (order: Order): Promise<void> => openOrder(this, order);
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);

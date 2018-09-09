@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { OrderID, OrderStatus } from "..//index";
+import RenExSDK, { MatchDetails, OrderID, OrderStatus } from "../index";
 
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { NetworkData } from "../lib/network";
@@ -20,8 +20,39 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     }
 };
 
-export const settled = async (sdk: RenExSDK, orderID: OrderID): Promise<boolean> => {
-    const orderStatus = new BN(await sdk.contracts.renExSettlement.orderStatus(orderID));
+export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {
+    const orderID = new EncodedData(orderID64, Encodings.BASE64);
+    const details = await sdk.contracts.renExSettlement.getMatchDetails(orderID.toHex());
 
-    return orderStatus.eq(new BN(2));
+    const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
+
+    if (!details.settled) {
+        throw new Error("Not settled");
+    }
+
+    if (details.orderIsBuy) {
+        return {
+            orderID: orderID64,
+            matchedID: matchedID.toBase64(),
+
+            receivedToken: new BN(details.secondaryToken).toNumber(),
+            receivedVolume: new BN(details.secondaryVolume),
+            fee: new BN(details.secondaryFee),
+
+            paidToken: new BN(details.priorityToken).toNumber(),
+            paidVolume: new BN(details.priorityVolume),
+        };
+    } else {
+        return {
+            orderID: orderID64,
+            matchedID: matchedID.toBase64(),
+
+            receivedToken: new BN(details.priorityToken).toNumber(),
+            receivedVolume: new BN(details.priorityVolume),
+            fee: new BN(details.priorityFee),
+
+            paidToken: new BN(details.secondaryToken).toNumber(),
+            paidVolume: new BN(details.secondaryVolume),
+        };
+    }
 };

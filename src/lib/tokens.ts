@@ -30,5 +30,5 @@ export function generateTokenPairing(buyToken: number, sellToken: number): BN {
     const lowPriorityToken = new BN(lowPriority).toArrayLike(Buffer, "be", 4);
     const highPriorityToken = new BN(highPriority).toArrayLike(Buffer, "be", 4);
     // Return the token pair as a 64 bit number
-    return new BN(Buffer.concat([highPriorityToken, lowPriorityToken], 8).toString("hex"), 2);
+    return new BN(Buffer.concat([highPriorityToken, lowPriorityToken]));
 }
