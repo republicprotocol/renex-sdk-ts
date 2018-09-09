@@ -134,7 +134,7 @@ class RenExSDK implements RenExSDK {
         this.web3 = new Web3(provider);
         this.address = address;
 
-        this.contracts.renExSettlement = new (withProvider(this.web3, RenExSettlement))(NetworkData.contracts[0].renExTokens);
+        this.contracts.renExSettlement = new (withProvider(this.web3, RenExSettlement))(NetworkData.contracts[0].renExSettlement);
         this.contracts.renExBalances = new (withProvider(this.web3, RenExBalances))(NetworkData.contracts[0].renExBalances);
         this.contracts.orderbook = new (withProvider(this.web3, Orderbook))(NetworkData.contracts[0].orderbook);
         this.contracts.darknodeRegistry = new (withProvider(this.web3, DarknodeRegistry))(NetworkData.contracts[0].darknodeRegistry);
