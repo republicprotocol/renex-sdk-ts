@@ -107,14 +107,14 @@ export function orderbookStateToOrderStatus(state: number): OrderStatus {
  * Status 2 means the order has been settled.
  * Status 3 means the order has been slashed.
  *
- * @throws {ErrUnknownOrderStatus} Will throw when the state is neither 1, 2, or 3.
+ * @throws {ErrUnknownOrderStatus} Will throw when the state is neither 0, 1, 2, or 3.
  * @param {number} status The status of the order returned from the RenExSettlement contract.
  * @returns {OrderStatus} The order status.
  */
 export function settlementStatusToOrderStatus(status: number): OrderStatus {
     switch (status) {
         case 0:
-            throw new Error(ErrUnknownOrderStatus);
+            return OrderStatus.CONFIRMED;
         case 1:
             return OrderStatus.CONFIRMED;
         case 2:
