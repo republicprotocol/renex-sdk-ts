@@ -112,15 +112,13 @@ class RenExSDK implements RenExSDK {
     public tokens = Token;
     public orderStatus = OrderStatus;
     public contracts: {
-        renExSettlement?: RenExSettlementContract,
-        renExTokens?: RenExTokensContract,
-        renExBalances?: RenExBalancesContract,
-        orderbook?: OrderbookContract,
-        darknodeRegistry?: DarknodeRegistryContract,
+        renExSettlement: RenExSettlementContract,
+        renExTokens: RenExTokensContract,
+        renExBalances: RenExBalancesContract,
+        orderbook: OrderbookContract,
+        darknodeRegistry: DarknodeRegistryContract,
         erc20: Map<number, ERC20Contract>,
-    } = {
-            erc20: new Map<number, ERC20Contract>()
-        };
+    };
 
     /**
      * Creates an instance of RenExSDK.
@@ -134,11 +132,14 @@ class RenExSDK implements RenExSDK {
         this.web3 = new Web3(provider);
         this.address = address;
 
-        this.contracts.renExSettlement = new (withProvider(this.web3, RenExSettlement))(NetworkData.contracts[0].renExSettlement);
-        this.contracts.renExBalances = new (withProvider(this.web3, RenExBalances))(NetworkData.contracts[0].renExBalances);
-        this.contracts.orderbook = new (withProvider(this.web3, Orderbook))(NetworkData.contracts[0].orderbook);
-        this.contracts.darknodeRegistry = new (withProvider(this.web3, DarknodeRegistry))(NetworkData.contracts[0].darknodeRegistry);
-        this.contracts.renExTokens = new (withProvider(this.web3, RenExTokens))(NetworkData.contracts[0].renExTokens);
+        this.contracts = {
+            renExSettlement: new (withProvider(this.web3, RenExSettlement))(NetworkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3, RenExBalances))(NetworkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3, Orderbook))(NetworkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(NetworkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3, RenExTokens))(NetworkData.contracts[0].renExTokens),
+            erc20: new Map<number, ERC20Contract>(),
+        };
     }
 
     // tslint:disable-next-line:max-line-length
