@@ -8,7 +8,6 @@ import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrUnsupportedFilterStatus } from "../lib/errors";
 import { OrderSettlement } from "../lib/market";
-import { NetworkData } from "../lib/network";
 import { generateTokenPairing } from "../lib/tokens";
 
 // TODO: Read these from the contract
@@ -104,7 +103,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
         address: sdk.address.slice(2),
         orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
     });
-    const signature = await ingress.submitOrderFragments(request);
+    const signature = await ingress.submitOrderFragments(sdk.networkData.ingress, request);
 
     // Submit order and the signature to the orderbook
     const tx = await sdk.contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address });

@@ -41,6 +41,8 @@ export enum OrderStatus {
 
 export { OrderSettlement } from "./lib/market";
 
+export { NetworkData } from "./lib/network";
+
 export interface Order {
     sellToken: number;
     buyToken: number;
@@ -108,6 +110,7 @@ interface RenExSDK {
 class RenExSDK implements RenExSDK {
     public web3: Web3;
     public address: string;
+    public networkData: NetworkData;
     // TODO: Make it possible to loop through all tokens (without the reverse lookup duplicates)
     public tokens = Token;
     public orderStatus = OrderStatus;
@@ -125,19 +128,20 @@ class RenExSDK implements RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, address: string) {
+    constructor(provider: Provider, networkData: NetworkData, address: string) {
         if (address === null) {
             throw new Error("invalid address");
         }
         this.web3 = new Web3(provider);
+        this.networkData = networkData;
         this.address = address;
 
         this.contracts = {
-            renExSettlement: new (withProvider(this.web3, RenExSettlement))(NetworkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3, RenExBalances))(NetworkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3, Orderbook))(NetworkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(NetworkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3, RenExTokens))(NetworkData.contracts[0].renExTokens),
+            renExSettlement: new (withProvider(this.web3, RenExSettlement))(networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3, RenExBalances))(networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3, Orderbook))(networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3, RenExTokens))(networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
         };
     }

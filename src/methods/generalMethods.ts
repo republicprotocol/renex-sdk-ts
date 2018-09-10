@@ -4,7 +4,6 @@ import RenExSDK, { IntInput } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, ETH_CODE, withProvider } from "../contracts/contracts";
-import { NetworkData } from "../lib/network";
 
 export const transfer = async (sdk: RenExSDK, addr: string, token: number, valueBig: IntInput): Promise<void> => {
     if (token === ETH_CODE) {

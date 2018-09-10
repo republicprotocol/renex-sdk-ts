@@ -3,7 +3,6 @@ import { BN } from "bn.js";
 import RenExSDK, { MatchDetails, OrderID, OrderStatus } from "../index";
 
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { NetworkData } from "../lib/network";
 import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
 
 export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {

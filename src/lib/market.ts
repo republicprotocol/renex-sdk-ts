@@ -57,108 +57,108 @@ export interface TokenDetail {
     offChain?: boolean; // Off-chain implies that fees must be paid in the other token
 }
 
-export let TokenDetails: Map<Token, TokenDetail> = Map();
+// export let TokenDetails: Map<Token, TokenDetail> = Map();
 
-TokenDetails = TokenDetails.set(Token.BTC, {
-    name: "Bitcoin",
-    symbol: "BTC",
-    icon: "btc.svg",
-    address: "",
-    pairs: OrderedMap<Token, Pair>(),
-    digits: 8,
-    cmcID: 1,
-    settlements: [OrderSettlement.RenExAtomic],
-    offChain: true,
-});
+// TokenDetails = TokenDetails.set(Token.BTC, {
+//     name: "Bitcoin",
+//     symbol: "BTC",
+//     icon: "btc.svg",
+//     address: "",
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 8,
+//     cmcID: 1,
+//     settlements: [OrderSettlement.RenExAtomic],
+//     offChain: true,
+// });
 
-TokenDetails = TokenDetails.set(Token.ETH, {
-    name: "Ethereum",
-    symbol: "ETH",
-    icon: "eth.svg",
-    address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    pairs: OrderedMap<Token, Pair>()
-        .set(Token.BTC, Pair.BTC_ETH)
-        .set(Token.DGX, Pair.ETH_DGX)
-        .set(Token.REN, Pair.ETH_REN)
-        .set(Token.ABC, Pair.ETH_ABC)
-        .set(Token.XYZ, Pair.ETH_XYZ)
-    ,
-    digits: 18,
-    cmcID: 1027,
-    settlements: [OrderSettlement.RenEx, OrderSettlement.RenExAtomic],
-});
+// TokenDetails = TokenDetails.set(Token.ETH, {
+//     name: "Ethereum",
+//     symbol: "ETH",
+//     icon: "eth.svg",
+//     address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+//     pairs: OrderedMap<Token, Pair>()
+//         .set(Token.BTC, Pair.BTC_ETH)
+//         .set(Token.DGX, Pair.ETH_DGX)
+//         .set(Token.REN, Pair.ETH_REN)
+//         .set(Token.ABC, Pair.ETH_ABC)
+//         .set(Token.XYZ, Pair.ETH_XYZ)
+//     ,
+//     digits: 18,
+//     cmcID: 1027,
+//     settlements: [OrderSettlement.RenEx, OrderSettlement.RenExAtomic],
+// });
 
-TokenDetails = TokenDetails.set(Token.DGX, {
-    name: "Digix Gold Token",
-    symbol: "DGX",
-    icon: "dgx.png",
-    address: NetworkData.tokens.DGX,
-    pairs: OrderedMap<Token, Pair>(),
-    digits: 9,
-    cmcID: 2739,
-    settlements: [OrderSettlement.RenEx],
-});
+// TokenDetails = TokenDetails.set(Token.DGX, {
+//     name: "Digix Gold Token",
+//     symbol: "DGX",
+//     icon: "dgx.png",
+//     address: NetworkData.tokens.DGX,
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 9,
+//     cmcID: 2739,
+//     settlements: [OrderSettlement.RenEx],
+// });
 
-TokenDetails = TokenDetails.set(Token.REN, {
-    name: "Republic Token",
-    symbol: "REN",
-    icon: "ren.svg",
-    address: NetworkData.tokens.REN,
-    pairs: OrderedMap<Token, Pair>(),
-    digits: 18,
-    cmcID: 2539,
-    settlements: [OrderSettlement.RenEx],
-});
+// TokenDetails = TokenDetails.set(Token.REN, {
+//     name: "Republic Token",
+//     symbol: "REN",
+//     icon: "ren.svg",
+//     address: NetworkData.tokens.REN,
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 18,
+//     cmcID: 2539,
+//     settlements: [OrderSettlement.RenEx],
+// });
 
-TokenDetails = TokenDetails.set(Token.ABC, {
-    name: "ABC Test Token",
-    symbol: "ABC",
-    icon: "abc.svg",
-    address: NetworkData.tokens.ABC,
-    pairs: OrderedMap<Token, Pair>(),
-    digits: 12,
-    cmcID: 1758,
-    settlements: [OrderSettlement.RenEx],
-});
+// TokenDetails = TokenDetails.set(Token.ABC, {
+//     name: "ABC Test Token",
+//     symbol: "ABC",
+//     icon: "abc.svg",
+//     address: NetworkData.tokens.ABC,
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 12,
+//     cmcID: 1758,
+//     settlements: [OrderSettlement.RenEx],
+// });
 
-TokenDetails = TokenDetails.set(Token.XYZ, {
-    name: "XYZ Test Token",
-    symbol: "XYZ",
-    icon: "xyz.svg",
-    address: NetworkData.tokens.XYZ,
-    pairs: OrderedMap<Token, Pair>(),
-    digits: 18,
-    cmcID: 1982,
-    settlements: [OrderSettlement.RenEx],
-});
+// TokenDetails = TokenDetails.set(Token.XYZ, {
+//     name: "XYZ Test Token",
+//     symbol: "XYZ",
+//     icon: "xyz.svg",
+//     address: NetworkData.tokens.XYZ,
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 18,
+//     cmcID: 1982,
+//     settlements: [OrderSettlement.RenEx],
+// });
 
-/**
- * Retrieves the current pricepoint for two currencies.
- * @param fstCode The first currency.
- * @param sndCode The second currency.
- * @returns An array containing the price with respect to the currencies, and the 24 hour percent change.
- */
-export async function getPrice(fstCode: Token, sndCode: Token): Promise<[number, number]> {
-    const fromID = TokenDetails.get(sndCode).cmcID;
-    const toSymbol = TokenDetails.get(fstCode).symbol;
-    const url = `https://api.coinmarketcap.com/v2/ticker/${fromID}/?convert=${toSymbol}`;
-    const response = await fetch.default(url);
-    const data = await response.json();
-    let price: number | null = data.data.quotes[toSymbol].price;
-    let percentChange: number | null = data.data.quotes[toSymbol].percent_change_24h;
-    if (percentChange === null) {
-        percentChange = 0;
-    }
-    if (price === null) {
-        price = 0;
-    }
-    return [price, percentChange];
-}
+// /**
+//  * Retrieves the current pricepoint for two currencies.
+//  * @param fstCode The first currency.
+//  * @param sndCode The second currency.
+//  * @returns An array containing the price with respect to the currencies, and the 24 hour percent change.
+//  */
+// export async function getPrice(fstCode: Token, sndCode: Token): Promise<[number, number]> {
+//     const fromID = TokenDetails.get(sndCode).cmcID;
+//     const toSymbol = TokenDetails.get(fstCode).symbol;
+//     const url = `https://api.coinmarketcap.com/v2/ticker/${fromID}/?convert=${toSymbol}`;
+//     const response = await fetch.default(url);
+//     const data = await response.json();
+//     let price: number | null = data.data.quotes[toSymbol].price;
+//     let percentChange: number | null = data.data.quotes[toSymbol].percent_change_24h;
+//     if (percentChange === null) {
+//         percentChange = 0;
+//     }
+//     if (price === null) {
+//         price = 0;
+//     }
+//     return [price, percentChange];
+// }
 
-export const RenExTokens = Tokens.filter((token) => {
-    return TokenDetails.get(token).settlements.indexOf(OrderSettlement.RenEx) !== -1;
-});
+// export const RenExTokens = Tokens.filter((token) => {
+//     return TokenDetails.get(token).settlements.indexOf(OrderSettlement.RenEx) !== -1;
+// });
 
-export const RenExAtomicTokens = Tokens.filter((token) => {
-    return TokenDetails.get(token).settlements.indexOf(OrderSettlement.RenExAtomic) !== -1;
-});
+// export const RenExAtomicTokens = Tokens.filter((token) => {
+//     return TokenDetails.get(token).settlements.indexOf(OrderSettlement.RenExAtomic) !== -1;
+// });

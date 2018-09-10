@@ -64,7 +64,7 @@ export const withdraw = async (
 
     // TODO: Check balance
 
-    const signature = await requestWithdrawalSignature(sdk.address, token);
+    const signature = await requestWithdrawalSignature(sdk.networkData.ingress, sdk.address, token);
     const tx = await sdk.contracts.renExBalances.withdraw(tokenString, value, signature.toHex(), { from: sdk.address });
     return tx;
 };

@@ -17,7 +17,6 @@ import { OrderID, OrderStatus } from "../index";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "./errors";
 import { OrderSettlement } from "./market";
-import { NetworkData } from "./network";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing } from "./tokens";
@@ -131,10 +130,11 @@ function verifyOrder(order: Order) {
 }
 
 export async function submitOrderFragments(
+    ingressURL: string,
     request: OpenOrderRequest,
 ): Promise<EncodedData> {
     try {
-        const resp = await axios.post(`${NetworkData.ingress}/orders`, request.toJS());
+        const resp = await axios.post(`${ingressURL}/orders`, request.toJS());
         if (resp.status !== 201) {
             throw new Error("Unexpected status code: " + resp.status);
         }
@@ -144,13 +144,13 @@ export async function submitOrderFragments(
     }
 }
 
-export async function requestWithdrawalSignature(address: string, tokenID: number): Promise<EncodedData> {
+export async function requestWithdrawalSignature(ingressURL: string, address: string, tokenID: number): Promise<EncodedData> {
     const request = new WithdrawRequest({
         address: address.slice(2),
         tokenID,
     });
 
-    const resp = await axios.post(`${NetworkData.ingress}/withdrawals`, request.toJS());
+    const resp = await axios.post(`${ingressURL}/withdrawals`, request.toJS());
     if (resp.status !== 201) {
         throw new Error("Unexpected status code: " + resp.status);
     }

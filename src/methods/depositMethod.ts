@@ -5,7 +5,6 @@ import RenExSDK, { IntInput, Transaction } from "../index";
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrFailedDeposit, ErrInsufficientFunds } from "../lib/errors";
-import { NetworkData } from "../lib/network";
 
 const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: boolean }) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
