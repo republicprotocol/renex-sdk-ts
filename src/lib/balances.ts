@@ -19,7 +19,7 @@ export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: strin
         return new BN(value.multipliedBy(new BigNumber(10).exponentiatedBy(toDecimals - fromDecimals)).toFixed());
     } else {
         const v = value.dividedBy(new BigNumber(10).exponentiatedBy(fromDecimals - toDecimals));
-        if (!v.integerValue().eq(v)) {
+        if (!v.integerValue(BigNumber.ROUND_FLOOR).eq(v)) {
             // We have a floating point number which can't be converted to BN.
             // This usually happens when the value passed in is too small.
             throw new Error(ErrNumericalPrecision);

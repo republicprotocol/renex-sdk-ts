@@ -28,7 +28,7 @@ export function priceFloatToCoExp(price: BigNumber): CoExp {
             exp: prev.exp + 1,
         });
     } else if (price.gte(1)) {
-        const _try = price.div(0.005).integerValue();
+        const _try = price.div(0.005).integerValue(BigNumber.ROUND_FLOOR);
         return new CoExp({
             co: _try.toNumber(),
             exp: 38,
@@ -55,7 +55,7 @@ export function volumeFloatToCoExp(volume: BigNumber): CoExp {
             exp: prev.exp + 1,
         });
     } else if (volume.gte(1)) {
-        const _try = volume.div(0.2).integerValue();
+        const _try = volume.div(0.2).integerValue(BigNumber.ROUND_FLOOR);
         return new CoExp({
             co: _try.toNumber(),
             exp: 12,
@@ -72,6 +72,7 @@ export function volumeFloatToCoExp(volume: BigNumber): CoExp {
         exp: 0,
     });
 }
+
 /**
  * Convert order state returned from the Orderbook contract into an OrderStatus enum.
  *
