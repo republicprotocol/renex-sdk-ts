@@ -18,8 +18,9 @@ export interface NetworkData {
     ];
     tokens: {
         DGX: string;
-        REN: string;
         ABC: string;
+        REN: string;
+        PQR: string;
         XYZ: string;
     };
 }
