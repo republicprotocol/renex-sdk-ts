@@ -36,7 +36,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
 
             receivedToken: new BN(details.secondaryToken).toNumber(),
             receivedVolume: new BN(details.secondaryVolume),
-            fee: new BN(details.secondaryFee),
+            fee: new BN(details.priorityFee),
 
             paidToken: new BN(details.priorityToken).toNumber(),
             paidVolume: new BN(details.priorityVolume),
@@ -48,7 +48,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
 
             receivedToken: new BN(details.priorityToken).toNumber(),
             receivedVolume: new BN(details.priorityVolume),
-            fee: new BN(details.priorityFee),
+            fee: new BN(details.secondaryFee),
 
             paidToken: new BN(details.secondaryToken).toNumber(),
             paidVolume: new BN(details.secondaryVolume),
