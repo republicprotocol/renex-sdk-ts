@@ -237,14 +237,15 @@ export async function buildOrderMapping(
 ): Promise<Map<string, List<OrderFragment>>> {
     const pods = await getPods(web3, darknodeRegistryContract);
 
+    const priceCoExp = priceToCoExp(order.price);
+    const volumeCoExp = volumeToCoExp(order.volume);
+    const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
+
     const fragmentPromises = (pods)
         .map(async (pool: Pool): Promise<Pool> => {
             const n = pool.darknodes.size;
             const k = Math.floor((2 * (n + 1)) / 3);
 
-            const priceCoExp = priceToCoExp(order.price);
-            const volumeCoExp = volumeToCoExp(order.volume);
-            const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
             const tokenShares = shamir.split(n, k, new BN(order.tokens));
             const priceCoShares = shamir.split(n, k, new BN(priceCoExp.co));
             const priceExpShares = shamir.split(n, k, new BN(priceCoExp.exp));
