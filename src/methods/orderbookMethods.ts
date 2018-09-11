@@ -73,12 +73,14 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
 
     // Initialize required contracts
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
+    const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken).toNumber());
 
     const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
 
     // We convert the volume and minimumVolume to 10^12
-    const volume = adjustDecimals(orderObj.volume, buyToken.decimals, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyToken.decimals, VOLUME_OFFSET);
+    const decimals = orderObj.buyToken > orderObj.sellToken ? buyToken.decimals : sellToken.decimals;
+    const volume = adjustDecimals(orderObj.volume, decimals, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderObj.minimumVolume, decimals, VOLUME_OFFSET);
 
     const parity = orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
     const tokens = parity === ingress.OrderParity.BUY ?
