@@ -102,6 +102,12 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
     const orderID = ingress.getOrderID(sdk.web3, ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
+    if (orderObj.id !== undefined) {
+        if (orderObj.id !== ingressOrder.id) {
+            throw new Error("Error creating order - mismatched order hash");
+        }
+    }
+
     // Create order fragment mapping
     const request = new ingress.OpenOrderRequest({
         address: sdk.address.slice(2),
