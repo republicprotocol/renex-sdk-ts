@@ -1,4 +1,4 @@
-import { Map, OrderedMap } from "immutable";
+import { OrderedMap } from "immutable";
 
 export enum OrderSettlement {
     RenEx = 1,
