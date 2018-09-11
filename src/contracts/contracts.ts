@@ -1,4 +1,5 @@
-import * as contract from "truffle-contract";
+const contract = require("./truffle-contract/index.js");
+// import * as contract from "truffle-contract";
 
 import Web3 from "web3";
 
@@ -29,30 +30,30 @@ export const withProvider = <T extends { setProvider(provider: Provider): void; 
     return artifact;
 };
 
-export const ERC20: ERC20Artifact = contract.default({
+export const ERC20: ERC20Artifact = contract({
     abi: ERC20JSON,
 });
 
-export const DarknodeRegistry: DarknodeRegistryArtifact = contract.default({
+export const DarknodeRegistry: DarknodeRegistryArtifact = contract({
     abi: DarknodeRegistryJSON,
 });
 
-export const Orderbook: OrderbookArtifact = contract.default({
+export const Orderbook: OrderbookArtifact = contract({
     abi: OrderbookJSON,
 });
 
-export const RenExSettlement: RenExSettlementArtifact = contract.default({
+export const RenExSettlement: RenExSettlementArtifact = contract({
     abi: RenExSettlementJSON,
 });
 
-export const RenExBalances: RenExBalancesArtifact = contract.default({
+export const RenExBalances: RenExBalancesArtifact = contract({
     abi: RenExBalancesJSON,
 });
 
-export const RenExTokens: RenExTokensArtifact = contract.default({
+export const RenExTokens: RenExTokensArtifact = contract({
     abi: RenExTokensJSON,
 });
 
-export const RenExAtomicInfo: RenExAtomicInfoArtifact = contract.default({
+export const RenExAtomicInfo: RenExAtomicInfoArtifact = contract({
     abi: RenExAtomicInfoJSON,
 });
