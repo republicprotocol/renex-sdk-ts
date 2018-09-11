@@ -18,6 +18,7 @@ export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
+    const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken).toNumber());
 
     if (orderObj.nonce === undefined) {
         orderObj.nonce = ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex"));
@@ -30,8 +31,9 @@ export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order
     const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
 
     // We convert the volume and minimumVolume to 10^12
-    const volume = adjustDecimals(orderObj.volume, buyToken.decimals, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderObj.minimumVolume, buyToken.decimals, VOLUME_OFFSET);
+    const decimals = orderObj.buyToken > orderObj.sellToken ? buyToken.decimals : sellToken.decimals;
+    const volume = adjustDecimals(orderObj.volume, decimals, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderObj.minimumVolume, decimals, VOLUME_OFFSET);
 
     const parity = orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
     const tokens = parity === ingress.OrderParity.BUY ?
