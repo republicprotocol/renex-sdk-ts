@@ -17,12 +17,7 @@ const VOLUME_OFFSET = 12;
 export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
-    let buyToken;
-    try {
-        buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
-    } catch (err) {
-        console.error(err);
-    }
+    const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
 
     if (orderObj.nonce === undefined) {
         orderObj.nonce = ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex"));
@@ -75,12 +70,7 @@ export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> =
     orderObj = await verifyOrder(sdk, orderObj);
 
     // Initialize required contracts
-    let buyToken;
-    try {
-        buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
-    } catch (err) {
-        console.error(err);
-    }
+    const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
 
     const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
 

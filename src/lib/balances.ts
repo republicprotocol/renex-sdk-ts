@@ -22,7 +22,7 @@ export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: strin
         if (!v.integerValue(BigNumber.ROUND_FLOOR).eq(v)) {
             // We have a floating point number which can't be converted to BN.
             // This usually happens when the value passed in is too small.
-            throw new Error(ErrNumericalPrecision);
+            throw new Error(`${ErrNumericalPrecision}: converting ${value} from ${fromDecimals} to ${toDecimals} decimals`);
         }
         return new BN(v.toFixed());
     }

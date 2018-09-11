@@ -166,6 +166,16 @@ class RenExSDK implements RenExSDK {
 
     public updateProvider(provider: Provider): void {
         this.web3 = new Web3(provider);
+
+        // Update contract providers
+        this.contracts = {
+            renExSettlement: new (withProvider(this.web3, RenExSettlement))(this.networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3, RenExBalances))(this.networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3, Orderbook))(this.networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(this.networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3, RenExTokens))(this.networkData.contracts[0].renExTokens),
+            erc20: new Map<number, ERC20Contract>(),
+        };
     }
     public updateAddress(address: string): void {
         this.address = address;
