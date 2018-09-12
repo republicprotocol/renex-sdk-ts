@@ -38,8 +38,8 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
             receivedVolume: new BN(details.secondaryVolume),
             fee: new BN(details.priorityFee),
 
-            paidToken: new BN(details.priorityToken).toNumber(),
-            paidVolume: new BN(details.priorityVolume),
+            spentToken: new BN(details.priorityToken).toNumber(),
+            spentVolume: new BN(details.priorityVolume),
         };
     } else {
         return {
@@ -50,8 +50,8 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
             receivedVolume: new BN(details.priorityVolume),
             fee: new BN(details.secondaryFee),
 
-            paidToken: new BN(details.secondaryToken).toNumber(),
-            paidVolume: new BN(details.secondaryVolume),
+            spentToken: new BN(details.secondaryToken).toNumber(),
+            spentVolume: new BN(details.secondaryVolume),
         };
     }
 };

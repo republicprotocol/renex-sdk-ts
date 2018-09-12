@@ -1,15 +1,11 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import { FloatInput, IntInput } from "../index";
 import { ErrNumericalPrecision } from "./errors";
 // import { Token, TokenDetails } from "./market";
 
-export const adjustDecimals = (value: IntInput | FloatInput, fromDecimals: string | number | BN, toDecimals: string | number | BN): BN => {
-    fromDecimals = new BN(fromDecimals).toNumber();
-    toDecimals = new BN(toDecimals).toNumber();
-
-    if (BigNumber.isBigNumber(value)) {
+export const adjustDecimals = (value: BN | BigNumber, fromDecimals: number, toDecimals: number): BN => {
+    if (BigNumber.isBigNumber(value) || value instanceof BigNumber) {
         value = new BigNumber((value as BigNumber).toFixed());
     } else {
         value = new BigNumber(value.toString());
