@@ -2,7 +2,7 @@ import { BN } from "bn.js";
 
 import * as ingress from "../lib/ingress";
 
-import RenExSDK, { HiddenOrder, GetOrdersFilter, Order, OrderID, OrderStatus } from "../index";
+import RenExSDK, { GetOrdersFilter, HiddenOrder, OrderID, OrderInputs, OrderStatus } from "../index";
 
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
@@ -14,7 +14,7 @@ import { generateTokenPairing } from "../lib/tokens";
 const PRICE_OFFSET = 12;
 const VOLUME_OFFSET = 12;
 
-export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order> => {
+export const verifyOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<OrderInputs> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
     const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
@@ -66,7 +66,7 @@ export const verifyOrder = async (sdk: RenExSDK, orderObj: Order): Promise<Order
     return orderObj;
 };
 
-export const openOrder = async (sdk: RenExSDK, orderObj: Order): Promise<void> => {
+export const openOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<void> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
     orderObj = await verifyOrder(sdk, orderObj);

@@ -44,7 +44,7 @@ export { OrderSettlement } from "./lib/market";
 
 export { NetworkData } from "./lib/network";
 
-export interface Order {
+export interface OrderInputs {
     sellToken: number;
     buyToken: number;
     price: FloatInput;
@@ -96,8 +96,8 @@ interface RenExSDK {
     withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction>;
     status(orderID: OrderID): Promise<OrderStatus>;
     matchDetails(orderID: OrderID): Promise<MatchDetails>;
-    verifyOrder(order: Order): Promise<Order>;
-    openOrder(order: Order): Promise<void>;
+    verifyOrder(order: OrderInputs): Promise<OrderInputs>;
+    openOrder(order: OrderInputs): Promise<void>;
     cancelOrder(orderID: OrderID): Promise<void>;
     getOrders(filter: GetOrdersFilter): Promise<HiddenOrder[]>;
 }
@@ -160,8 +160,8 @@ class RenExSDK implements RenExSDK {
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction> => withdraw(this, token, value, withoutIngressSignature, key);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public verifyOrder = (order: Order): Promise<Order> => verifyOrder(this, order);
-    public openOrder = (order: Order): Promise<void> => openOrder(this, order);
+    public verifyOrder = (order: OrderInputs): Promise<OrderInputs> => verifyOrder(this, order);
+    public openOrder = (order: OrderInputs): Promise<void> => openOrder(this, order);
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<HiddenOrder[]> => getOrders(this, filter);
 
