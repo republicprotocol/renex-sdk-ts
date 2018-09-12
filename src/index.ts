@@ -18,7 +18,7 @@ import { Token } from "./lib/tokens";
 import { balance, balances, nondepositedBalance, nondepositedBalances, usableBalance, usableBalances, withdraw } from "./methods/balancesMethods";
 import { deposit } from "./methods/depositMethod";
 import { transfer } from "./methods/generalMethods";
-import { cancelOrder, listOrders, openOrder, verifyOrder } from "./methods/orderbookMethods";
+import { cancelOrder, getOrders, openOrder, verifyOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 
 // These are temporary types to ensure that all user inputs are converted
@@ -37,6 +37,7 @@ export enum OrderStatus {
     CANCELED = "canceled",
     SETTLED = "settled",
     SLASHED = "slashed",
+    EXPIRED = "expired",
 }
 
 export { OrderSettlement } from "./lib/market";
@@ -61,7 +62,7 @@ export interface HiddenOrder {
     trader: string;
 }
 
-export interface ListOrdersFilter {
+export interface GetOrdersFilter {
     address?: string;
     status?: OrderStatus;
     limit?: number;
@@ -98,7 +99,7 @@ interface RenExSDK {
     verifyOrder(order: Order): Promise<Order>;
     openOrder(order: Order): Promise<void>;
     cancelOrder(orderID: OrderID): Promise<void>;
-    listOrders(filter: ListOrdersFilter): Promise<HiddenOrder[]>;
+    getOrders(filter: GetOrdersFilter): Promise<HiddenOrder[]>;
 }
 
 /**
@@ -162,7 +163,7 @@ class RenExSDK implements RenExSDK {
     public verifyOrder = (order: Order): Promise<Order> => verifyOrder(this, order);
     public openOrder = (order: Order): Promise<void> => openOrder(this, order);
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
-    public listOrders = (filter: ListOrdersFilter): Promise<HiddenOrder[]> => listOrders(this, filter);
+    public getOrders = (filter: GetOrdersFilter): Promise<HiddenOrder[]> => getOrders(this, filter);
 
     public updateProvider(provider: Provider): void {
         this.web3 = new Web3(provider);

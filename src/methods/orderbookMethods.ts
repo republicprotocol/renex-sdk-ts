@@ -2,7 +2,7 @@ import { BN } from "bn.js";
 
 import * as ingress from "../lib/ingress";
 
-import RenExSDK, { HiddenOrder, ListOrdersFilter, Order, OrderID, OrderStatus } from "../index";
+import RenExSDK, { HiddenOrder, GetOrdersFilter, Order, OrderID, OrderStatus } from "../index";
 
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
@@ -127,13 +127,13 @@ export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void
     await sdk.contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address });
 };
 
-export const listOrders = async (sdk: RenExSDK, filter: ListOrdersFilter): Promise<HiddenOrder[]> => {
+export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise<HiddenOrder[]> => {
     const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
     if (filter.status && !filterableStatuses.includes(filter.status)) {
         throw new Error(ErrUnsupportedFilterStatus);
     }
 
-    let orders = await ingress.listOrders(sdk.contracts.orderbook, filter.start, filter.limit);
+    let orders = await ingress.getOrders(sdk.contracts.orderbook, filter.start, filter.limit);
 
     if (filter.address) {
         orders = orders.filter(order => filter.status === order[1]).toList();

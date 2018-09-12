@@ -172,7 +172,7 @@ async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: 
     return ordersList;
 }
 
-export async function listOrders(orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
+export async function getOrders(orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
     const orderCount = new BN(await orderbook.ordersCount()).toNumber();
 
     // If limit is 0 then we treat is as no limit
@@ -442,9 +442,9 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
             darknodes: pools.get(i).darknodes
         });
 
-        console.log(pool.id, JSON.stringify(pool.darknodes.map((node: string) =>
-            new EncodedData("0x1B20" + node.slice(2), Encodings.HEX).toBase58()
-        ).toArray()));
+        // console.log(pool.id, JSON.stringify(pool.darknodes.map((node: string) =>
+        //     new EncodedData("0x1B20" + node.slice(2), Encodings.HEX).toBase58()
+        // ).toArray()));
 
         pools = pools.set(i, pool);
     }
