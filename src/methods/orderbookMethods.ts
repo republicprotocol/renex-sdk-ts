@@ -1,8 +1,10 @@
+import BigNumber from "bignumber.js";
+
 import { BN } from "bn.js";
 
 import * as ingress from "../lib/ingress";
 
-import RenExSDK, { GetOrdersFilter, HiddenOrder, OrderID, OrderInputs, OrderStatus } from "../index";
+import RenExSDK, { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderStatus, TraderOrder } from "../index";
 
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
@@ -14,99 +16,64 @@ import { generateTokenPairing } from "../lib/tokens";
 const PRICE_OFFSET = 12;
 const VOLUME_OFFSET = 12;
 
-export const verifyOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<OrderInputs> => {
-    // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
+// Default time an order is open for (24 hours)
+const DEFAULT_EXPIRY_OFFSET = 60 * 60 * 24;
 
-    const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
-    const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken).toNumber());
+const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeconds: number): OrderInputsAll => {
+    return {
+        spendToken: orderInputs.spendToken,
+        receiveToken: orderInputs.receiveToken,
+        price: new BigNumber(orderInputs.price),
+        volume: new BN(orderInputs.volume),
+        minimumVolume: new BN(orderInputs.minimumVolume),
 
-    if (orderObj.nonce === undefined) {
-        orderObj.nonce = ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex"));
-    }
-
-    if (orderObj.expiry === undefined) {
-        orderObj.expiry = Math.round(new Date().getTime() / 1000) + (60 * 60 * 24);
-    }
-
-    const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
-
-    // We convert the volume and minimumVolume to 10^12
-    const decimals = orderObj.buyToken > orderObj.sellToken ? buyToken.decimals : sellToken.decimals;
-    const volume = adjustDecimals(orderObj.volume, decimals, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderObj.minimumVolume, decimals, VOLUME_OFFSET);
-
-    const parity = orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
-    const tokens = parity === ingress.OrderParity.BUY ?
-        generateTokenPairing(orderObj.sellToken, orderObj.buyToken) :
-        generateTokenPairing(orderObj.buyToken, orderObj.sellToken);
-
-    let ingressOrder = new ingress.Order({
-        type: ingress.OrderType.LIMIT,
-        parity,
-        orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
-        expiry: orderObj.expiry,
-        tokens,
-        price,
-        volume,
-        minimumVolume,
-        nonce: orderObj.nonce,
-    });
-
-    const orderID = ingress.getOrderID(sdk.web3, ingressOrder);
-    ingressOrder = ingressOrder.set("id", orderID.toBase64());
-
-    if (orderObj.id !== undefined) {
-        if (orderObj.id !== ingressOrder.id) {
-            throw new Error("invalid id");
-        }
-    } else {
-        orderObj.id = ingressOrder.id;
-    }
-
-    return orderObj;
+        orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
+        nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex")),
+        expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
+        type: orderInputs.type !== undefined ? orderInputs.type : ingress.OrderType.LIMIT,
+    };
 };
 
-export const openOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<void> => {
+export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Promise<TraderOrder> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
-    orderObj = await verifyOrder(sdk, orderObj);
+    const unixSeconds = Math.floor(new Date().getTime() / 1000);
+
+    const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
     // Initialize required contracts
-    const buyToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.buyToken).toNumber());
-    const sellToken = await sdk.contracts.renExTokens.tokens(new BN(orderObj.sellToken).toNumber());
+    const receiveToken = await sdk.contracts.renExTokens.tokens(new BN(orderInputs.receiveToken).toNumber());
+    const spendToken = await sdk.contracts.renExTokens.tokens(new BN(orderInputs.spendToken).toNumber());
 
-    const price = adjustDecimals(orderObj.price, 0, PRICE_OFFSET);
+    const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
 
     // We convert the volume and minimumVolume to 10^12
-    const decimals = orderObj.buyToken > orderObj.sellToken ? buyToken.decimals : sellToken.decimals;
-    const volume = adjustDecimals(orderObj.volume, decimals, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderObj.minimumVolume, decimals, VOLUME_OFFSET);
+    const decimals = orderInputs.receiveToken > orderInputs.spendToken ?
+        new BN(receiveToken.decimals).toNumber() :
+        new BN(spendToken.decimals).toNumber();
+    const volume = adjustDecimals(orderInputs.volume, decimals, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderInputs.minimumVolume, decimals, VOLUME_OFFSET);
 
-    const parity = orderObj.buyToken < orderObj.sellToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
+    const parity = orderInputs.receiveToken < orderInputs.spendToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
     const tokens = parity === ingress.OrderParity.BUY ?
-        generateTokenPairing(orderObj.sellToken, orderObj.buyToken) :
-        generateTokenPairing(orderObj.buyToken, orderObj.sellToken);
+        generateTokenPairing(orderInputs.spendToken, orderInputs.receiveToken) :
+        generateTokenPairing(orderInputs.receiveToken, orderInputs.spendToken);
 
     let ingressOrder = new ingress.Order({
-        type: ingress.OrderType.LIMIT,
+        type: orderInputs.type,
+        orderSettlement: orderInputs.orderSettlement,
+        expiry: orderInputs.expiry,
+        nonce: orderInputs.nonce,
+
         parity,
-        orderSettlement: orderObj.orderSettlement ? orderObj.orderSettlement : OrderSettlement.RenEx,
-        expiry: orderObj.expiry,
         tokens,
         price,
         volume,
         minimumVolume,
-        nonce: orderObj.nonce,
     });
 
     const orderID = ingress.getOrderID(sdk.web3, ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
-
-    if (orderObj.id !== undefined) {
-        if (orderObj.id !== ingressOrder.id) {
-            throw new Error("Error creating order - mismatched order hash");
-        }
-    }
 
     // Create order fragment mapping
     const request = new ingress.OpenOrderRequest({
@@ -118,7 +85,21 @@ export const openOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<v
     // Submit order and the signature to the orderbook
     const tx = await sdk.contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address });
 
-    console.log(`Opening order: ${JSON.stringify(ingressOrder.toJS())}. Transaction: ${tx.tx.toString()}`);
+    const priorityVolume: BN = new BN(new BigNumber(orderInputs.volume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
+
+    return {
+        orderInputs,
+        status: OrderStatus.NOT_SUBMITTED,
+        trader: sdk.address,
+        id: orderID.toBase64(),
+        transactionHash: tx.tx,
+        computedOrderDetails: {
+            spendVolume: parity === ingress.OrderParity.BUY ? priorityVolume : orderInputs.volume,
+            receiveVolume: parity === ingress.OrderParity.BUY ? orderInputs.volume : priorityVolume,
+            date: unixSeconds,
+            parity,
+        },
+    };
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
@@ -127,7 +108,7 @@ export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void
     await sdk.contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address });
 };
 
-export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise<HiddenOrder[]> => {
+export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise<Order[]> => {
     const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
     if (filter.status && !filterableStatuses.includes(filter.status)) {
         throw new Error(ErrUnsupportedFilterStatus);
@@ -144,7 +125,7 @@ export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise
     }
 
     return orders.map(order => ({
-        orderID: order[0],
+        id: order[0],
         status: order[1],
         trader: order[2],
     })).toArray();

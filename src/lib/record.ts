@@ -59,11 +59,11 @@ export function Record<T>(data: Pick<T, keyof T>) {
         public toJS(): any {
             return super.toJS();
         }
-    } as any as Interface<T>;
+    } as any as RecordInterface<T>;
 }
 
 // An interface to which the return class will be cast.
-export interface Interface<T> {
+export interface RecordInterface<T> {
     new(inner?: Partial<T>): Props<T> & Methods<T>;
 }
 
