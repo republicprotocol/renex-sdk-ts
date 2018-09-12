@@ -4,6 +4,7 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK, { GetOrdersFilter, HiddenOrder, OrderID, OrderInputs, OrderStatus } from "../index";
 
+import { WyreContract } from "contracts/bindings/wyre";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrUnsupportedFilterStatus } from "../lib/errors";
@@ -13,6 +14,11 @@ import { generateTokenPairing } from "../lib/tokens";
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
 const VOLUME_OFFSET = 12;
+
+export const verifyTrader = async (wyreContract: WyreContract, address: string): Promise<boolean> => {
+    const balance = await wyreContract.balanceOf(address);
+    return balance === 1;
+};
 
 export const verifyOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<OrderInputs> => {
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
@@ -67,6 +73,12 @@ export const verifyOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise
 };
 
 export const openOrder = async (sdk: RenExSDK, orderObj: OrderInputs): Promise<void> => {
+    // Verify trader
+    const verified = await verifyTrader(sdk.contracts.wyre, sdk.address);
+    if (!verified) {
+        return Promise.reject(new Error("Trader verification failed"));
+    }
+
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
     orderObj = await verifyOrder(sdk, orderObj);

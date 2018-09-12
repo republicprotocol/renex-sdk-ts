@@ -10,8 +10,9 @@ import { OrderbookContract } from "./contracts/bindings/orderbook";
 import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
 import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
 import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
+import { WyreContract } from "./contracts/bindings/wyre";
 
-import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider } from "./contracts/contracts";
+import { DarknodeRegistry, ERC20, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { OrderSettlement } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { Token } from "./lib/tokens";
@@ -122,6 +123,7 @@ class RenExSDK implements RenExSDK {
         orderbook: OrderbookContract,
         darknodeRegistry: DarknodeRegistryContract,
         erc20: Map<number, ERC20Contract>,
+        wyre: WyreContract,
     };
 
     /**
@@ -144,6 +146,7 @@ class RenExSDK implements RenExSDK {
             darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
             renExTokens: new (withProvider(this.web3, RenExTokens))(networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
+            wyre: new (withProvider(this.web3, Wyre))(networkData.contracts[0].wyre),
         };
     }
 
@@ -176,6 +179,7 @@ class RenExSDK implements RenExSDK {
             darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(this.networkData.contracts[0].darknodeRegistry),
             renExTokens: new (withProvider(this.web3, RenExTokens))(this.networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
+            wyre: new (withProvider(this.web3, Wyre))(this.networkData.contracts[0].wyre),
         };
     }
     public updateAddress(address: string): void {

@@ -124,7 +124,7 @@ export async function openOrder(web3: Web3, address: string, order: Order): Prom
     return order;
 }
 
-function verifyOrder(order: Order) {
+function verifyOrder(order: Order): boolean {
     // FIXME: check order price and volume correctness
     return true;
 }

@@ -13,6 +13,7 @@ import { RenExAtomicInfoArtifact } from "./bindings/ren_ex_atomic_info";
 import { RenExBalancesArtifact } from "./bindings/ren_ex_balances";
 import { RenExSettlementArtifact } from "./bindings/ren_ex_settlement";
 import { RenExTokensArtifact } from "./bindings/ren_ex_tokens";
+import { WyreArtifact } from "./bindings/wyre";
 
 // ABIs
 import DarknodeRegistryJSON from "./ABIs/DarknodeRegistry.json";
@@ -22,6 +23,7 @@ import RenExAtomicInfoJSON from "./ABIs/RenExAtomicInfo.json";
 import RenExBalancesJSON from "./ABIs/RenExBalances.json";
 import RenExSettlementJSON from "./ABIs/RenExSettlement.json";
 import RenExTokensJSON from "./ABIs/RenExTokens.json";
+import WyreJSON from "./ABIs/Wyre.json";
 
 export const ETH_CODE = 1;
 
@@ -56,4 +58,8 @@ export const RenExTokens: RenExTokensArtifact = contract({
 
 export const RenExAtomicInfo: RenExAtomicInfoArtifact = contract({
     abi: RenExAtomicInfoJSON,
+});
+
+export const Wyre: WyreArtifact = contract({
+    abi: WyreJSON,
 });
