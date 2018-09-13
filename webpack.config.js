@@ -1,5 +1,4 @@
 var path = require('path');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
 var nodeExternals = require('webpack-node-externals');
 // var TypedocWebpackPlugin = require('typedoc-webpack-plugin');
 
@@ -13,11 +12,7 @@ let common = {
       exclude: /node_modules/
     }, ]
   },
-  plugins: [
-    new CleanWebpackPlugin(['lib'], {
-      exclude: ['test.html']
-    }),
-  ],
+  plugins: [],
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
   }
