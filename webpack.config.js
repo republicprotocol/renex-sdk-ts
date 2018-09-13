@@ -19,21 +19,23 @@ let common = {
 };
 
 module.exports = [
-  Object.assign({}, common, {
-    target: 'web',
-    entry: ['babel-polyfill', './src/index.ts'],
-    output: {
-      path: path.resolve(__dirname, 'lib'),
-      filename: 'browser.js',
-      libraryTarget: 'var',
-      library: 'RenExSDK', // This is the var name in browser
-      libraryExport: 'default'
-    },
-    node: {
-      fs: 'empty',
-      child_process: 'empty'
-    }
-  }),
+  // TODO: Un-comment before publish
+
+  // Object.assign({}, common, {
+  //   target: 'web',
+  //   entry: ['babel-polyfill', './src/index.ts'],
+  //   output: {
+  //     path: path.resolve(__dirname, 'lib'),
+  //     filename: 'browser.js',
+  //     libraryTarget: 'var',
+  //     library: 'RenExSDK', // This is the var name in browser
+  //     libraryExport: 'default'
+  //   },
+  //   node: {
+  //     fs: 'empty',
+  //     child_process: 'empty'
+  //   }
+  // }),
   Object.assign({}, common, {
     target: 'node',
     output: {

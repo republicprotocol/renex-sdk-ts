@@ -94,6 +94,8 @@ export interface Order {
     matchDetails?: MatchDetails;
 }
 
+// If TraderOrder, then it's serialize / deserialize functions should be
+// updated as well.
 export interface TraderOrder extends Order {
     readonly computedOrderDetails: ComputedOrderDetails;
     readonly orderInputs: OrderInputsAll;
@@ -122,6 +124,30 @@ export interface TokenDetails {
     address: string;
     decimals: number;
     registered: boolean;
+}
+
+export enum BalanceActionType {
+    Withdraw = "withdraw",
+    Deposit = "deposit",
+}
+
+export enum BalanceActionStatus {
+    Pending,
+    Updating,
+    Done,
+    Failed
+}
+
+// If BalanceAction, then it's serialize / deserialize functions should be
+// updated as well.
+export interface BalanceAction {
+    action: BalanceActionType;
+    amount: BN;
+    time: number;
+    status: BalanceActionStatus;
+    token: number;
+    trader: string;
+    txHash: string;
 }
 
 /**
@@ -182,8 +208,8 @@ class RenExSDK {
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
-    public deposit = (token: number, value: IntInput): Promise<Transaction> => deposit(this, token, value);
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction> =>
+    public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
+    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<BalanceAction> =>
         withdraw(this, token, value, withoutIngressSignature, key)
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
@@ -191,7 +217,8 @@ class RenExSDK {
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
 
-    public listTraderOrders = () => this.storage.getOrders();
+    public listTraderOrders = (): Promise<TraderOrder[]> => this.storage.getOrders();
+    public listBalanceActions = (): Promise<BalanceAction[]> => this.storage.getBalanceActions();
 
     public updateProvider(provider: Provider): void {
         this.web3 = new Web3(provider);

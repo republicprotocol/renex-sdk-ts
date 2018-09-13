@@ -1,11 +1,13 @@
-import { OrderID, TraderOrder } from "../index";
+import { BalanceAction, OrderID, TraderOrder } from "../index";
 import { Storage } from "./interface";
 
 export class MemoryStorage implements Storage {
     private orders: Map<string, TraderOrder>;
+    private balanceActions: Map<string, BalanceAction>;
 
     constructor() {
         this.orders = new Map();
+        this.balanceActions = new Map();
     }
 
     // Orders
@@ -21,10 +23,13 @@ export class MemoryStorage implements Storage {
     }
 
     // // Balances
-    // public async setBalanceItem(balanceItem: any): Promise<void> {
-    //     //
-    // }
-    // public async getBalanceItems(): Promise<any[]> {
-    //     //
-    // }
+    public async setBalanceAction(balanceAction: BalanceAction): Promise<void> {
+        this.balanceActions.set(balanceAction.txHash, balanceAction);
+    }
+    public async getBalanceAction(txHash: string): Promise<BalanceAction> {
+        return this.balanceActions.get(txHash);
+    }
+    public async getBalanceActions(): Promise<BalanceAction[]> {
+        return Array.from(this.balanceActions.values());
+    }
 }
