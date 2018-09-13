@@ -35,18 +35,7 @@ const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeco
     };
 };
 
-export const verifyTrader = async (wyreContract: WyreContract, address: string): Promise<boolean> => {
-    const balance = await wyreContract.balanceOf(address);
-    return balance === 1;
-};
-
 export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Promise<TraderOrder> => {
-    // Verify trader
-    const verified = await verifyTrader(sdk.contracts.wyre, sdk.address);
-    if (!verified) {
-        return Promise.reject(new Error("Trader verification failed"));
-    }
-
     // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
 
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
