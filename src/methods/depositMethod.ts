@@ -1,30 +1,30 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { IntInput, Transaction } from "../index";
+import RenExSDK, { IntInput, TokenDetails, Transaction } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientFunds } from "../lib/errors";
 
-const tokenIsEthereum = (token: { addr: string, decimals: IntInput, registered: boolean }) => {
+const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-    return token.addr.toLowerCase() === ETH_ADDR.toLowerCase();
+    return token.address.toLowerCase() === ETH_ADDR.toLowerCase();
 };
 
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<Transaction> => {
     value = new BN(value);
 
-    const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
+    const tokenDetails = await sdk.tokenDetails(token);
 
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            const tx: Transaction = await sdk.contracts.renExBalances.deposit(tokenDetails.addr, value, { value: value.toString(), from: sdk.address });
+            const tx: Transaction = await sdk.contracts.renExBalances.deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address });
             return tx;
         } else {
             // ERC20 token
             let tokenContract: ERC20Contract;
             if (!sdk.contracts.erc20.has(token)) {
-                tokenContract = new (withProvider(sdk.web3, ERC20))(tokenDetails.addr);
+                tokenContract = new (withProvider(sdk.web3, ERC20))(tokenDetails.address);
                 sdk.contracts.erc20.set(token, tokenContract);
             } else {
                 tokenContract = sdk.contracts.erc20.get(token);
@@ -40,7 +40,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 await tokenContract.approve(sdk.contracts.renExBalances.address, value, { from: sdk.address });
             }
             const tx: Transaction = await sdk.contracts.renExBalances.deposit(
-                tokenDetails.addr,
+                tokenDetails.address,
                 value,
                 {
                     // Manually set gas limit since gas estimation won't work

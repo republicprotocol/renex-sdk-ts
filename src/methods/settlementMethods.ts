@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { MatchDetails, OrderID, OrderStatus } from "../index";
+import RenExSDK, { MatchDetails, OrderID, OrderStatus, TraderOrder } from "../index";
 
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
@@ -9,14 +9,27 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     // Convert orderID from base64 to hex
     const orderID = new EncodedData(orderID64, Encodings.BASE64).toHex();
 
-    const obStatus = orderbookStateToOrderStatus(new BN(await sdk.contracts.orderbook.orderState(orderID)).toNumber());
-    switch (obStatus) {
+    let orderStatus: OrderStatus;
+
+    const orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk.contracts.orderbook.orderState(orderID)).toNumber());
+    switch (orderbookStatus) {
         case OrderStatus.CONFIRMED:
             const settlementStatus = new BN(await sdk.contracts.renExSettlement.orderStatus(orderID)).toNumber();
-            return settlementStatusToOrderStatus(settlementStatus);
+            orderStatus = settlementStatusToOrderStatus(settlementStatus);
+            break;
         default:
-            return obStatus;
+            orderStatus = orderbookStatus;
     }
+
+    // Update local storage (without awaiting)
+    sdk.storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
+        if (storedOrder !== null) {
+            storedOrder.status = orderStatus;
+            await sdk.storage.setOrder(storedOrder);
+        }
+    }).catch(console.error);
+
+    return orderStatus;
 };
 
 export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {
@@ -29,8 +42,8 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
         throw new Error("Not settled");
     }
 
-    if (details.orderIsBuy) {
-        return {
+    const orderMatchDetails: MatchDetails = (details.orderIsBuy) ?
+        {
             orderID: orderID64,
             matchedID: matchedID.toBase64(),
 
@@ -40,9 +53,8 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
 
             spentToken: new BN(details.priorityToken).toNumber(),
             spentVolume: new BN(details.priorityVolume),
-        };
-    } else {
-        return {
+        } :
+        {
             orderID: orderID64,
             matchedID: matchedID.toBase64(),
 
@@ -53,5 +65,14 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
             spentToken: new BN(details.secondaryToken).toNumber(),
             spentVolume: new BN(details.secondaryVolume),
         };
-    }
+
+    // Update local storage (without awaiting)
+    sdk.storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
+        if (storedOrder !== null) {
+            storedOrder.matchDetails = orderMatchDetails;
+            await sdk.storage.setOrder(storedOrder);
+        }
+    }).catch(console.error);
+
+    return orderMatchDetails;
 };

@@ -43,8 +43,8 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
     // Initialize required contracts
-    const receiveToken = await sdk.contracts.renExTokens.tokens(new BN(orderInputs.receiveToken).toNumber());
-    const spendToken = await sdk.contracts.renExTokens.tokens(new BN(orderInputs.spendToken).toNumber());
+    const receiveToken = await sdk.tokenDetails(new BN(orderInputs.receiveToken).toNumber());
+    const spendToken = await sdk.tokenDetails(new BN(orderInputs.spendToken).toNumber());
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
 
@@ -88,7 +88,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
 
     const priorityVolume: BN = new BN(new BigNumber(orderInputs.volume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
 
-    return {
+    const completeOrder = {
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.address,
@@ -101,6 +101,10 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
             parity,
         },
     };
+
+    sdk.storage.setOrder(completeOrder);
+
+    return completeOrder;
 };
 
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {

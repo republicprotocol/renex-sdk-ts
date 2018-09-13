@@ -13,10 +13,10 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: number, value
             value: new BN(valueBig).mul(new BN(10).pow(new BN(18))).toNumber(),
         });
     } else {
-        const tokenDetails = (await sdk.contracts.renExTokens.tokens(token));
+        const tokenDetails = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract;
         if (!sdk.contracts.erc20.has(token)) {
-            tokenContract = new (withProvider(sdk.web3, ERC20))(tokenDetails.addr);
+            tokenContract = new (withProvider(sdk.web3, ERC20))(tokenDetails.address);
             sdk.contracts.erc20.set(token, tokenContract);
         } else {
             tokenContract = sdk.contracts.erc20.get(token);
