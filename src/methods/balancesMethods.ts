@@ -1,11 +1,9 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { BalanceAction, BalanceActionStatus, BalanceActionType, IdempotentKey, IntInput, TokenDetails } from "../index";
+import RenExSDK, { TokenDetails } from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
-import { requestWithdrawalSignature } from "../lib/ingress";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     if (sdk.cachedTokenDetails.has(token)) {
@@ -76,58 +74,4 @@ export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> =
 export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
     // TODO: Subtract balances locked up in orders
     return balances(sdk, tokens);
-};
-
-export const withdraw = async (
-    sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean, key?: IdempotentKey
-): Promise<BalanceAction> => {
-    value = new BN(value);
-
-    // Trustless withdrawals are not implemented yet
-    if (withoutIngressSignature === true || key !== undefined) {
-        throw new Error(ErrUnimplemented);
-    }
-
-    const details = await sdk.tokenDetails(token);
-
-    // TODO: Check balance
-
-    const balanceAction: BalanceAction = {
-        action: BalanceActionType.Withdraw,
-        amount: value,
-        time: Math.floor(new Date().getTime() / 1000),
-        status: BalanceActionStatus.Pending,
-        token,
-        trader: sdk.address,
-        txHash: "",
-    };
-
-    try {
-        const signature = await requestWithdrawalSignature(sdk.networkData.ingress, sdk.address, token);
-        const transaction = await sdk.contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address });
-
-        // TODO: Store balanceAction before confirmation with on("transactionHash").
-
-        // Update balance action
-        balanceAction.status = BalanceActionStatus.Done;
-        balanceAction.txHash = transaction.tx;
-
-        sdk.storage.setBalanceAction(balanceAction).catch(console.error);
-
-        return balanceAction;
-    } catch (error) {
-        if (error.tx) {
-            balanceAction.txHash = error.tx;
-            sdk.storage.setBalanceAction(balanceAction).catch(console.error);
-            return balanceAction;
-        }
-
-        if (error.message.match("Insufficient funds")) {
-            throw new Error(ErrInsufficientFunds);
-        }
-        if (error.message.match("User denied transaction signature")) {
-            throw new Error(ErrCanceledByUser);
-        }
-        throw error;
-    }
 };

@@ -46,7 +46,7 @@ class LocalStorage implements Storage {
             try {
                 orders.push(deserializeTraderOrder(value));
             } catch (err) {
-                console.log(err);
+                console.error(err);
             }
         });
         return orders;
@@ -66,7 +66,7 @@ class LocalStorage implements Storage {
             try {
                 balanceActions.push(deserializeBalanceAction(value));
             } catch (err) {
-                console.log(err);
+                console.error(err);
             }
         });
         return balanceActions;

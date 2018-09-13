@@ -19,8 +19,8 @@ import { OrderParity, OrderType } from "./lib/ingress";
 import { OrderSettlement } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { Token } from "./lib/tokens";
-import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances, withdraw } from "./methods/balancesMethods";
-import { deposit } from "./methods/depositMethod";
+import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
+import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
@@ -38,6 +38,7 @@ export type IdempotentKey = string;
 export type OrderID = string;
 export enum OrderStatus {
     NOT_SUBMITTED = "not submitted",
+    FAILED_TO_OPEN = "failed to open",
     OPEN = "open",
     CONFIRMED = "confirmed",
     CANCELED = "canceled",
@@ -133,10 +134,9 @@ export enum BalanceActionType {
 }
 
 export enum BalanceActionStatus {
-    Pending,
-    Updating,
-    Done,
-    Failed
+    Pending = "pending",
+    Done = "done",
+    Failed = "failed"
 }
 
 // If BalanceAction, then it's serialize / deserialize functions should be
@@ -211,6 +211,7 @@ class RenExSDK {
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
+    public getBalanceActionStatus = (txHash: string): Promise<BalanceActionStatus> => getBalanceActionStatus(this, txHash);
     public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<BalanceAction> =>
         withdraw(this, token, value, withoutIngressSignature, key)
@@ -220,8 +221,15 @@ class RenExSDK {
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
 
-    public listTraderOrders = (): Promise<TraderOrder[]> => this.storage.getOrders();
-    public listBalanceActions = (): Promise<BalanceAction[]> => this.storage.getBalanceActions();
+    public listTraderOrders = async (): Promise<TraderOrder[]> =>
+        this.storage
+            .getOrders()
+            .then(orders => orders.sort((a, b) => a.computedOrderDetails.date < b.computedOrderDetails.date ? -1 : 1))
+
+    public listBalanceActions = (): Promise<BalanceAction[]> =>
+        this.storage
+            .getBalanceActions()
+            .then(actions => actions.sort((a, b) => a.time < b.time ? -1 : 1))
 
     public updateProvider(provider: Provider): void {
         this.web3 = new Web3(provider);
