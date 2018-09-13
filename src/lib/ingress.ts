@@ -24,8 +24,10 @@ import { generateTokenPairing, splitTokenPairing } from "./tokens";
 const NULL = "0x0000000000000000000000000000000000000000";
 
 export enum OrderType {
-    MIDPOINT = 0,
-    LIMIT = 1, // FIXME: unsupported
+    MIDPOINT = 0, // FIXME: Unsupported
+    LIMIT = 1,
+    MIDPOINT_IOC = 2, // FIXME: Unsupported
+    LIMIT_IOC = 3,
 }
 
 export enum OrderParity {
