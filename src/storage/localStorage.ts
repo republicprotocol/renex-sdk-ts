@@ -1,20 +1,19 @@
 import localforage from "localforage";
-import { OrderID, TraderOrder } from "../index";
-import { deserializeTraderOrder, serializeTraderOrder, Storage } from "./interface";
+import { BalanceAction, OrderID, TraderOrder } from "../index";
+import { Storage } from "./interface";
+import { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./serializers";
 
-// const ROOT_KEY = "renex_sdk";
-
-// const createKey = (name: string, address: string): string => `${ROOT_KEY}_${name}_${address}`;
+const createKey = (name: string, address: string): string => `renex_sdk_${name}_${address.toLowerCase()}`;
 
 class LocalStorage implements Storage {
     private orders: LocalForage;
-    // private deposits: LocalForage;
+    private balanceActions: LocalForage;
 
     constructor(address: string) {
 
         this.orders = localforage.createInstance({
             name: "orders",
-            storeName: `renex_sdk_orders_${address.toLowerCase()}`,
+            storeName: createKey("orders", address),
             driver: [
                 localforage.INDEXEDDB,
                 localforage.WEBSQL,
@@ -22,33 +21,19 @@ class LocalStorage implements Storage {
             ],
         });
 
-        // // this is just for demonstration purposes
-        // const originalConsoleLog = console.log;
-        // function consoleLogProxy() {
-        //     originalConsoleLog.apply(console, arguments);
-        //     const htmlConsole = document.getElementById("htmlConsole");
-        //     if (htmlConsole) {
-        //         const message = Array.prototype.slice.apply(arguments, []).join(" ");
-        //         htmlConsole.innerHTML += "<li>" + message + "</li>";
-        //     }
-        // }
-        // console.log = consoleLogProxy;
-
-        // localforage.config({
-        //     name: "renex_sdk",
-        //     version: 1.0,
-        //     storeName: "renex_sdk",
-        //     description: "RenEx SDK trader order storage"
-        // });
-
-        // this.deposits = localforage.createInstance({
-        //     name: ROOT_KEY + "deposits",
-        // });
+        this.balanceActions = localforage.createInstance({
+            name: "deposits",
+            storeName: createKey("deposits", address),
+            driver: [
+                localforage.INDEXEDDB,
+                localforage.WEBSQL,
+                localforage.LOCALSTORAGE
+            ],
+        });
     }
 
     // Orders
     public async setOrder(order: TraderOrder): Promise<void> {
-        // const toMerge: TraderOrder = await this.getOrder(order.id)
         await this.orders.setItem(order.id, serializeTraderOrder(order));
     }
     public async getOrder(orderID: OrderID): Promise<TraderOrder> {
@@ -67,13 +52,25 @@ class LocalStorage implements Storage {
         return orders;
     }
 
-    // // Balances
-    // public async setBalanceItem(balanceItem: any): Promise<void> {
-    //     //
-    // }
-    // public async getBalanceItems(): Promise<any[]> {
-    //     //
-    // }
+    // Balances
+    public async setBalanceAction(balanceAction: BalanceAction): Promise<void> {
+        await this.balanceActions.setItem(balanceAction.txHash, serializeBalanceAction(balanceAction));
+    }
+    public async getBalanceAction(txHash: string): Promise<BalanceAction> {
+        const serialized: string = await this.balanceActions.getItem(txHash) as string;
+        return deserializeBalanceAction(serialized);
+    }
+    public async getBalanceActions(): Promise<BalanceAction[]> {
+        const balanceActions: BalanceAction[] = [];
+        await this.balanceActions.iterate((value: string) => {
+            try {
+                balanceActions.push(deserializeBalanceAction(value));
+            } catch (err) {
+                console.log(err);
+            }
+        });
+        return balanceActions;
+    }
 }
 
 export default LocalStorage;
