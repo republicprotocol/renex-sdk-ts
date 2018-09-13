@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
 
-import { Order, OrderID, TraderOrder } from "../index";
+import { TraderOrder } from "../index";
 
 export interface Storage {
     // Orders

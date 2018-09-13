@@ -2,9 +2,9 @@ import localforage from "localforage";
 import { OrderID, TraderOrder } from "../index";
 import { deserializeTraderOrder, serializeTraderOrder, Storage } from "./interface";
 
-const ROOT_KEY = "renex_sdk";
+// const ROOT_KEY = "renex_sdk";
 
-const createKey = (name: string, address: string): string => `${ROOT_KEY}_${name}_${address}`;
+// const createKey = (name: string, address: string): string => `${ROOT_KEY}_${name}_${address}`;
 
 class LocalStorage implements Storage {
     private orders: LocalForage;
@@ -14,6 +14,7 @@ class LocalStorage implements Storage {
 
         this.orders = localforage.createInstance({
             name: "orders",
+            storeName: `renex_sdk_orders_${address.toLowerCase()}`,
             driver: [
                 localforage.INDEXEDDB,
                 localforage.WEBSQL,

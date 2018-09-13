@@ -27,18 +27,18 @@
     "watch": "cross-env NODE_ENV=development webpack --watch --mode development --display-error-details --progress --color",
     "build:dev": "cross-env NODE_ENV=development webpack --mode development --display-error-details --progress --color",
     "build:prod": "cross-env NODE_ENV=production webpack --mode production --progress --color",
-    "prepublish": "npm run lint && npm run build:dev"
+    "prepare": "# npm run lint && npm run build:dev"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
+    "@babel/core": "^7.0.1",
     "@types/chai": "^4.1.4",
     "@types/chai-as-promised": "^7.1.0",
     "@types/crypto-js": "^3.1.43",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.0.4",
-    "awesome-typescript-loader": "^5.2.0",
+    "awesome-typescript-loader": "^5.2.1",
     "babel-core": "^6.26.3",
-    "babel-loader": "^8.0.0",
+    "babel-loader": "^8.0.2",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-stage-3": "^6.24.1",
