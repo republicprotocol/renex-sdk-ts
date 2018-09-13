@@ -34,7 +34,7 @@ export const serializeBalanceAction = (balanceAction: BalanceAction): string => 
 export const deserializeBalanceAction = (balanceActionString: string): BalanceAction => {
     const balanceAction: BalanceAction = JSON.parse(balanceActionString);
 
-    balanceAction.amount = new BN(balanceAction.amount);
+    balanceAction.amount = new BN(balanceAction.amount, "hex");
 
     return balanceAction;
 };
