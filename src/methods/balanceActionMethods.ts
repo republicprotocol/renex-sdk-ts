@@ -1,14 +1,49 @@
 import { BN } from "bn.js";
+import { TransactionReceipt } from "web3/types";
 
-import RenExSDK, { BalanceAction, BalanceActionStatus, BalanceActionType, IntInput, TokenDetails, Transaction } from "../index";
+import RenExSDK, { BalanceAction, BalanceActionStatus, BalanceActionType, IdempotentKey, IntInput, TokenDetails, Transaction } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrInsufficientFunds } from "../lib/errors";
+import { ErrCanceledByUser, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
+import { requestWithdrawalSignature } from "../lib/ingress";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
     return token.address.toLowerCase() === ETH_ADDR.toLowerCase();
+};
+
+export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<BalanceActionStatus> => {
+
+    console.log(`Getting status of ${txHash}`);
+    const receipt: TransactionReceipt | null = await sdk.web3.eth.getTransactionReceipt(txHash);
+
+    let balanceActionStatus: BalanceActionStatus;
+
+    if (receipt !== null && receipt.blockHash !== "") {
+
+        // Status type is string, but actually returns back as a boolean
+        const receiptStatus: any = receipt.status;
+        if (receiptStatus === "0" || receiptStatus === 0 || receiptStatus === false) {
+            balanceActionStatus = BalanceActionStatus.Failed;
+        } else {
+            balanceActionStatus = BalanceActionStatus.Done;
+        }
+    } else {
+        balanceActionStatus = BalanceActionStatus.Pending;
+    }
+
+    // Update local storage (without awaiting)
+    sdk.storage.getBalanceAction(txHash).then(async (balanceAction: BalanceAction) => {
+        if (balanceAction !== null) {
+            balanceAction.status = balanceActionStatus;
+            await sdk.storage.setBalanceAction(balanceAction);
+        }
+    }).catch(console.error);
+
+    console.log(`Got status ${balanceActionStatus}`);
+
+    return balanceActionStatus;
 };
 
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<BalanceAction> => {
@@ -74,6 +109,59 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
 
             // TODO: https://github.com/MetaMask/metamask-extension/issues/3425
         }
+    } catch (error) {
+        if (error.tx) {
+            balanceAction.txHash = error.tx;
+            sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+            return balanceAction;
+        }
+
+        if (error.message.match("Insufficient funds")) {
+            throw new Error(ErrInsufficientFunds);
+        }
+        if (error.message.match("User denied transaction signature")) {
+            throw new Error(ErrCanceledByUser);
+        }
+        throw error;
+    }
+};
+
+export const withdraw = async (
+    sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean, key?: IdempotentKey
+): Promise<BalanceAction> => {
+    value = new BN(value);
+
+    // Trustless withdrawals are not implemented yet
+    if (withoutIngressSignature === true || key !== undefined) {
+        throw new Error(ErrUnimplemented);
+    }
+
+    const details = await sdk.tokenDetails(token);
+
+    // TODO: Check balance
+
+    const balanceAction: BalanceAction = {
+        action: BalanceActionType.Withdraw,
+        amount: value,
+        time: Math.floor(new Date().getTime() / 1000),
+        status: BalanceActionStatus.Pending,
+        token,
+        trader: sdk.address,
+        txHash: "",
+    };
+
+    try {
+        const signature = await requestWithdrawalSignature(sdk.networkData.ingress, sdk.address, token);
+        const transaction = await sdk.contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address });
+
+        // TODO: Store balanceAction before confirmation with on("transactionHash").
+
+        // Update balance action
+        balanceAction.txHash = transaction.tx;
+
+        sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+
+        return balanceAction;
     } catch (error) {
         if (error.tx) {
             balanceAction.txHash = error.tx;
