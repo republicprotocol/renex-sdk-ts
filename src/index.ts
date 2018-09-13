@@ -4,6 +4,8 @@ import Web3 from "web3";
 import { BN } from "bn.js";
 import { Provider } from "web3/types";
 
+import LocalStorage from "./storage/localStorage";
+
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
 import { ERC20Contract } from "./contracts/bindings/erc20";
 import { OrderbookContract } from "./contracts/bindings/orderbook";
@@ -16,11 +18,13 @@ import { OrderParity, OrderType } from "./lib/ingress";
 import { OrderSettlement } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { Token } from "./lib/tokens";
-import { balance, balances, nondepositedBalance, nondepositedBalances, usableBalance, usableBalances, withdraw } from "./methods/balancesMethods";
+import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances, withdraw } from "./methods/balancesMethods";
 import { deposit } from "./methods/depositMethod";
 import { transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
+import { Storage } from "./storage/interface";
+import { MemoryStorage } from "./storage/memoryStorage";
 
 // These are temporary types to ensure that all user inputs are converted
 // correctly.
@@ -114,40 +118,25 @@ export interface MatchDetails {
     spentToken: number;
 }
 
-/**
- * This is the interface that the SDK exposes.
- *
- * @interface RenExSDK
- */
-interface RenExSDK {
+export interface TokenDetails {
     address: string;
-    transfer(address: string, token: number, value: IntInput): Promise<void>;
-    balance(token: number): Promise<BN>;
-    balances(tokens: number[]): Promise<BN[]>;
-    nondepositedBalance(token: number): Promise<BN>;
-    usableBalance(token: number): Promise<BN>;
-    deposit(token: number, value: IntInput): Promise<Transaction>;
-    withdraw(token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction>;
-    status(orderID: OrderID): Promise<OrderStatus>;
-    matchDetails(orderID: OrderID): Promise<MatchDetails>;
-    openOrder(order: OrderInputs): Promise<Order>;
-    cancelOrder(orderID: OrderID): Promise<void>;
-    getOrders(filter: GetOrdersFilter): Promise<Order[]>;
+    decimals: number;
+    registered: boolean;
 }
 
 /**
- * This is the concrete class that implements the RenExSDK interface.
+ * This is the concrete class that implements the IRenExSDK interface.
  *
- * @class RenExSDK
- * @implements {RenExSDK}
+ * @class IRenExSDK
  */
-class RenExSDK implements RenExSDK {
+class RenExSDK {
     public web3: Web3;
     public address: string;
     public networkData: NetworkData;
     // TODO: Make it possible to loop through all tokens (without the reverse lookup duplicates)
     public tokens = Token;
     public orderStatus = OrderStatus;
+    public storage: Storage;
     public contracts: {
         renExSettlement: RenExSettlementContract,
         renExTokens: RenExTokensContract,
@@ -156,6 +145,7 @@ class RenExSDK implements RenExSDK {
         darknodeRegistry: DarknodeRegistryContract,
         erc20: Map<number, ERC20Contract>,
     };
+    public cachedTokenDetails: Map<number, TokenDetails> = new Map();
 
     /**
      * Creates an instance of RenExSDK.
@@ -163,12 +153,15 @@ class RenExSDK implements RenExSDK {
      * @memberof RenExSDK
      */
     constructor(provider: Provider, networkData: NetworkData, address: string) {
-        if (address === null) {
-            throw new Error("invalid address");
-        }
         this.web3 = new Web3(provider);
         this.networkData = networkData;
         this.address = address;
+
+        if (address) {
+            this.storage = new LocalStorage(address);
+        } else {
+            this.storage = new MemoryStorage();
+        }
 
         this.contracts = {
             renExSettlement: new (withProvider(this.web3, RenExSettlement))(networkData.contracts[0].renExSettlement),
@@ -181,6 +174,7 @@ class RenExSDK implements RenExSDK {
     }
 
     // tslint:disable-next-line:max-line-length
+    public tokenDetails = (token: number): Promise<TokenDetails> => tokenDetails(this, token);
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
     public nondepositedBalance = (token: number): Promise<BN> => nondepositedBalance(this, token);
     public nondepositedBalances = (tokens: number[]): Promise<BN[]> => nondepositedBalances(this, tokens);
@@ -189,13 +183,15 @@ class RenExSDK implements RenExSDK {
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
     public deposit = (token: number, value: IntInput): Promise<Transaction> => deposit(this, token, value);
-    // tslint:disable-next-line:max-line-length
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction> => withdraw(this, token, value, withoutIngressSignature, key);
+    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<Transaction> =>
+        withdraw(this, token, value, withoutIngressSignature, key)
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public openOrder = (order: OrderInputs): Promise<Order> => openOrder(this, order);
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
+
+    public listTraderOrders = () => this.storage.getOrders();
 
     public updateProvider(provider: Provider): void {
         this.web3 = new Web3(provider);
@@ -210,8 +206,11 @@ class RenExSDK implements RenExSDK {
             erc20: new Map<number, ERC20Contract>(),
         };
     }
+
     public updateAddress(address: string): void {
         this.address = address;
+
+        this.storage = new LocalStorage(address);
     }
 }
 
