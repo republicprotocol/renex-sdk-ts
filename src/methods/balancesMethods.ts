@@ -67,6 +67,17 @@ export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
 };
 
 export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+
+    // balanceHistory.map((transaction: BalanceItem) => {
+    //     if (transaction.status === BalanceItemStatus.Pending && transaction.action === BalanceItemAction.Withdraw) {
+    //         const token: Token = transaction.token;
+    //         const amountBN = readableToBalance(transaction.amount.toString(), token);
+    //         let usableBalance = usableBalances.get(token);
+    //         usableBalance = usableBalance.sub(amountBN);
+    //         usableBalances = usableBalances.set(token, usableBalance.gt(new BN(0)) ? usableBalance : new BN(0));
+    //     }
+    // });
+
     // TODO: Subtract balances locked up in orders
     return balance(sdk, token);
 };

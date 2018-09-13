@@ -1,7 +1,7 @@
 import { BN } from "bn.js";
 import { TransactionReceipt } from "web3/types";
 
-import RenExSDK, { BalanceAction, BalanceActionStatus, BalanceActionType, IdempotentKey, IntInput, TokenDetails, Transaction } from "../index";
+import RenExSDK, { BalanceAction, BalanceActionType, IdempotentKey, IntInput, TokenDetails, Transaction, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
@@ -13,25 +13,26 @@ const tokenIsEthereum = (token: TokenDetails) => {
     return token.address.toLowerCase() === ETH_ADDR.toLowerCase();
 };
 
-export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<BalanceActionStatus> => {
-
-    console.log(`Getting status of ${txHash}`);
+export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
     const receipt: TransactionReceipt | null = await sdk.web3.eth.getTransactionReceipt(txHash);
-
-    let balanceActionStatus: BalanceActionStatus;
 
     if (receipt !== null && receipt.blockHash !== "") {
 
         // Status type is string, but actually returns back as a boolean
         const receiptStatus: any = receipt.status;
         if (receiptStatus === "0" || receiptStatus === 0 || receiptStatus === false) {
-            balanceActionStatus = BalanceActionStatus.Failed;
+            return TransactionStatus.Failed;
         } else {
-            balanceActionStatus = BalanceActionStatus.Done;
+            return TransactionStatus.Done;
         }
     } else {
-        balanceActionStatus = BalanceActionStatus.Pending;
+        return TransactionStatus.Pending;
     }
+};
+
+export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
+
+    const balanceActionStatus: TransactionStatus = await getTransactionStatus(sdk, txHash);
 
     // Update local storage (without awaiting)
     sdk.storage.getBalanceAction(txHash).then(async (balanceAction: BalanceAction) => {
@@ -40,8 +41,6 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
             await sdk.storage.setBalanceAction(balanceAction);
         }
     }).catch(console.error);
-
-    console.log(`Got status ${balanceActionStatus}`);
 
     return balanceActionStatus;
 };
@@ -55,7 +54,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         action: BalanceActionType.Deposit,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
-        status: BalanceActionStatus.Pending,
+        status: TransactionStatus.Pending,
         token,
         trader: sdk.address,
         txHash: "",
@@ -144,7 +143,7 @@ export const withdraw = async (
         action: BalanceActionType.Withdraw,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
-        status: BalanceActionStatus.Pending,
+        status: TransactionStatus.Pending,
         token,
         trader: sdk.address,
         txHash: "",

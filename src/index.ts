@@ -132,7 +132,7 @@ export enum BalanceActionType {
     Deposit = "deposit",
 }
 
-export enum BalanceActionStatus {
+export enum TransactionStatus {
     Pending = "pending",
     Done = "done",
     Failed = "failed"
@@ -144,7 +144,7 @@ export interface BalanceAction {
     action: BalanceActionType;
     amount: BN;
     time: number;
-    status: BalanceActionStatus;
+    status: TransactionStatus;
     token: number;
     trader: string;
     txHash: string;
@@ -208,7 +208,7 @@ class RenExSDK {
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
-    public getBalanceActionStatus = (txHash: string): Promise<BalanceActionStatus> => getBalanceActionStatus(this, txHash);
+    public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
     public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<BalanceAction> =>
         withdraw(this, token, value, withoutIngressSignature, key)
