@@ -101,7 +101,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
         },
     };
 
-    sdk.storage.setOrder(completeOrder);
+    sdk.storage.setOrder(completeOrder).catch(console.error);
 
     return completeOrder;
 };
