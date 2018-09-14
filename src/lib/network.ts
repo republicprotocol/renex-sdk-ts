@@ -2,6 +2,7 @@ export interface NetworkData {
     network: string;
     ingress: string;
     infura: string;
+    renex: string;
     etherscan: string;
     ethNetwork: string;
     ethNetworkLabel: string;
