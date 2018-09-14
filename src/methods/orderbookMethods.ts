@@ -4,14 +4,14 @@ import { BN } from "bn.js";
 
 import * as ingress from "../lib/ingress";
 
-import RenExSDK, { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderStatus, TraderOrder } from "../index";
+import RenExSDK from "../index";
 
 import { WyreContract } from "contracts/bindings/wyre";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrUnsupportedFilterStatus } from "../lib/errors";
-import { OrderSettlement } from "../lib/market";
 import { generateTokenPairing } from "../lib/tokens";
+import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -31,7 +31,7 @@ const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeco
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex")),
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
-        type: orderInputs.type !== undefined ? orderInputs.type : ingress.OrderType.LIMIT,
+        type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };
 
@@ -55,8 +55,8 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     const volume = adjustDecimals(orderInputs.volume, decimals, VOLUME_OFFSET);
     const minimumVolume = adjustDecimals(orderInputs.minimumVolume, decimals, VOLUME_OFFSET);
 
-    const parity = orderInputs.receiveToken < orderInputs.spendToken ? ingress.OrderParity.SELL : ingress.OrderParity.BUY;
-    const tokens = parity === ingress.OrderParity.BUY ?
+    const parity = orderInputs.receiveToken < orderInputs.spendToken ? OrderParity.SELL : OrderParity.BUY;
+    const tokens = parity === OrderParity.BUY ?
         generateTokenPairing(orderInputs.spendToken, orderInputs.receiveToken) :
         generateTokenPairing(orderInputs.receiveToken, orderInputs.spendToken);
 
@@ -95,8 +95,8 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
         id: orderID.toBase64(),
         transactionHash: tx.tx,
         computedOrderDetails: {
-            spendVolume: parity === ingress.OrderParity.BUY ? priorityVolume : orderInputs.volume,
-            receiveVolume: parity === ingress.OrderParity.BUY ? orderInputs.volume : priorityVolume,
+            spendVolume: parity === OrderParity.BUY ? priorityVolume : orderInputs.volume,
+            receiveVolume: parity === OrderParity.BUY ? orderInputs.volume : priorityVolume,
             date: unixSeconds,
             parity,
         },

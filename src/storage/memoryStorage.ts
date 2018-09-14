@@ -1,4 +1,4 @@
-import { BalanceAction, OrderID, TraderOrder } from "../index";
+import { BalanceAction, OrderID, TraderOrder } from "../types";
 import { Storage } from "./interface";
 
 export class MemoryStorage implements Storage {

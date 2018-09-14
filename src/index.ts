@@ -1,4 +1,3 @@
-import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
 import { BN } from "bn.js";
@@ -15,8 +14,6 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
-import { OrderParity, OrderType } from "./lib/ingress";
-import { OrderSettlement } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { Token } from "./lib/tokens";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
@@ -26,135 +23,14 @@ import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
+import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Order, OrderID, OrderInputs, OrderStatus, TokenDetails, TraderOrder, TransactionStatus } from "./types";
 
-// These are temporary types to ensure that all user inputs are converted
-// correctly.
-export type IntInput = number | string | BN;
-export type FloatInput = number | string | BigNumber;
-
-export interface Transaction { receipt: any; tx: string; logs: any[]; }
-
-export type IdempotentKey = string;
-export type OrderID = string;
-export enum OrderStatus {
-    NOT_SUBMITTED = "not submitted",
-    FAILED_TO_OPEN = "failed to open",
-    OPEN = "open",
-    CONFIRMED = "confirmed",
-    CANCELED = "canceled",
-    SETTLED = "settled",
-    SLASHED = "slashed",
-    EXPIRED = "expired",
-}
-
-export { OrderSettlement } from "./lib/market";
-
-export { OrderParity, OrderType } from "./lib/ingress";
-
-export { NetworkData } from "./lib/network";
-
-export interface OrderInputs {
-    // Required fields
-    spendToken: number;
-    receiveToken: number;
-    price: FloatInput;
-    volume: IntInput;
-    minimumVolume: IntInput;
-
-    // Optional fields
-    type?: OrderInputsAll["type"];
-    orderSettlement?: OrderInputsAll["orderSettlement"];
-    nonce?: OrderInputsAll["nonce"];
-    expiry?: OrderInputsAll["expiry"];
-}
-
-// OrderInputsAll extends OrderInputs and sets optional fields to be required.
-export interface OrderInputsAll extends OrderInputs {
-    // Restrict type
-    price: BigNumber;
-    volume: BN;
-    minimumVolume: BN;
-
-    // Change to non-optional
-    type: OrderType;
-    orderSettlement: OrderSettlement;
-    nonce: BN;
-    expiry: number;
-}
-
-export interface ComputedOrderDetails {
-    receiveVolume: BN;
-    spendVolume: BN;
-    date: number;
-    parity: OrderParity;
-}
-
-export interface Order {
-    readonly id: OrderID;
-    readonly trader: string;
-    status: OrderStatus;
-    matchDetails?: MatchDetails;
-}
-
-// If TraderOrder, then it's serialize / deserialize functions should be
-// updated as well.
-export interface TraderOrder extends Order {
-    readonly computedOrderDetails: ComputedOrderDetails;
-    readonly orderInputs: OrderInputsAll;
-    readonly transactionHash: string;
-}
-
-export interface GetOrdersFilter {
-    address?: string;
-    status?: OrderStatus;
-    limit?: number;
-    start?: number;
-}
-
-export interface MatchDetails {
-    orderID: string;
-    matchedID: string;
-
-    receivedVolume: BN;
-    spentVolume: BN;
-    fee: BN;
-    receivedToken: number;
-    spentToken: number;
-}
-
-export interface TokenDetails {
-    address: string;
-    decimals: number;
-    registered: boolean;
-}
-
-export enum BalanceActionType {
-    Withdraw = "withdraw",
-    Deposit = "deposit",
-}
-
-export enum BalanceActionStatus {
-    Pending = "pending",
-    Done = "done",
-    Failed = "failed"
-}
-
-// If BalanceAction, then it's serialize / deserialize functions should be
-// updated as well.
-export interface BalanceAction {
-    action: BalanceActionType;
-    amount: BN;
-    time: number;
-    status: BalanceActionStatus;
-    token: number;
-    trader: string;
-    txHash: string;
-}
+export * from "./types";
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
  *
- * @class IRenExSDK
+ * @class RenExSDK
  */
 class RenExSDK {
     public web3: Web3;
@@ -211,10 +87,10 @@ class RenExSDK {
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
-    public getBalanceActionStatus = (txHash: string): Promise<BalanceActionStatus> => getBalanceActionStatus(this, txHash);
+    public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean, key?: IdempotentKey): Promise<BalanceAction> =>
-        withdraw(this, token, value, withoutIngressSignature, key)
+    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean): Promise<BalanceAction> =>
+        withdraw(this, token, value, withoutIngressSignature)
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public openOrder = (order: OrderInputs): Promise<Order> => openOrder(this, order);

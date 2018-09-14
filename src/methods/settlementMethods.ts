@@ -1,9 +1,10 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { MatchDetails, OrderID, OrderStatus, TraderOrder } from "../index";
+import RenExSDK from "../index";
 
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
+import { MatchDetails, OrderID, OrderStatus, TraderOrder } from "../types";
 
 export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
     // Convert orderID from base64 to hex

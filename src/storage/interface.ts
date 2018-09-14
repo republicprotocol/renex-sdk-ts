@@ -1,4 +1,4 @@
-import { BalanceAction, TraderOrder } from "../index";
+import { BalanceAction, TraderOrder } from "../types";
 
 export interface Storage {
     // Orders

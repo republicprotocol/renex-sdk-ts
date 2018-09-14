@@ -1,9 +1,5 @@
 import { OrderedMap } from "immutable";
-
-export enum OrderSettlement {
-    RenEx = 1,
-    RenExAtomic = 2,
-}
+import { OrderSettlement } from "../types";
 
 export enum Token {
     BTC = 0x00000000,

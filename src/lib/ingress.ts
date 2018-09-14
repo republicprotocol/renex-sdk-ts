@@ -13,27 +13,14 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
-import { OrderID, OrderStatus } from "../index";
+import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "./errors";
-import { OrderSettlement } from "./market";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing } from "./tokens";
 
 const NULL = "0x0000000000000000000000000000000000000000";
-
-export enum OrderType {
-    MIDPOINT = 0, // FIXME: Unsupported
-    LIMIT = 1,
-    MIDPOINT_IOC = 2, // FIXME: Unsupported
-    LIMIT_IOC = 3,
-}
-
-export enum OrderParity {
-    BUY = 0,
-    SELL = 1,
-}
 
 export class Tuple extends Record({
     c: 0,
