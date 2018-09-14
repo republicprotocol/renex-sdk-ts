@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import { BalanceAction, TraderOrder } from "../index";
+import { BalanceAction, TraderOrder } from "../types";
 
 export const serializeTraderOrder = (order: TraderOrder): string => {
     return JSON.stringify(order);

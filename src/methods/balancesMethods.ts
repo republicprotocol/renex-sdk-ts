@@ -1,9 +1,10 @@
 import { BN } from "bn.js";
 
-import RenExSDK, { TokenDetails } from "../index";
+import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
+import { TokenDetails } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     if (sdk.cachedTokenDetails.has(token)) {

@@ -1,7 +1,8 @@
 import { BN } from "bn.js";
 import { TransactionReceipt } from "web3/types";
 
-import RenExSDK, { BalanceAction, BalanceActionType, IdempotentKey, IntInput, TokenDetails, Transaction, TransactionStatus } from "../index";
+import RenExSDK from "../index";
+import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
@@ -126,12 +127,12 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
 };
 
 export const withdraw = async (
-    sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean, key?: IdempotentKey
+    sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean
 ): Promise<BalanceAction> => {
     value = new BN(value);
 
     // Trustless withdrawals are not implemented yet
-    if (withoutIngressSignature === true || key !== undefined) {
+    if (withoutIngressSignature === true) {
         throw new Error(ErrUnimplemented);
     }
 

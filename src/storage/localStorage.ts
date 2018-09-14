@@ -1,5 +1,5 @@
 import localforage from "localforage";
-import { BalanceAction, OrderID, TraderOrder } from "../index";
+import { BalanceAction, OrderID, TraderOrder } from "../types";
 import { Storage } from "./interface";
 import { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./serializers";
 
