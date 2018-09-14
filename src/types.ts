@@ -1,6 +1,10 @@
 import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
+import { AtomicSwapStatus } from "./lib/atomic";
+
+export { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
+export { NetworkData } from "./lib/network";
 
 // These are temporary types to ensure that all user inputs are converted
 // correctly.
@@ -26,8 +30,6 @@ export enum OrderSettlement {
     RenExAtomic = 2,
 }
 
-export { NetworkData } from "./lib/network";
-
 export enum OrderType {
     MIDPOINT = 0, // FIXME: Unsupported
     LIMIT = 1,
@@ -40,10 +42,12 @@ export enum OrderParity {
     SELL = 1,
 }
 
+export type TokenCode = number;
+
 export interface OrderInputs {
     // Required fields
-    spendToken: number;
-    receiveToken: number;
+    spendToken: TokenCode;
+    receiveToken: TokenCode;
     price: FloatInput;
     volume: IntInput;
     minimumVolume: IntInput;
@@ -80,6 +84,7 @@ export interface Order {
     readonly id: OrderID;
     readonly trader: string;
     status: OrderStatus;
+    atomicSwapStatus?: AtomicSwapStatus;
     matchDetails?: MatchDetails;
 }
 
@@ -105,8 +110,8 @@ export interface MatchDetails {
     receivedVolume: BN;
     spentVolume: BN;
     fee: BN;
-    receivedToken: number;
-    spentToken: number;
+    receivedToken: TokenCode;
+    spentToken: TokenCode;
 }
 
 export interface TokenDetails {
@@ -133,7 +138,7 @@ export interface BalanceAction {
     amount: BN;
     time: number;
     status: TransactionStatus;
-    token: number;
+    token: TokenCode;
     trader: string;
     txHash: string;
 }

@@ -7,35 +7,35 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { TokenDetails } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
-    if (sdk.cachedTokenDetails.has(token)) {
-        return sdk.cachedTokenDetails.get(token);
+    if (sdk._cachedTokenDetails.has(token)) {
+        return sdk._cachedTokenDetails.get(token);
     }
 
-    const detailsFromContract = await sdk.contracts.renExTokens.tokens(token);
+    const detailsFromContract = await sdk._contracts.renExTokens.tokens(token);
     const details: TokenDetails = {
         address: detailsFromContract.addr,
         decimals: new BN(detailsFromContract.decimals).toNumber(),
         registered: detailsFromContract.registered,
     };
 
-    sdk.cachedTokenDetails.set(token, details);
+    sdk._cachedTokenDetails.set(token, details);
 
     return details;
 };
 
 export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     if (token === 1) {
-        return new BN(await sdk.web3.eth.getBalance(sdk.address));
+        return new BN(await sdk.web3().eth.getBalance(sdk.address()));
     } else {
         const details = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract;
-        if (!sdk.contracts.erc20.has(token)) {
-            tokenContract = new (withProvider(sdk.web3, ERC20))(details.address);
-            sdk.contracts.erc20.set(token, tokenContract);
+        if (!sdk._contracts.erc20.has(token)) {
+            tokenContract = new (withProvider(sdk.web3(), ERC20))(details.address);
+            sdk._contracts.erc20.set(token, tokenContract);
         } else {
-            tokenContract = sdk.contracts.erc20.get(token);
+            tokenContract = sdk._contracts.erc20.get(token);
         }
-        return new BN(await tokenContract.balanceOf(sdk.address));
+        return new BN(await tokenContract.balanceOf(sdk.address()));
     }
 };
 
@@ -53,7 +53,7 @@ export const nondepositedBalances = (sdk: RenExSDK, tokens: number[]): Promise<B
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     const details = await sdk.tokenDetails(token);
-    return new BN(await sdk.contracts.renExBalances.traderBalances(sdk.address, details.address));
+    return new BN(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
 };
 
 export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {

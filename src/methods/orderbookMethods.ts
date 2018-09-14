@@ -6,6 +6,7 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK from "../index";
 
+import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrUnsupportedFilterStatus } from "../lib/errors";
@@ -28,7 +29,7 @@ const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeco
         minimumVolume: new BN(orderInputs.minimumVolume),
 
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
-        nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3.utils.randomHex(8).slice(2), "hex")),
+        nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
@@ -72,25 +73,27 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
         minimumVolume,
     });
 
-    const orderID = ingress.getOrderID(sdk.web3, ingressOrder);
+    const orderID = ingress.getOrderID(sdk.web3(), ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
+
+    await submitOrderToAtom(orderID);
 
     // Create order fragment mapping
     const request = new ingress.OpenOrderRequest({
-        address: sdk.address.slice(2),
-        orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3, sdk.contracts.darknodeRegistry, ingressOrder)]
+        address: sdk.address().slice(2),
+        orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3(), sdk._contracts.darknodeRegistry, ingressOrder)]
     });
-    const signature = await ingress.submitOrderFragments(sdk.networkData.ingress, request);
+    const signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
 
     // Submit order and the signature to the orderbook
-    const tx = await sdk.contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address });
+    const tx = await sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() });
 
     const priorityVolume: BN = new BN(new BigNumber(orderInputs.volume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
 
     const completeOrder = {
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
-        trader: sdk.address,
+        trader: sdk.address(),
         id: orderID.toBase64(),
         transactionHash: tx.tx,
         computedOrderDetails: {
@@ -101,7 +104,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
         },
     };
 
-    sdk.storage.setOrder(completeOrder).catch(console.error);
+    sdk._storage.setOrder(completeOrder).catch(console.error);
 
     return completeOrder;
 };
@@ -109,7 +112,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
 export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 
-    await sdk.contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address });
+    await sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address() });
 };
 
 export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise<Order[]> => {
@@ -118,7 +121,7 @@ export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise
         throw new Error(ErrUnsupportedFilterStatus);
     }
 
-    let orders = await ingress.getOrders(sdk.contracts.orderbook, filter.start, filter.limit);
+    let orders = await ingress.getOrders(sdk._contracts.orderbook, filter.start, filter.limit);
 
     if (filter.address) {
         orders = orders.filter(order => filter.status === order[1]).toList();
