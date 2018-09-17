@@ -111,14 +111,10 @@ export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
         withdrawnBalance,
     ]) => {
         tokens.forEach((token, index) => {
-            const ob = orderBalance.get(token);
-            if (ob) {
-                startingBalance[index] = startingBalance[index].sub(ob);
-            }
-            const wb = withdrawnBalance.get(token);
-            if (wb) {
-                startingBalance[index] = startingBalance[index].sub(wb);
-            }
+            const ob = orderBalance.get(token) || new BN(0);
+            const wb = withdrawnBalance.get(token) || new BN(0);
+            // Don't let this balance value be negative.
+            startingBalance[index] = BN.max(new BN(0), startingBalance[index].sub(wb.add(ob)));
         });
         return startingBalance;
     });
