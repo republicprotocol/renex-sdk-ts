@@ -76,7 +76,9 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     const orderID = ingress.getOrderID(sdk.web3(), ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
-    await submitOrderToAtom(orderID);
+    if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+        await submitOrderToAtom(orderID);
+    }
 
     // Create order fragment mapping
     const request = new ingress.OpenOrderRequest({
