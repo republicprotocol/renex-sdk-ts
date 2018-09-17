@@ -4,7 +4,7 @@ import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { TokenDetails } from "../types";
+import { BalanceActionType, OrderStatus, TokenDetails, TransactionStatus } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     if (sdk._cachedTokenDetails.has(token)) {
@@ -68,22 +68,58 @@ export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
 };
 
 export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-
-    // balanceHistory.map((transaction: BalanceItem) => {
-    //     if (transaction.status === BalanceItemStatus.Pending && transaction.action === BalanceItemAction.Withdraw) {
-    //         const token: Token = transaction.token;
-    //         const amountBN = readableToBalance(transaction.amount.toString(), token);
-    //         let usableBalance = usableBalances.get(token);
-    //         usableBalance = usableBalance.sub(amountBN);
-    //         usableBalances = usableBalances.set(token, usableBalance.gt(new BN(0)) ? usableBalance : new BN(0));
-    //     }
-    // });
-
-    // TODO: Subtract balances locked up in orders
-    return balance(sdk, token);
+    return usableBalances(sdk, [token]).then(b => b[0]);
 };
 
 export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    // TODO: Subtract balances locked up in orders
-    return balances(sdk, tokens);
+    const usedOrderBalances = sdk.listTraderOrders().then(orders => {
+        const usedFunds = new Map<number, BN>();
+        orders.forEach(order => {
+            if (order.status === OrderStatus.NOT_SUBMITTED ||
+                order.status === OrderStatus.OPEN ||
+                order.status === OrderStatus.CONFIRMED) {
+                const token = order.orderInputs.spendToken;
+                const usedTokenBalance = usedFunds.get(token);
+                if (usedTokenBalance) {
+                    usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                } else {
+                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
+                }
+            }
+        });
+        return usedFunds;
+    });
+
+    const pendingBalances = sdk.listBalanceActions().then(balanceActions => {
+        const pendingFunds = new Map<number, BN>();
+        balanceActions.forEach(action => {
+            if (action.action === BalanceActionType.Withdraw && action.status === TransactionStatus.Pending) {
+                const pendingTokenFunds = pendingFunds.get(action.token);
+                if (pendingTokenFunds) {
+                    pendingFunds.set(action.token, pendingTokenFunds.add(action.amount));
+                } else {
+                    pendingFunds.set(action.token, action.amount);
+                }
+            }
+        });
+        return pendingFunds;
+    });
+
+    return Promise.all([balances(sdk, tokens), usedOrderBalances, pendingBalances]).then(([
+        startingBalance,
+        orderBalance,
+        withdrawnBalance,
+    ]) => {
+        tokens.forEach((token, index) => {
+            const ob = orderBalance.get(token);
+            if (ob) {
+                startingBalance[index] = startingBalance[index].sub(ob);
+            }
+            const wb = withdrawnBalance.get(token);
+            if (wb) {
+                startingBalance[index] = startingBalance[index].sub(wb);
+            }
+        });
+        return startingBalance;
+    });
 };
