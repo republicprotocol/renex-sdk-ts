@@ -14,6 +14,7 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider } from "./contracts/contracts";
 import { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
+import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
 import { atomConnected, atomConnectionStatus, atomicBalance, atomicSwapStatus, authorizeAtom, connectToAtom } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
@@ -23,7 +24,7 @@ import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Order, OrderID, OrderInputs, OrderStatus, TokenDetails, TraderOrder, TransactionStatus } from "./types";
+import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, TokenDetails, TraderOrder, TransactionStatus } from "./types";
 
 export * from "./types";
 
@@ -50,16 +51,18 @@ class RenExSDK {
 
     private _web3: Web3;
     private _address: string;
+    private _config: Config;
 
     /**
      * Creates an instance of RenExSDK.
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, networkData: NetworkData, address: string) {
+    constructor(provider: Provider, networkData: NetworkData, address: string, options?: Options) {
         this._web3 = new Web3(provider);
         this._networkData = networkData;
         this._address = address;
+        this._config = generateConfig(options);
 
         if (address) {
             this._storage = new LocalStorage(address);
@@ -117,6 +120,7 @@ class RenExSDK {
     // Provider / account functions
     public web3 = (): Web3 => this._web3;
     public address = (): string => this._address;
+    public config = (): Config => this._config;
 
     public updateProvider = (provider: Provider): void => {
         this._web3 = new Web3(provider);

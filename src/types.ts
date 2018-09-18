@@ -142,3 +142,7 @@ export interface BalanceAction {
     trader: string;
     txHash: string;
 }
+
+export interface Options {
+    minimumTradeVolume?: IntInput;
+}
