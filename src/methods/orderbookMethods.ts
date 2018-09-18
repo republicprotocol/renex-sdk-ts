@@ -9,9 +9,10 @@ import RenExSDK from "../index";
 import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { ErrUnsupportedFilterStatus } from "../lib/errors";
+import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
+import { usableBalance } from "./balancesMethods";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -36,15 +37,27 @@ const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeco
 };
 
 export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Promise<TraderOrder> => {
-    // TODO: check balance, min volume is profitable, and token, price, volume, and min volume are valid
-
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
-
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
     // Initialize required contracts
     const receiveToken = await sdk.tokenDetails(new BN(orderInputs.receiveToken).toNumber());
     const spendToken = await sdk.tokenDetails(new BN(orderInputs.spendToken).toNumber());
+
+    const parity = orderInputs.receiveToken < orderInputs.spendToken ? OrderParity.SELL : OrderParity.BUY;
+    const nonPriorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? spendToken.decimals : receiveToken.decimals;
+    const priorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? receiveToken.decimals : spendToken.decimals;
+    const convertedVolume = adjustDecimals(new BigNumber(orderInputs.volume.toString()), nonPriorityDecimals, priorityDecimals);
+    const priorityVolume = new BN(new BigNumber(convertedVolume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
+
+    const spendVolume = parity === OrderParity.BUY ? priorityVolume : orderInputs.volume;
+    const receiveVolume = parity === OrderParity.BUY ? orderInputs.volume : priorityVolume;
+
+    // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
+    const balance = await usableBalance(sdk, orderInputs.spendToken);
+    if (spendVolume.gt(balance)) {
+        throw new Error(ErrInsufficientBalance);
+    }
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
 
@@ -55,7 +68,6 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     const volume = adjustDecimals(orderInputs.volume, decimals, VOLUME_OFFSET);
     const minimumVolume = adjustDecimals(orderInputs.minimumVolume, decimals, VOLUME_OFFSET);
 
-    const parity = orderInputs.receiveToken < orderInputs.spendToken ? OrderParity.SELL : OrderParity.BUY;
     const tokens = parity === OrderParity.BUY ?
         generateTokenPairing(orderInputs.spendToken, orderInputs.receiveToken) :
         generateTokenPairing(orderInputs.receiveToken, orderInputs.spendToken);
@@ -90,11 +102,6 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     // Submit order and the signature to the orderbook
     const tx = await sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() });
 
-    const nonPriorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? spendToken.decimals : receiveToken.decimals;
-    const priorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? receiveToken.decimals : spendToken.decimals;
-    const convertedVolume = adjustDecimals(new BigNumber(orderInputs.volume.toString()), nonPriorityDecimals, priorityDecimals);
-    const priorityVolume = new BN(new BigNumber(convertedVolume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
-
     const completeOrder = {
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
@@ -102,8 +109,8 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
         id: orderID.toBase64(),
         transactionHash: tx.tx,
         computedOrderDetails: {
-            spendVolume: parity === OrderParity.BUY ? priorityVolume : orderInputs.volume,
-            receiveVolume: parity === OrderParity.BUY ? orderInputs.volume : priorityVolume,
+            spendVolume,
+            receiveVolume,
             date: unixSeconds,
             parity,
         },
