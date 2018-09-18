@@ -58,6 +58,18 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     if (spendVolume.gt(balance)) {
         throw new Error(ErrInsufficientBalance);
     }
+    if (orderInputs.price.lte(new BigNumber(0))) {
+        throw new Error("Invalid price");
+    }
+    if (orderInputs.volume.lte(new BN(0))) {
+        throw new Error("Invalid volume");
+    }
+    if (orderInputs.minimumVolume.lte(new BN(0))) {
+        throw new Error("Invalid minimum volume");
+    }
+    if (orderInputs.volume.lt(orderInputs.minimumVolume)) {
+        throw new Error("Volume must be greater or equal to minimum volume");
+    }
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
 
