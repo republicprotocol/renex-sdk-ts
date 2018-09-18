@@ -8,7 +8,7 @@ import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
-import { usableBalance } from "./balancesMethods";
+import { nondepositedBalance, usableBalance } from "./balancesMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -49,6 +49,12 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
 
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<BalanceAction> => {
     value = new BN(value);
+
+    // Check that we can deposit that amount
+    const balance = await nondepositedBalance(sdk, token);
+    if (value.gt(balance)) {
+        throw new Error(ErrInsufficientBalance);
+    }
 
     const tokenDetails = await sdk.tokenDetails(token);
 
