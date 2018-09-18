@@ -90,7 +90,10 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     // Submit order and the signature to the orderbook
     const tx = await sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() });
 
-    const priorityVolume: BN = new BN(new BigNumber(orderInputs.volume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
+    const nonPriorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? spendToken.decimals : receiveToken.decimals;
+    const priorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? receiveToken.decimals : spendToken.decimals;
+    const convertedVolume = adjustDecimals(new BigNumber(orderInputs.volume.toString()), nonPriorityDecimals, priorityDecimals);
+    const priorityVolume = new BN(new BigNumber(convertedVolume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
 
     const completeOrder = {
         orderInputs,
