@@ -6,8 +6,9 @@ import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, 
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
+import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
+import { usableBalance } from "./balancesMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -136,10 +137,13 @@ export const withdraw = async (
         throw new Error(ErrUnimplemented);
     }
 
+    // Check the balance before withdrawal attempt
+    const balance = await usableBalance(sdk, token);
+    if (value.gt(balance)) {
+        throw new Error(ErrInsufficientBalance);
+    }
+
     const details = await sdk.tokenDetails(token);
-
-    // TODO: Check balance
-
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Withdraw,
         amount: value,
