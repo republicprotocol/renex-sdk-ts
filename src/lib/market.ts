@@ -5,14 +5,14 @@ export enum Token {
     BTC = 0x00000000,
     ETH = 0x00000001,
     DGX = 0x00000100,
-    ABC = 0x00000101,
+    TUSD = 0x00000101,
     REN = 0x00010000,
-    PQR = 0x00010001,
-    XYZ = 0x00010002,
+    OMG = 0x00010001,
+    ZRX = 0x00010002,
 }
 
 // For iterating over Tokens
-export const Tokens: Token[] = [Token.BTC, Token.ETH, Token.REN, Token.DGX, Token.ABC, Token.PQR, Token.XYZ];
+export const Tokens: Token[] = [Token.BTC, Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.OMG, Token.ZRX];
 
 export interface PairDetails {
     code: Pair;
@@ -25,10 +25,10 @@ export interface PairDetails {
 export enum Pair {
     BTC_ETH = 0x0000000000000001,
     ETH_DGX = 0x0000000100000100,
-    ETH_ABC = 0x0000000100000101,
+    ETH_TUSD = 0x0000000100000101,
     ETH_REN = 0x0000000100010000,
-    ETH_PQR = 0x0000000100010001,
-    ETH_XYZ = 0x0000000100010002,
+    ETH_OMG = 0x0000000100010001,
+    ETH_ZRX = 0x0000000100010002,
 }
 
 export const Pairs: OrderedMap<Pair, PairDetails> = OrderedMap<Pair, PairDetails>()
@@ -36,10 +36,10 @@ export const Pairs: OrderedMap<Pair, PairDetails> = OrderedMap<Pair, PairDetails
     .set(Pair.BTC_ETH, { code: Pair.BTC_ETH, orderSettlement: OrderSettlement.RenExAtomic, left: Token.BTC, right: Token.ETH, category: Token.ETH })
     // RenEx:
     .set(Pair.ETH_DGX, { code: Pair.ETH_DGX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.DGX })
+    .set(Pair.ETH_TUSD, { code: Pair.ETH_TUSD, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.TUSD })
     .set(Pair.ETH_REN, { code: Pair.ETH_REN, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.REN })
-    .set(Pair.ETH_ABC, { code: Pair.ETH_ABC, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.ABC })
-    .set(Pair.ETH_PQR, { code: Pair.ETH_PQR, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.PQR })
-    .set(Pair.ETH_XYZ, { code: Pair.ETH_XYZ, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.XYZ });
+    .set(Pair.ETH_OMG, { code: Pair.ETH_OMG, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.OMG })
+    .set(Pair.ETH_ZRX, { code: Pair.ETH_ZRX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.ZRX });
 
 export interface TokenDetail {
     name: string;
