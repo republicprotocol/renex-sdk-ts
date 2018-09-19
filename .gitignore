@@ -18,5 +18,3 @@ node_modules
 src/.DS_Store
 
 typedoc/
-
-src/contracts/bindings

@@ -14,6 +14,7 @@ export interface NetworkData {
             renExBalances: string;
             renExSettlement: string;
             renExAtomicInfo: string;
+            wyre: string;
         }
     ];
     tokens: {
