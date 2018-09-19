@@ -4,38 +4,38 @@ import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { TokenDetails } from "../types";
+import { BalanceActionType, OrderStatus, TokenDetails, TransactionStatus } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
-    if (sdk.cachedTokenDetails.has(token)) {
-        return sdk.cachedTokenDetails.get(token);
+    if (sdk._cachedTokenDetails.has(token)) {
+        return sdk._cachedTokenDetails.get(token);
     }
 
-    const detailsFromContract = await sdk.contracts.renExTokens.tokens(token);
+    const detailsFromContract = await sdk._contracts.renExTokens.tokens(token);
     const details: TokenDetails = {
         address: detailsFromContract.addr,
         decimals: new BN(detailsFromContract.decimals).toNumber(),
         registered: detailsFromContract.registered,
     };
 
-    sdk.cachedTokenDetails.set(token, details);
+    sdk._cachedTokenDetails.set(token, details);
 
     return details;
 };
 
 export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     if (token === 1) {
-        return new BN(await sdk.web3.eth.getBalance(sdk.address));
+        return new BN(await sdk.web3().eth.getBalance(sdk.address()));
     } else {
         const details = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract;
-        if (!sdk.contracts.erc20.has(token)) {
-            tokenContract = new (withProvider(sdk.web3, ERC20))(details.address);
-            sdk.contracts.erc20.set(token, tokenContract);
+        if (!sdk._contracts.erc20.has(token)) {
+            tokenContract = new (withProvider(sdk.web3(), ERC20))(details.address);
+            sdk._contracts.erc20.set(token, tokenContract);
         } else {
-            tokenContract = sdk.contracts.erc20.get(token);
+            tokenContract = sdk._contracts.erc20.get(token);
         }
-        return new BN(await tokenContract.balanceOf(sdk.address));
+        return new BN(await tokenContract.balanceOf(sdk.address()));
     }
 };
 
@@ -53,7 +53,7 @@ export const nondepositedBalances = (sdk: RenExSDK, tokens: number[]): Promise<B
 
 export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     const details = await sdk.tokenDetails(token);
-    return new BN(await sdk.contracts.renExBalances.traderBalances(sdk.address, details.address));
+    return new BN(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
 };
 
 export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
@@ -68,22 +68,54 @@ export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
 };
 
 export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-
-    // balanceHistory.map((transaction: BalanceItem) => {
-    //     if (transaction.status === BalanceItemStatus.Pending && transaction.action === BalanceItemAction.Withdraw) {
-    //         const token: Token = transaction.token;
-    //         const amountBN = readableToBalance(transaction.amount.toString(), token);
-    //         let usableBalance = usableBalances.get(token);
-    //         usableBalance = usableBalance.sub(amountBN);
-    //         usableBalances = usableBalances.set(token, usableBalance.gt(new BN(0)) ? usableBalance : new BN(0));
-    //     }
-    // });
-
-    // TODO: Subtract balances locked up in orders
-    return balance(sdk, token);
+    return usableBalances(sdk, [token]).then(b => b[0]);
 };
 
 export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    // TODO: Subtract balances locked up in orders
-    return balances(sdk, tokens);
+    const usedOrderBalances = sdk.listTraderOrders().then(orders => {
+        const usedFunds = new Map<number, BN>();
+        orders.forEach(order => {
+            if (order.status === OrderStatus.NOT_SUBMITTED ||
+                order.status === OrderStatus.OPEN ||
+                order.status === OrderStatus.CONFIRMED) {
+                const token = order.orderInputs.spendToken;
+                const usedTokenBalance = usedFunds.get(token);
+                if (usedTokenBalance) {
+                    usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                } else {
+                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
+                }
+            }
+        });
+        return usedFunds;
+    });
+
+    const pendingBalances = sdk.listBalanceActions().then(balanceActions => {
+        const pendingFunds = new Map<number, BN>();
+        balanceActions.forEach(action => {
+            if (action.action === BalanceActionType.Withdraw && action.status === TransactionStatus.Pending) {
+                const pendingTokenFunds = pendingFunds.get(action.token);
+                if (pendingTokenFunds) {
+                    pendingFunds.set(action.token, pendingTokenFunds.add(action.amount));
+                } else {
+                    pendingFunds.set(action.token, action.amount);
+                }
+            }
+        });
+        return pendingFunds;
+    });
+
+    return Promise.all([balances(sdk, tokens), usedOrderBalances, pendingBalances]).then(([
+        startingBalance,
+        orderBalance,
+        withdrawnBalance,
+    ]) => {
+        tokens.forEach((token, index) => {
+            const ob = orderBalance.get(token) || new BN(0);
+            const wb = withdrawnBalance.get(token) || new BN(0);
+            // Don't let this balance value be negative.
+            startingBalance[index] = BN.max(new BN(0), startingBalance[index].sub(wb.add(ob)));
+        });
+        return startingBalance;
+    });
 };

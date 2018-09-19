@@ -6,8 +6,9 @@ import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, 
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
+import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
+import { nondepositedBalance, usableBalance } from "./balancesMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -15,7 +16,7 @@ const tokenIsEthereum = (token: TokenDetails) => {
 };
 
 export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
-    const receipt: TransactionReceipt | null = await sdk.web3.eth.getTransactionReceipt(txHash);
+    const receipt: TransactionReceipt | null = await sdk.web3().eth.getTransactionReceipt(txHash);
 
     if (receipt !== null && receipt.blockHash !== "") {
 
@@ -36,10 +37,10 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
     const balanceActionStatus: TransactionStatus = await getTransactionStatus(sdk, txHash);
 
     // Update local storage (without awaiting)
-    sdk.storage.getBalanceAction(txHash).then(async (balanceAction: BalanceAction) => {
+    sdk._storage.getBalanceAction(txHash).then(async (balanceAction: BalanceAction) => {
         if (balanceAction !== null) {
             balanceAction.status = balanceActionStatus;
-            await sdk.storage.setBalanceAction(balanceAction);
+            await sdk._storage.setBalanceAction(balanceAction);
         }
     }).catch(console.error);
 
@@ -49,6 +50,12 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<BalanceAction> => {
     value = new BN(value);
 
+    // Check that we can deposit that amount
+    const balance = await nondepositedBalance(sdk, token);
+    if (value.gt(balance)) {
+        throw new Error(ErrInsufficientBalance);
+    }
+
     const tokenDetails = await sdk.tokenDetails(token);
 
     const balanceAction: BalanceAction = {
@@ -57,28 +64,28 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         time: Math.floor(new Date().getTime() / 1000),
         status: TransactionStatus.Pending,
         token,
-        trader: sdk.address,
+        trader: sdk.address(),
         txHash: "",
     };
 
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            const transaction: Transaction = await sdk.contracts.renExBalances
-                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address });
+            const transaction: Transaction = await sdk._contracts.renExBalances
+                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address() });
 
             balanceAction.txHash = transaction.tx;
 
-            sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+            sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
             return balanceAction;
         } else {
             // ERC20 token
             let tokenContract: ERC20Contract;
-            if (!sdk.contracts.erc20.has(token)) {
-                tokenContract = new (withProvider(sdk.web3, ERC20))(tokenDetails.address);
-                sdk.contracts.erc20.set(token, tokenContract);
+            if (!sdk._contracts.erc20.has(token)) {
+                tokenContract = new (withProvider(sdk.web3(), ERC20))(tokenDetails.address);
+                sdk._contracts.erc20.set(token, tokenContract);
             } else {
-                tokenContract = sdk.contracts.erc20.get(token);
+                tokenContract = sdk._contracts.erc20.get(token);
             }
 
             // If allowance is less than amount, user must first approve
@@ -86,24 +93,24 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             // twice in a row rapidly (after already having an allowance set)
             // There's no way to check pending state - alternative is to see
             // if there are any pending deposits for the same token
-            const allowance = new BN(await tokenContract.allowance(sdk.address, sdk.contracts.renExBalances.address, { from: sdk.address }));
+            const allowance = new BN(await tokenContract.allowance(sdk.address(), sdk._contracts.renExBalances.address, { from: sdk.address() }));
             if (allowance.lt(value)) {
-                await tokenContract.approve(sdk.contracts.renExBalances.address, value, { from: sdk.address });
+                await tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: sdk.address() });
             }
-            const transaction: Transaction = await sdk.contracts.renExBalances.deposit(
+            const transaction: Transaction = await sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 value,
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
-                    from: sdk.address,
+                    from: sdk.address(),
                     gas: "150000",
                 }
             );
 
             balanceAction.txHash = transaction.tx;
 
-            sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+            sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
             return balanceAction;
 
@@ -112,7 +119,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
     } catch (error) {
         if (error.tx) {
             balanceAction.txHash = error.tx;
-            sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+            sdk._storage.setBalanceAction(balanceAction).catch(console.error);
             return balanceAction;
         }
 
@@ -136,36 +143,39 @@ export const withdraw = async (
         throw new Error(ErrUnimplemented);
     }
 
+    // Check the balance before withdrawal attempt
+    const balance = await usableBalance(sdk, token);
+    if (value.gt(balance)) {
+        throw new Error(ErrInsufficientBalance);
+    }
+
     const details = await sdk.tokenDetails(token);
-
-    // TODO: Check balance
-
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Withdraw,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
         status: TransactionStatus.Pending,
         token,
-        trader: sdk.address,
+        trader: sdk.address(),
         txHash: "",
     };
 
     try {
-        const signature = await requestWithdrawalSignature(sdk.networkData.ingress, sdk.address, token);
-        const transaction = await sdk.contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address });
+        const signature = await requestWithdrawalSignature(sdk._networkData.ingress, sdk.address(), token);
+        const transaction = await sdk._contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address() });
 
         // TODO: Store balanceAction before confirmation with on("transactionHash").
 
         // Update balance action
         balanceAction.txHash = transaction.tx;
 
-        sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+        sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
         return balanceAction;
     } catch (error) {
         if (error.tx) {
             balanceAction.txHash = error.tx;
-            sdk.storage.setBalanceAction(balanceAction).catch(console.error);
+            sdk._storage.setBalanceAction(balanceAction).catch(console.error);
             return balanceAction;
         }
 

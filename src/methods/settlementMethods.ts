@@ -12,10 +12,10 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
 
     let orderStatus: OrderStatus;
 
-    const orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk.contracts.orderbook.orderState(orderID)).toNumber());
+    const orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID)).toNumber());
     switch (orderbookStatus) {
         case OrderStatus.CONFIRMED:
-            const settlementStatus = new BN(await sdk.contracts.renExSettlement.orderStatus(orderID)).toNumber();
+            const settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID)).toNumber();
             orderStatus = settlementStatusToOrderStatus(settlementStatus);
             break;
         default:
@@ -23,10 +23,10 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     }
 
     // Update local storage (without awaiting)
-    sdk.storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
+    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
         if (storedOrder !== null) {
             storedOrder.status = orderStatus;
-            await sdk.storage.setOrder(storedOrder);
+            await sdk._storage.setOrder(storedOrder);
         }
     }).catch(console.error);
 
@@ -35,7 +35,7 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
 
 export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
-    const details = await sdk.contracts.renExSettlement.getMatchDetails(orderID.toHex());
+    const details = await sdk._contracts.renExSettlement.getMatchDetails(orderID.toHex());
 
     const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
 
@@ -68,10 +68,10 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
         };
 
     // Update local storage (without awaiting)
-    sdk.storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
+    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
         if (storedOrder !== null) {
             storedOrder.matchDetails = orderMatchDetails;
-            await sdk.storage.setOrder(storedOrder);
+            await sdk._storage.setOrder(storedOrder);
         }
     }).catch(console.error);
 

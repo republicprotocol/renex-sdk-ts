@@ -14,8 +14,10 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
+import { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
+import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { Token } from "./lib/tokens";
+import { atomConnected, atomConnectionStatus, atomicBalance, atomicSwapStatus, authorizeAtom, connectToAtom } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
@@ -23,7 +25,7 @@ import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Order, OrderID, OrderInputs, OrderStatus, TokenDetails, TraderOrder, TransactionStatus } from "./types";
+import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, TokenDetails, TraderOrder, TransactionStatus } from "./types";
 
 export * from "./types";
 
@@ -33,14 +35,12 @@ export * from "./types";
  * @class RenExSDK
  */
 class RenExSDK {
-    public web3: Web3;
-    public address: string;
-    public networkData: NetworkData;
-    // TODO: Make it possible to loop through all tokens (without the reverse lookup duplicates)
-    public tokens = Token;
-    public orderStatus = OrderStatus;
-    public storage: Storage;
-    public contracts: {
+
+    public _networkData: NetworkData;
+    public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
+
+    public _storage: Storage;
+    public _contracts: {
         renExSettlement: RenExSettlementContract,
         renExTokens: RenExTokensContract,
         renExBalances: RenExBalancesContract,
@@ -49,36 +49,40 @@ class RenExSDK {
         erc20: Map<number, ERC20Contract>,
         wyre: WyreContract,
     };
-    public cachedTokenDetails: Map<number, TokenDetails> = new Map();
+    public _cachedTokenDetails: Map<number, TokenDetails> = new Map();
+
+    private _web3: Web3;
+    private _address: string;
+    private _config: Config;
 
     /**
      * Creates an instance of RenExSDK.
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, networkData: NetworkData, address: string) {
-        this.web3 = new Web3(provider);
-        this.networkData = networkData;
-        this.address = address;
+    constructor(provider: Provider, networkData: NetworkData, address: string, options?: Options) {
+        this._web3 = new Web3(provider);
+        this._networkData = networkData;
+        this._address = address;
+        this._config = generateConfig(options);
 
         if (address) {
-            this.storage = new LocalStorage(address);
+            this._storage = new LocalStorage(address);
         } else {
-            this.storage = new MemoryStorage();
+            this._storage = new MemoryStorage();
         }
 
-        this.contracts = {
-            renExSettlement: new (withProvider(this.web3, RenExSettlement))(networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3, RenExBalances))(networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3, Orderbook))(networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3, RenExTokens))(networkData.contracts[0].renExTokens),
+        this._contracts = {
+            renExSettlement: new (withProvider(this.web3(), RenExSettlement))(networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3(), RenExBalances))(networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3(), Orderbook))(networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3(), DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3(), RenExTokens))(networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
             wyre: new (withProvider(this.web3, Wyre))(networkData.contracts[0].wyre),
         };
     }
 
-    // tslint:disable-next-line:max-line-length
     public tokenDetails = (token: number): Promise<TokenDetails> => tokenDetails(this, token);
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
     public nondepositedBalance = (token: number): Promise<BN> => nondepositedBalance(this, token);
@@ -97,35 +101,49 @@ class RenExSDK {
     public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
 
+    // Atomic functions
+    public atomConnectionStatus = (): AtomicConnectionStatus => atomConnectionStatus(this);
+    public atomConnected = (): boolean => atomConnected(this);
+    public atomicSwapStatus = (orderID: OrderID): Promise<AtomicSwapStatus> => atomicSwapStatus(this, orderID);
+    public connectToAtom = (): Promise<AtomicConnectionStatus> => connectToAtom(this);
+    public authorizeAtom = () => authorizeAtom(this);
+    public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
+
+    // Storage functions
     public listTraderOrders = async (): Promise<TraderOrder[]> =>
-        this.storage
+        this._storage
             .getOrders()
             .then(orders => orders.sort((a, b) => a.computedOrderDetails.date < b.computedOrderDetails.date ? -1 : 1))
 
     public listBalanceActions = (): Promise<BalanceAction[]> =>
-        this.storage
+        this._storage
             .getBalanceActions()
             .then(actions => actions.sort((a, b) => a.time < b.time ? -1 : 1))
 
-    public updateProvider(provider: Provider): void {
-        this.web3 = new Web3(provider);
+    // Provider / account functions
+    public web3 = (): Web3 => this._web3;
+    public address = (): string => this._address;
+    public config = (): Config => this._config;
+
+    public updateProvider = (provider: Provider): void => {
+        this._web3 = new Web3(provider);
 
         // Update contract providers
-        this.contracts = {
-            renExSettlement: new (withProvider(this.web3, RenExSettlement))(this.networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3, RenExBalances))(this.networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3, Orderbook))(this.networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3, DarknodeRegistry))(this.networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3, RenExTokens))(this.networkData.contracts[0].renExTokens),
+        this._contracts = {
+            renExSettlement: new (withProvider(this.web3(), RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3(), RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3(), Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3(), DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3(), RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
             wyre: new (withProvider(this.web3, Wyre))(this.networkData.contracts[0].wyre),
         };
     }
 
-    public updateAddress(address: string): void {
-        this.address = address;
+    public updateAddress = (address: string): void => {
+        this._address = address;
 
-        this.storage = new LocalStorage(address);
+        this._storage = new LocalStorage(address);
     }
 }
 
