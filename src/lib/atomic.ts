@@ -64,7 +64,7 @@ interface StatusResponse {
 }
 
 interface WhoamiResponse {
-    boxInfo: {
+    whoAmI: {
         challenge: string;
         version: string;
         authorizedAddresses: string[];
@@ -101,18 +101,18 @@ export async function _connectToAtom(web3: Web3, address: string): Promise<Atomi
         return AtomicConnectionStatus.NotConnected;
     }
 
-    if (response === undefined || response.boxInfo === undefined || response.boxInfo.authorizedAddresses === undefined) {
+    if (response === undefined || response.whoAmI === undefined || response.whoAmI.authorizedAddresses === undefined) {
         return AtomicConnectionStatus.NotConnected;
     }
 
-    const authorizedAddresses = response.boxInfo.authorizedAddresses.map(addr => addr.toLowerCase());
+    const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => addr.toLowerCase());
     if (authorizedAddresses.indexOf(address.toLowerCase()) === -1) {
         // TODO: Inform user address is not authorized
         return AtomicConnectionStatus.NotAuthorized;
     }
 
     // TODO: Use web3 from store
-    const msg = "0x" + new Buffer(JSON.stringify(response.boxInfo)).toString("hex");
+    const msg = "0x" + new Buffer(JSON.stringify(response.whoAmI)).toString("hex");
     const chaHash = web3.utils.keccak256(msg);
     const swapperAddress = web3.eth.accounts.recover(chaHash, "0x" + response.signature, true as any);
 
