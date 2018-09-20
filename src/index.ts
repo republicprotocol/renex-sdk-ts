@@ -17,7 +17,7 @@ import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExToken
 import { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomConnectionStatus, atomicBalance, atomicBalances, atomicSwapStatus, authorizeAtom, connectToAtom, supportedTokens, atomicAddress, atomicAddresses } from "./methods/atomicMethods";
+import { atomConnected, atomConnectionStatus, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, atomicSwapStatus, authorizeAtom, connectToAtom, supportedTokens } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
