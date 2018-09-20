@@ -5,6 +5,7 @@ import RenExSDK, { TokenCode, TraderOrder } from "../index";
 import { _connectToAtom, AtomicConnectionStatus, AtomicSwapStatus, getAtomicBalances, getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { Token } from "../lib/tokens";
+import { OrderSettlement, OrderStatus } from "../types";
 
 /* Atomic Connection */
 
@@ -90,35 +91,40 @@ export const atomicAddress = async (sdk: RenExSDK, token: number): Promise<strin
     return atomicAddresses(sdk, [token]).then(addresses => addresses[0]);
 };
 
+export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+    const usedOrderBalances = sdk.listTraderOrders().then(orders => {
+        const usedFunds = new Map<number, BN>();
+        orders.forEach(order => {
+            if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&
+                (order.status === OrderStatus.NOT_SUBMITTED ||
+                    order.status === OrderStatus.OPEN ||
+                    order.status === OrderStatus.CONFIRMED)
+            ) {
+                const token = order.orderInputs.spendToken;
+                const usedTokenBalance = usedFunds.get(token);
+                if (usedTokenBalance) {
+                    usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                } else {
+                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
+                }
+            }
+        });
+        return usedFunds;
+    });
+
+    return Promise.all([atomicBalances(sdk, tokens), usedOrderBalances]).then(([
+        startingBalance,
+        orderBalance,
+    ]) => {
+        tokens.forEach((token, index) => {
+            const ob = orderBalance.get(token) || new BN(0);
+            // Don't let this balance value be negative.
+            startingBalance[index] = BN.max(new BN(0), startingBalance[index].sub(ob));
+        });
+        return startingBalance;
+    });
+};
+
 export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<any> => {
-    throw new Error("unimplemented");
-
-    // // Remove balances used for open orders from usable balances.
-    // traderOrders.map((order: TraderOrder) => {
-    //     if (
-    //         //     (
-    //         //     order.status !== OrderStatus.Open &&
-    //         //     order.status !== OrderStatus.Unknown &&
-    //         //     order.status !== OrderStatus.Confirmed
-    //         // ) ||
-    //         order.trader !== sdk.address() ||
-    //         order.orderSettlement !== OrderSettlement.RenExAtomic
-    //     ) {
-    //         return;
-    //     }
-
-    //     const volumeBN = readableToBalance(order.volume.toString(), order.parity === OrderParity.BUY ? order.fstCode : order.sndCode);
-    //     const primaryToken = order.parity === OrderParity.BUY ? order.fstCode : order.sndCode;
-    //     let usableAtomicBalance = usableAtomicBalances.get(primaryToken);
-    //     usableAtomicBalance = usableAtomicBalance.sub(volumeBN);
-
-    //     if (usableAtomicBalance.lt(new BN(0))) {
-    //         usableAtomicBalance = new BN(0);
-    //     }
-    //     usableAtomicBalances = usableAtomicBalances.set(primaryToken, usableAtomicBalance);
-    // });
-
-    // if (!usableAtomicBalances.equals(oldUsableAtomicBalances)) {
-    //     // dispatch(updateUsableAtomicBalance({ usableAtomicBalances }));
-    // }
+    return usableAtomicBalances(sdk, [token]);
 };
