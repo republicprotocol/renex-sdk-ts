@@ -13,7 +13,7 @@ import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement"
 import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 
-import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
+import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withKovanProvider, withProvider, Wyre } from "./contracts/contracts";
 import { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
@@ -79,7 +79,7 @@ class RenExSDK {
             darknodeRegistry: new (withProvider(this.web3(), DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
             renExTokens: new (withProvider(this.web3(), RenExTokens))(networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withProvider(this.web3(), Wyre))(networkData.contracts[0].wyre),
+            wyre: new (withKovanProvider(Wyre))(networkData.contracts[0].wyre),
         };
     }
 
