@@ -72,6 +72,24 @@ export const atomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> =
     return atomicBalances(sdk, [token]).then(balances => balances[0]);
 };
 
+export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string[]> => {
+    return getAtomicBalances().then(balances => {
+        return tokens.map(token => {
+            switch (token) {
+                case Token.ETH:
+                    return balances.ethereum.address;
+                case Token.BTC:
+                    return balances.bitcoin.address;
+            }
+            return "";
+        });
+    });
+};
+
+export const atomicAddress = async (sdk: RenExSDK, token: number): Promise<string> => {
+    return atomicAddresses(sdk, [token]).then(addresses => addresses[0]);
+};
+
 export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<any> => {
     throw new Error("unimplemented");
 
