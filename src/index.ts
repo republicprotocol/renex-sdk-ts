@@ -17,7 +17,7 @@ import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExToken
 import { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomConnectionStatus, atomicBalance, atomicSwapStatus, authorizeAtom, connectToAtom } from "./methods/atomicMethods";
+import { atomConnected, atomConnectionStatus, atomicBalance, atomicBalances, atomicSwapStatus, authorizeAtom, connectToAtom, supportedTokens } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
@@ -25,7 +25,7 @@ import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, TokenDetails, TraderOrder, TransactionStatus } from "./types";
+import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, TokenCode, TokenDetails, TraderOrder, TransactionStatus } from "./types";
 
 export * from "./types";
 
@@ -108,6 +108,8 @@ class RenExSDK {
     public connectToAtom = (): Promise<AtomicConnectionStatus> => connectToAtom(this);
     public authorizeAtom = () => authorizeAtom(this);
     public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
+    public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
+    public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedTokens(this);
 
     // Storage functions
     public listTraderOrders = async (): Promise<TraderOrder[]> =>

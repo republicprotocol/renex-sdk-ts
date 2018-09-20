@@ -4,6 +4,7 @@ import RenExSDK, { TokenCode, TraderOrder } from "../index";
 
 import { _connectToAtom, AtomicConnectionStatus, AtomicSwapStatus, getAtomicBalances, getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
+import { Token } from "../lib/tokens";
 
 /* Atomic Connection */
 
@@ -51,34 +52,24 @@ export const atomicSwapStatus = async (sdk: RenExSDK, orderID64: string): Promis
 
 /* Atomic balances */
 
-export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [0, 1];
-
-export const atomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-
-    const connectionStatus = sdk.atomConnectionStatus();
-    if (!sdk.atomConnected()) { throw new Error("Not connected to Atomic"); }
-
-    const atomicBalanceResponse = await getAtomicBalances();
-
-    for (const balanceItem of atomicBalanceResponse) {
-        if (balanceItem.priorityCode === token) {
-            return new BN(balanceItem.amount);
-        }
-    }
-
-    // We return 0 if no balance is found
-    throw new Error(`Could not retrieve Atomic balance for token #${token}`);
-};
+export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
 export const atomicBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    // Loop through all tokens, returning 0 for any that throw an error
-    return Promise.all(tokens.map((async (token) => {
-        try {
-            return sdk.atomicBalance(token);
-        } catch (err) {
+    return getAtomicBalances().then(balances => {
+        return tokens.map(token => {
+            switch (token) {
+                case Token.ETH:
+                    return new BN(balances.ethereum.amount);
+                case Token.BTC:
+                    return new BN(balances.bitcoin.amount);
+            }
             return new BN(0);
-        }
-    })));
+        });
+    });
+};
+
+export const atomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+    return atomicBalances(sdk, [token]).then(balances => balances[0]);
 };
 
 export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<any> => {

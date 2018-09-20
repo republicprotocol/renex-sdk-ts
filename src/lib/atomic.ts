@@ -84,11 +84,13 @@ interface OrdersResponse {
 
 interface BalanceObject {
     address: string;
-    amount: number;
-    priorityCode: number;
+    amount: string;
 }
 
-type BalancesResponse = BalanceObject[];
+interface BalancesResponse {
+    ethereum: BalanceObject;
+    bitcoin: BalanceObject;
+}
 
 export async function _connectToAtom(web3: Web3, address: string): Promise<AtomicConnectionStatus> {
 
