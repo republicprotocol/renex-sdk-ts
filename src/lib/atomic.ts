@@ -3,6 +3,7 @@ import Web3 from "web3";
 
 // import { second, sleep } from "@Library/conversion";
 import { EncodedData, Encodings } from "./encodedData";
+import { checkAtomAuthorization } from "./ingress";
 // import { Order } from "@Library/ingress";
 // import { NetworkData } from "@Library/network";
 
@@ -92,7 +93,7 @@ interface BalancesResponse {
     bitcoin: BalanceObject;
 }
 
-export async function _connectToAtom(web3: Web3, address: string): Promise<AtomicConnectionStatus> {
+export async function _connectToAtom(web3: Web3, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
 
     const challenge = "cha";
 
@@ -118,9 +119,15 @@ export async function _connectToAtom(web3: Web3, address: string): Promise<Atomi
     const chaHash = web3.utils.keccak256(msg);
     const swapperAddress = web3.eth.accounts.recover(chaHash, "0x" + response.signature, true as any);
 
-    // TODO: Check with Ingress if Atomc address is authorised
+    // Check with Ingress if Atomic address is authorised
+    // FIXME: Figure out why this breaks everything
+    // const atomAuthorized = await checkAtomAuthorization(ingressURL, address);
+    const atomAuthorized = false;
+    if (atomAuthorized) {
+        return AtomicConnectionStatus.ConnectedUnlocked;
+    }
 
-    return AtomicConnectionStatus.ConnectedUnlocked;
+    return AtomicConnectionStatus.AtomNotAuthorized;
 }
 
 export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {

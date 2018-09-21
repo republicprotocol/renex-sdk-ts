@@ -22,7 +22,7 @@ export const atomConnected = (sdk: RenExSDK): boolean => {
 };
 
 export const connectToAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    sdk._atomConnectionStatus = await _connectToAtom(sdk.web3(), sdk.address());
+    sdk._atomConnectionStatus = await _connectToAtom(sdk.web3(), sdk._networkData.ingress, sdk.address());
     return sdk._atomConnectionStatus;
 };
 
