@@ -180,13 +180,13 @@ export async function getOrders(orderbook: OrderbookContract, startIn?: number, 
     const limit = limitIn || orderCount - (startIn || 0);
 
     // Start can be 0 so we compare against undefined instead
-    let start = startIn !== undefined ? startIn : orderCount - limit;
+    let start = startIn !== undefined ? startIn : Math.max(0, orderCount - limit);
 
     // We only get at most 500 orders per batch
     let batchLimit = Math.min(limit, 500);
 
     // Indicates where to stop (non-inclusive)
-    const stop = limit ? start + limit : orderCount;
+    const stop = limit ? start + Math.min(orderCount, limit) : orderCount;
 
     let ordersList = List<[OrderID, OrderStatus, string]>();
     while (true) {
