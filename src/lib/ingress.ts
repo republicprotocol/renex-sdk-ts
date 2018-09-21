@@ -118,6 +118,18 @@ function verifyOrder(order: Order): boolean {
     return true;
 }
 
+export async function checkAtomAuthorization(
+    ingressURL: string,
+    address: string,
+): Promise<boolean> {
+    try {
+        const resp = await axios.get(`${ingressURL}/${address}`);
+        return resp.status !== 404;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+}
+
 export async function submitOrderFragments(
     ingressURL: string,
     request: OpenOrderRequest,
