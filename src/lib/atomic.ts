@@ -130,6 +130,38 @@ export async function _connectToAtom(web3: Web3, ingressURL: string, address: st
     return AtomicConnectionStatus.AtomNotAuthorized;
 }
 
+export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<AtomicConnectionStatus> {
+    const request = await getAtomAuthorizationRequest(web3, atomAddress, address);
+    await authorizeSwapper(ingressURL, request);
+    return AtomicConnectionStatus.AtomNotAuthorized;
+}
+
+async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
+    const prefix: string = web3.utils.toHex("RenEx: authorize: ");
+    const checkedAddress = new EncodedData(atomAddress, Encodings.HEX);
+    const hashForSigning: string = (prefix + checkedAddress.toHex(""));
+
+    let signature: EncodedData;
+    try {
+        signature = new EncodedData(await web3.eth.sign(hashForSigning, address));
+    } catch (error) {
+        if (error.message.match(/User denied message signature/)) {
+            return Promise.reject(new Error(ErrCanceledByUser));
+        }
+        return Promise.reject(new Error(ErrUnsignedTransaction));
+    }
+
+    const buff = signature.toBuffer();
+    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
+    // but for future compatibility, we stick to one format)
+    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
+    if (buff[64] === 27 || buff[64] === 28) {
+        buff[64] = buff[64] - 27;
+    }
+
+    return new AtomAuthorizationRequest({ atomAddress: checkedAddress.toHex(), signature: buff.toString("base64") });
+}
+
 export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
 
     // orderID and signature should be hex-encoded

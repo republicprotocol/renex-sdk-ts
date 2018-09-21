@@ -2,7 +2,7 @@ import { BN } from "bn.js";
 
 import RenExSDK, { TokenCode, TraderOrder } from "../index";
 
-import { _connectToAtom, AtomicConnectionStatus, AtomicSwapStatus, getAtomicBalances, getOrderStatus } from "../lib/atomic";
+import { _authorizeAtom, _connectToAtom, AtomicConnectionStatus, AtomicSwapStatus, getAtomicBalances, getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { Token } from "../lib/tokens";
 import { OrderSettlement, OrderStatus } from "../types";
@@ -27,7 +27,9 @@ export const connectToAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 };
 
 export const authorizeAtom = async (sdk: RenExSDK) => {
-    // Not supported yet
+    const ethAtomAddress = await sdk.atomicAddress(Token.ETH);
+    sdk._atomConnectionStatus = await _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address());
+    return sdk._atomConnectionStatus;
 };
 
 /* Atomic Order Status */

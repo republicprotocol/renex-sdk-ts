@@ -41,6 +41,11 @@ export class Order extends Record({
     nonce: new BN(0),
 }) { }
 
+export class AtomAuthorizationRequest extends Record({
+    atomAddress: "",
+    signature: "",
+}) { }
+
 export class OpenOrderRequest extends Record({
     address: "",
     orderFragmentMappings: Array<Map<string, List<OrderFragment>>>()
@@ -80,37 +85,16 @@ export function randomNonce(randomBN: () => BN): BN {
     return nonce;
 }
 
-export async function openOrder(web3: Web3, address: string, order: Order): Promise<Order> {
-    // Verify order details
-    if (!verifyOrder(order)) {
-        return Promise.reject(new Error(ErrInvalidOrderDetails));
-    }
-
-    const id: EncodedData = new EncodedData(getOrderID(web3, order), Encodings.HEX);
-    const prefix: string = web3.utils.toHex("Republic Protocol: open: ");
-    const hashForSigning: string = (prefix + id.toHex(""));
-
-    let signature: EncodedData;
+export async function authorizeSwapper(ingressURL: string, request: AtomAuthorizationRequest): Promise<EncodedData> {
     try {
-        signature = new EncodedData(await web3.eth.sign(hashForSigning, address));
-    } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrCanceledByUser));
+        const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
+        if (resp.status !== 201) {
+            throw new Error("Unexpected status code: " + resp.status);
         }
-        return Promise.reject(new Error(ErrUnsignedTransaction));
+        return new EncodedData(resp.data.signature, Encodings.BASE64);
+    } catch (error) {
+        return Promise.reject(error);
     }
-
-    const buff = signature.toBuffer();
-    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
-    // but for future compatibility, we stick to one format)
-    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
-    if (buff[64] === 27 || buff[64] === 28) {
-        buff[64] = buff[64] - 27;
-    }
-
-    order = order.merge({ id: id.toBase64(), signature: buff.toString("base64") });
-
-    return order;
 }
 
 function verifyOrder(order: Order): boolean {
