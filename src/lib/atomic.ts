@@ -130,9 +130,14 @@ export async function _connectToAtom(web3: Web3, ingressURL: string, address: st
 }
 
 export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<AtomicConnectionStatus> {
-    const request = await getAtomAuthorizationRequest(web3, atomAddress, address);
-    await authorizeSwapper(ingressURL, request);
-    return AtomicConnectionStatus.AtomNotAuthorized;
+    try {
+        const request = await getAtomAuthorizationRequest(web3, atomAddress, address);
+        await authorizeSwapper(ingressURL, request);
+        return AtomicConnectionStatus.ConnectedUnlocked;
+    } catch (error) {
+        console.error(error);
+        return AtomicConnectionStatus.AtomNotAuthorized;
+    }
 }
 
 async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
