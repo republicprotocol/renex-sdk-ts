@@ -147,7 +147,7 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
 
     let signature: EncodedData;
     try {
-        signature = new EncodedData(await web3.eth.sign(hashForSigning, address));
+        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
     } catch (error) {
         if (error.message.match(/User denied message signature/)) {
             return Promise.reject(new Error(ErrCanceledByUser));
