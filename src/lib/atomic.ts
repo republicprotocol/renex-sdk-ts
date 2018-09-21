@@ -3,7 +3,8 @@ import Web3 from "web3";
 
 // import { second, sleep } from "@Library/conversion";
 import { EncodedData, Encodings } from "./encodedData";
-import { checkAtomAuthorization } from "./ingress";
+import { ErrCanceledByUser, ErrUnsignedTransaction } from "./errors";
+import { AtomAuthorizationRequest, authorizeSwapper, checkAtomAuthorization } from "./ingress";
 // import { Order } from "@Library/ingress";
 // import { NetworkData } from "@Library/network";
 
@@ -120,9 +121,7 @@ export async function _connectToAtom(web3: Web3, ingressURL: string, address: st
     const swapperAddress = web3.eth.accounts.recover(chaHash, "0x" + response.signature, true as any);
 
     // Check with Ingress if Atomic address is authorised
-    // FIXME: Figure out why this breaks everything
-    // const atomAuthorized = await checkAtomAuthorization(ingressURL, address);
-    const atomAuthorized = false;
+    const atomAuthorized = await checkAtomAuthorization(ingressURL, address);
     if (atomAuthorized) {
         return AtomicConnectionStatus.ConnectedUnlocked;
     }
