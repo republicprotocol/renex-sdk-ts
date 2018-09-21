@@ -122,12 +122,12 @@ export async function checkAtomAuthorization(
     ingressURL: string,
     address: string,
 ): Promise<boolean> {
-    try {
-        const resp = await axios.get(`${ingressURL}/${address}`);
-        return resp.status !== 404;
-    } catch (error) {
-        return Promise.reject(error);
-    }
+    return axios.get(`${ingressURL}/authorized/${address}`)
+        .then(resp => resp.status !== 404)
+        .catch(err => {
+            console.error(err);
+            return false;
+        });
 }
 
 export async function submitOrderFragments(
