@@ -7,12 +7,12 @@ export enum Token {
     DGX = 0x00000100,
     TUSD = 0x00000101,
     REN = 0x00010000,
-    OMG = 0x00010001,
-    ZRX = 0x00010002,
+    ZRX = 0x00010001,
+    OMG = 0x00010002,
 }
 
 // For iterating over Tokens
-export const Tokens: Token[] = [Token.BTC, Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.OMG, Token.ZRX];
+export const Tokens: Token[] = [Token.BTC, Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG];
 
 export interface PairDetails {
     code: Pair;
@@ -27,8 +27,8 @@ export enum Pair {
     ETH_DGX = 0x0000000100000100,
     ETH_TUSD = 0x0000000100000101,
     ETH_REN = 0x0000000100010000,
-    ETH_OMG = 0x0000000100010001,
-    ETH_ZRX = 0x0000000100010002,
+    ETH_ZRX = 0x0000000100010001,
+    ETH_OMG = 0x0000000100010002,
 }
 
 export const Pairs: OrderedMap<Pair, PairDetails> = OrderedMap<Pair, PairDetails>()
@@ -38,8 +38,8 @@ export const Pairs: OrderedMap<Pair, PairDetails> = OrderedMap<Pair, PairDetails
     .set(Pair.ETH_DGX, { code: Pair.ETH_DGX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.DGX })
     .set(Pair.ETH_TUSD, { code: Pair.ETH_TUSD, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.TUSD })
     .set(Pair.ETH_REN, { code: Pair.ETH_REN, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.REN })
-    .set(Pair.ETH_OMG, { code: Pair.ETH_OMG, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.OMG })
-    .set(Pair.ETH_ZRX, { code: Pair.ETH_ZRX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.ZRX });
+    .set(Pair.ETH_ZRX, { code: Pair.ETH_ZRX, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.ZRX })
+    .set(Pair.ETH_OMG, { code: Pair.ETH_OMG, orderSettlement: OrderSettlement.RenEx, left: Token.ETH, right: Token.OMG });
 
 export interface TokenDetail {
     name: string;
