@@ -14,7 +14,7 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withKovanProvider, withProvider, Wyre } from "./contracts/contracts";
-import { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
+import { AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
 import { atomConnected, atomConnectionStatus, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, atomicSwapStatus, authorizeAtom, connectToAtom, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
@@ -28,6 +28,14 @@ import { MemoryStorage } from "./storage/memoryStorage";
 import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, TokenCode, TokenDetails, TraderOrder, TransactionStatus } from "./types";
 
 export * from "./types";
+
+export enum AtomicConnectionStatus {
+    NotConnected = "not_connected",
+    NotAuthorized = "not_authorized",
+    AtomNotAuthorized = "atom_not_authorized",
+    ConnectedUnlocked = "connected_unlocked",
+    ConnectedLocked = "connected_locked",
+}
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
