@@ -12,6 +12,7 @@ import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
+import { usableAtomicBalance } from "./atomicMethods";
 import { usableBalance } from "./balancesMethods";
 
 // TODO: Read these from the contract
@@ -54,7 +55,12 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     const receiveVolume = parity === OrderParity.BUY ? orderInputs.volume : priorityVolume;
 
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
-    const balance = await usableBalance(sdk, orderInputs.spendToken);
+    let balance;
+    if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
+        balance = await usableBalance(sdk, orderInputs.spendToken);
+    } else {
+        balance = await usableAtomicBalance(sdk, orderInputs.spendToken);
+    }
     if (spendVolume.gt(balance)) {
         throw new Error(ErrInsufficientBalance);
     }
