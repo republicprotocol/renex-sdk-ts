@@ -13,7 +13,6 @@ export interface NetworkData {
             renExTokens: string;
             renExBalances: string;
             renExSettlement: string;
-            renExAtomicInfo: string;
             wyre: string;
         }
     ];

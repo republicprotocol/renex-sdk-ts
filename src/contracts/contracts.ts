@@ -11,7 +11,6 @@ import { Provider } from "web3/types";
 import { DarknodeRegistryArtifact } from "./bindings/darknode_registry";
 import { ERC20Artifact } from "./bindings/erc20";
 import { OrderbookArtifact } from "./bindings/orderbook";
-import { RenExAtomicInfoArtifact } from "./bindings/ren_ex_atomic_info";
 import { RenExBalancesArtifact } from "./bindings/ren_ex_balances";
 import { RenExSettlementArtifact } from "./bindings/ren_ex_settlement";
 import { RenExTokensArtifact } from "./bindings/ren_ex_tokens";
@@ -21,7 +20,6 @@ import { WyreArtifact } from "./bindings/wyre";
 import DarknodeRegistryJSON from "./ABIs/DarknodeRegistry.json";
 import ERC20JSON from "./ABIs/ERC20.json";
 import OrderbookJSON from "./ABIs/Orderbook.json";
-import RenExAtomicInfoJSON from "./ABIs/RenExAtomicInfo.json";
 import RenExBalancesJSON from "./ABIs/RenExBalances.json";
 import RenExSettlementJSON from "./ABIs/RenExSettlement.json";
 import RenExTokensJSON from "./ABIs/RenExTokens.json";
@@ -64,10 +62,6 @@ export const RenExBalances: RenExBalancesArtifact = contract({
 
 export const RenExTokens: RenExTokensArtifact = contract({
     abi: RenExTokensJSON,
-});
-
-export const RenExAtomicInfo: RenExAtomicInfoArtifact = contract({
-    abi: RenExAtomicInfoJSON,
 });
 
 export const Wyre: WyreArtifact = contract({
