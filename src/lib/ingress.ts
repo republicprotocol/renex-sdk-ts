@@ -85,13 +85,16 @@ export function randomNonce(randomBN: () => BN): BN {
     return nonce;
 }
 
-export async function authorizeSwapper(ingressURL: string, request: AtomAuthorizationRequest): Promise<EncodedData> {
+export async function authorizeSwapper(ingressURL: string, request: AtomAuthorizationRequest): Promise<boolean> {
     try {
         const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
-        if (resp.status !== 201) {
-            throw new Error("Unexpected status code: " + resp.status);
+        if (resp.status === 201) {
+            return true;
         }
-        return new EncodedData(resp.data.signature, Encodings.BASE64);
+        if (resp.status === 401) {
+            throw new Error("Could not authorize swapper. Reason: address is not KYC'd");
+        }
+        throw new Error(`Could not authorize swapper. Status code: ${resp.status}`);
     } catch (error) {
         return Promise.reject(error);
     }
