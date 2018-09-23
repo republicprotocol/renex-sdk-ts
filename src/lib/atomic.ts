@@ -116,12 +116,13 @@ export async function _connectToAtom(web3: Web3, ingressURL: string, address: st
     }
 
     // TODO: Use web3 from store
-    const msg = "0x" + new Buffer(JSON.stringify(response.whoAmI)).toString("hex");
-    const chaHash = web3.utils.keccak256(msg);
-    const swapperAddress = web3.eth.accounts.recover(chaHash, "0x" + response.signature, true as any);
+    // const msg = "0x" + new Buffer(JSON.stringify(response.whoAmI)).toString("hex");
+    // const chaHash = web3.utils.keccak256(msg);
+    // const swapperAddress = web3.eth.accounts.recover(chaHash, "0x" + response.signature, true as any);
+    const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
 
     // Check with Ingress if Atomic address is authorised
-    const atomAuthorized = await checkAtomAuthorization(ingressURL, address);
+    const atomAuthorized = await checkAtomAuthorization(ingressURL, address, expectedEthAddress);
     if (atomAuthorized) {
         return AtomicConnectionStatus.ConnectedUnlocked;
     }

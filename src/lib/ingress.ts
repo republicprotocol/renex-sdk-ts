@@ -105,9 +105,10 @@ function verifyOrder(order: Order): boolean {
 export async function checkAtomAuthorization(
     ingressURL: string,
     address: string,
+    expectedEthAddress: string,
 ): Promise<boolean> {
     return axios.get(`${ingressURL}/authorized/${address}`)
-        .then(resp => resp.status !== 404)
+        .then(resp => (resp.status === 200 && resp.data.atomAddress === expectedEthAddress))
         .catch(err => {
             console.error(err);
             return false;
