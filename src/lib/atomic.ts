@@ -105,7 +105,10 @@ export async function _connectToAtom(web3: Web3, ingressURL: string, address: st
         return AtomicConnectionStatus.NotConnected;
     }
 
-    if (response === undefined || response.whoAmI === undefined || response.whoAmI.authorizedAddresses === undefined) {
+    if (response === undefined ||
+        response.whoAmI === undefined ||
+        response.whoAmI.authorizedAddresses === undefined ||
+        response.whoAmI.authorizedAddresses === null) {
         return AtomicConnectionStatus.NotConnected;
     }
 
