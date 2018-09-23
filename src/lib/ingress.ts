@@ -108,7 +108,12 @@ export async function checkAtomAuthorization(
     expectedEthAddress: string,
 ): Promise<boolean> {
     return axios.get(`${ingressURL}/authorized/${address}`)
-        .then(resp => (resp.status === 200 && resp.data.atomAddress === expectedEthAddress))
+        .then(resp => {
+            if (resp.status !== 200) {
+                throw new Error("Unexpected status code: " + resp.status);
+            }
+            return resp.data.atomAddress === expectedEthAddress;
+        })
         .catch(err => {
             console.error(err);
             return false;
