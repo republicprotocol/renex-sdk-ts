@@ -171,7 +171,7 @@ export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
 
     // orderID and signature should be hex-encoded
     const data: OrdersParameters = {
-        orderID: orderID.toHex(),
+        orderID: orderID.toHex(""),
     };
 
     let response: OrdersResponse;
