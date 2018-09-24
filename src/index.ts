@@ -95,7 +95,7 @@ class RenExSDK {
             darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
             renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withProvider(this._kovanProvider, Wyre))(networkData.contracts[0].wyre),
+            wyre: new (withProvider(this.web3().currentProvider, Wyre))(networkData.contracts[0].wyre),
         };
     }
 
@@ -157,7 +157,7 @@ class RenExSDK {
             darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
             renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withProvider(this._kovanProvider, Wyre))(this._networkData.contracts[0].wyre),
+            wyre: new (withProvider(this.web3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 
