@@ -23,8 +23,6 @@ export enum OrderStatus {
     SLASHED = "SLASHED",
     EXPIRED = "EXPIRED",
 }
-export enum AtomicOrderStatus {
-}
 
 export enum OrderSettlement {
     RenEx = 1,
