@@ -7,18 +7,17 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { BalanceActionType, OrderStatus, TokenDetails, TransactionStatus } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
-    if (sdk._cachedTokenDetails.has(token)) {
-        return sdk._cachedTokenDetails.get(token);
+    if (!sdk._cachedTokenDetails.has(token)) {
+        const call = sdk._contracts.renExTokens.tokens(token);
+        sdk._cachedTokenDetails.set(token, call);
     }
 
-    const detailsFromContract = await sdk._contracts.renExTokens.tokens(token);
+    const detailsFromContract = await sdk._cachedTokenDetails.get(token);
     const details: TokenDetails = {
         address: detailsFromContract.addr,
         decimals: new BN(detailsFromContract.decimals).toNumber(),
         registered: detailsFromContract.registered,
     };
-
-    sdk._cachedTokenDetails.set(token, details);
 
     return details;
 };
@@ -30,7 +29,7 @@ export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise
         const details = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract;
         if (!sdk._contracts.erc20.has(token)) {
-            tokenContract = new (withProvider(sdk.web3(), ERC20))(details.address);
+            tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(details.address);
             sdk._contracts.erc20.set(token, tokenContract);
         } else {
             tokenContract = sdk._contracts.erc20.get(token);

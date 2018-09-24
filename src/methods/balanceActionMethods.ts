@@ -82,7 +82,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             // ERC20 token
             let tokenContract: ERC20Contract;
             if (!sdk._contracts.erc20.has(token)) {
-                tokenContract = new (withProvider(sdk.web3(), ERC20))(tokenDetails.address);
+                tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
                 sdk._contracts.erc20.set(token, tokenContract);
             } else {
                 tokenContract = sdk._contracts.erc20.get(token);

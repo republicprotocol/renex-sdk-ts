@@ -1,4 +1,6 @@
 import Web3 from "web3";
+import ProviderEngine from "web3-provider-engine";
+import FetchSubprovider from "web3-provider-engine/subproviders/fetch";
 
 import { BN } from "bn.js";
 import { Provider } from "web3/types";
@@ -57,9 +59,10 @@ class RenExSDK {
         erc20: Map<number, ERC20Contract>,
         wyre: WyreContract,
     };
-    public _cachedTokenDetails: Map<number, TokenDetails> = new Map();
+    public _cachedTokenDetails: Map<number, Promise<{ addr: string, decimals: IntInput, registered: boolean }>> = new Map();
 
     private _web3: Web3;
+    private _kovanProvider: Provider;
     private _address: string;
     private _config: Config;
 
@@ -80,14 +83,20 @@ class RenExSDK {
             this._storage = new MemoryStorage();
         }
 
+        // TODO: Remove once Wyre is set-up for Mainnet
+        const kovanEngine = new ProviderEngine();
+        kovanEngine.addProvider(new FetchSubprovider({ rpcUrl: "https://kovan.infura.io/8ZCgtqu4tkIIRHh9hFZj" }));
+        kovanEngine.start();
+        this._kovanProvider = kovanEngine;
+
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3(), RenExSettlement))(networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3(), RenExBalances))(networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3(), Orderbook))(networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3(), DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3(), RenExTokens))(networkData.contracts[0].renExTokens),
+            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withKovanProvider(Wyre))(networkData.contracts[0].wyre),
+            wyre: new (withProvider(this._kovanProvider, Wyre))(networkData.contracts[0].wyre),
         };
     }
 
@@ -144,13 +153,13 @@ class RenExSDK {
 
         // Update contract providers
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3(), RenExSettlement))(this._networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3(), RenExBalances))(this._networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3(), Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3(), DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3(), RenExTokens))(this._networkData.contracts[0].renExTokens),
+            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withKovanProvider(Wyre))(this._networkData.contracts[0].wyre),
+            wyre: new (withProvider(this._kovanProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 
