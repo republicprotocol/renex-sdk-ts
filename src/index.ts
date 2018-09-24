@@ -16,7 +16,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withKovanProvider, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomConnectionStatus, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, connectToAtom, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
+import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
@@ -109,9 +109,9 @@ class RenExSDK {
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
 
     // Atomic functions
-    public atomConnectionStatus = (): AtomicConnectionStatus => atomConnectionStatus(this);
     public atomConnected = (): boolean => atomConnected(this);
-    public connectToAtom = (): Promise<AtomicConnectionStatus> => connectToAtom(this);
+    public currentAtomConnectionStatus = (): AtomicConnectionStatus => currentAtomConnectionStatus(this);
+    public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
     public authorizeAtom = () => authorizeAtom(this);
     public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
     public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
