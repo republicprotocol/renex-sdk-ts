@@ -8,19 +8,19 @@ import { OrderSettlement, OrderStatus } from "../types";
 
 /* Atomic Connection */
 
-export const atomConnectionStatus = (sdk: RenExSDK): AtomicConnectionStatus => {
+export const currentAtomConnectionStatus = (sdk: RenExSDK): AtomicConnectionStatus => {
     return sdk._atomConnectionStatus;
 };
 
 export const atomConnected = (sdk: RenExSDK): boolean => {
-    const status = sdk.atomConnectionStatus();
+    const status = sdk.currentAtomConnectionStatus();
     return (
         status === AtomicConnectionStatus.ConnectedLocked ||
         status === AtomicConnectionStatus.ConnectedUnlocked
     );
 };
 
-export const connectToAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
+export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     sdk._atomConnectionStatus = await _connectToAtom(sdk.web3(), sdk._networkData.ingress, sdk.address());
     return sdk._atomConnectionStatus;
 };
