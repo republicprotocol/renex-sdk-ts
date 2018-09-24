@@ -130,6 +130,6 @@ export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Pro
     });
 };
 
-export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<any> => {
-    return usableAtomicBalances(sdk, [token]);
+export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+    return usableAtomicBalances(sdk, [token]).then(balances => balances[0]);
 };
