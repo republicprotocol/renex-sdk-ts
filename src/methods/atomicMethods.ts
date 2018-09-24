@@ -2,7 +2,7 @@ import { BN } from "bn.js";
 
 import RenExSDK, { TokenCode, TraderOrder } from "../index";
 
-import { _authorizeAtom, _connectToAtom, AtomicConnectionStatus, AtomicSwapStatus, getAtomicBalances, getOrderStatus } from "../lib/atomic";
+import { _authorizeAtom, _connectToAtom, AtomicConnectionStatus, getAtomicBalances, getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { Token } from "../lib/tokens";
 import { OrderSettlement, OrderStatus } from "../types";

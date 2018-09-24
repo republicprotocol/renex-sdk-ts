@@ -25,42 +25,6 @@ export enum AtomicConnectionStatus {
     ConnectedLocked = "connected_locked",
 }
 
-export enum AtomicSwapStatus {
-    Unknown = "UNKNOWN",
-    Matched = "MATCHED",
-    InfoSubmitted = "INFO_SUBMITTED",
-    InitiateDetailsAcquired = "INITIATE_DETAILS_ACQUIRED",
-    Initiated = "INITIATED",
-    WaitingForCounterInitiation = "WAITING_FOR_COUNTER_INITIATION",
-    RedeemDetailsAcquired = "REDEEM_DETAILS_ACQUIRED",
-    Redeemed = "REDEEMED",
-    WaitingForCounterRedemption = "WAITING_FOR_COUNTER_REDEMPTION",
-    Refunded = "REFUNDED",
-    Complained = "COMPLAINED",
-
-    ReceivedSwapDetails = "RECEIVED_SWAP_DETAILS",
-    SentSwapDetails = "SENT_SWAP_DETAILS",
-    Audited = "AUDITED",
-}
-
-export const AtomicSwapStatusDisplay = {
-    [AtomicSwapStatus.Unknown]: "",
-    [AtomicSwapStatus.Matched]: "Pending...",
-    [AtomicSwapStatus.InfoSubmitted]: "Information submitted",
-    [AtomicSwapStatus.InitiateDetailsAcquired]: "Initiate-details acquired",
-    [AtomicSwapStatus.Initiated]: "Initiated",
-    [AtomicSwapStatus.WaitingForCounterInitiation]: "Waiting for counter-initiation",
-    [AtomicSwapStatus.RedeemDetailsAcquired]: "Redeem-details acquired",
-    [AtomicSwapStatus.Redeemed]: "Redeemed",
-    [AtomicSwapStatus.WaitingForCounterRedemption]: "Waiting for counter-redemption",
-    [AtomicSwapStatus.Refunded]: "Refunded",
-    [AtomicSwapStatus.Complained]: "Complained",
-
-    [AtomicSwapStatus.ReceivedSwapDetails]: "Received swap-details",
-    [AtomicSwapStatus.SentSwapDetails]: "Sent swap-details",
-    [AtomicSwapStatus.Audited]: "Audited",
-};
-
 interface StatusResponse {
     order_id: string;
     status: OrderStatus;
