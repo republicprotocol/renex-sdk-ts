@@ -15,7 +15,7 @@ import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement"
 import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 
-import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withKovanProvider, withProvider, Wyre } from "./contracts/contracts";
+import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
