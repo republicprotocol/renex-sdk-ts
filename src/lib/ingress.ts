@@ -2,7 +2,7 @@ import axios from "axios";
 
 // tsc complains about importing NodeRSA normally
 import * as NodeRSAType from "node-rsa";
-const NodeRSA = require("node-rsa") as { new(...args: any[]): NodeRSAType };
+const NodeRSA = require("node-rsa") as { new(): NodeRSAType };
 
 import Web3 from "web3";
 
@@ -15,7 +15,6 @@ import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registr
 import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
-import { ErrCanceledByUser, ErrInvalidOrderDetails, ErrUnsignedTransaction } from "./errors";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing } from "./tokens";
@@ -98,11 +97,6 @@ export async function authorizeSwapper(ingressURL: string, request: AtomAuthoriz
     } catch (error) {
         return Promise.reject(error);
     }
-}
-
-function verifyOrder(order: Order): boolean {
-    // FIXME: check order price and volume correctness
-    return true;
 }
 
 export async function checkAtomAuthorization(
@@ -353,7 +347,7 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
 }
 
 /*
- * Retreive all the darknodes in the darknode registry contract.
+ * Retrieve all the darknodes in the darknode registry contract.
  * The getDarknodes() function will always return an array of {count} with empty
  * values being the NULL address. These addresses must be filtered out.
  * When the {start} value is not the NULL address, it is always returned as the

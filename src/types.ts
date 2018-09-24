@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
 
-export { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
+export { AtomicConnectionStatus } from "./lib/atomic";
 export { NetworkData } from "./lib/network";
 
 // These are temporary types to ensure that all user inputs are converted
@@ -10,6 +10,7 @@ export { NetworkData } from "./lib/network";
 export type IntInput = number | string | BN;
 export type FloatInput = number | string | BigNumber;
 
+// tslint:disable-next-line:no-any
 export interface Transaction { receipt: any; tx: string; logs: any[]; }
 
 export type OrderID = string;

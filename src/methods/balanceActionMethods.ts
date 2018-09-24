@@ -21,6 +21,7 @@ export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promi
     if (receipt !== null && receipt.blockHash !== "") {
 
         // Status type is string, but actually returns back as a boolean
+        // tslint:disable-next-line:no-any
         const receiptStatus: any = receipt.status;
         if (receiptStatus === "0" || receiptStatus === 0 || receiptStatus === false) {
             return TransactionStatus.Failed;
@@ -80,12 +81,10 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             return balanceAction;
         } else {
             // ERC20 token
-            let tokenContract: ERC20Contract;
-            if (!sdk._contracts.erc20.has(token)) {
+            let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
+            if (tokenContract === undefined) {
                 tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
                 sdk._contracts.erc20.set(token, tokenContract);
-            } else {
-                tokenContract = sdk._contracts.erc20.get(token);
             }
 
             // If allowance is less than amount, user must first approve

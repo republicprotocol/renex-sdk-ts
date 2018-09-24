@@ -16,7 +16,6 @@ import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
-import { AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
 import { atomConnected, atomConnectionStatus, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, connectToAtom, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
@@ -110,7 +109,7 @@ class RenExSDK {
     public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature?: boolean): Promise<BalanceAction> =>
+    public withdraw = (token: number, value: IntInput, withoutIngressSignature = false): Promise<BalanceAction> =>
         withdraw(this, token, value, withoutIngressSignature)
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);

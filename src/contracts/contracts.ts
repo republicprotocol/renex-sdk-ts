@@ -1,9 +1,4 @@
 const contract = require("./truffle-contract/index.js");
-// import * as contract from "truffle-contract";
-
-import Web3 from "web3";
-import ProviderEngine from "web3-provider-engine";
-import FetchSubprovider from "web3-provider-engine/subproviders/fetch";
 
 import { Provider } from "web3/types";
 

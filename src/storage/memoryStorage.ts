@@ -16,7 +16,11 @@ export class MemoryStorage implements Storage {
     }
 
     public async getOrder(orderID: OrderID): Promise<TraderOrder> {
-        return this.orders.get(orderID);
+        const order = this.orders.get(orderID);
+        if (order === undefined) {
+            throw new Error("order not found");
+        }
+        return order;
     }
     public async getOrders(): Promise<TraderOrder[]> {
         return Array.from(this.orders.values());
@@ -27,7 +31,11 @@ export class MemoryStorage implements Storage {
         this.balanceActions.set(balanceAction.txHash, balanceAction);
     }
     public async getBalanceAction(txHash: string): Promise<BalanceAction> {
-        return this.balanceActions.get(txHash);
+        const action = this.balanceActions.get(txHash);
+        if (action === undefined) {
+            throw new Error("balance action not found");
+        }
+        return action;
     }
     public async getBalanceActions(): Promise<BalanceAction[]> {
         return Array.from(this.balanceActions.values());

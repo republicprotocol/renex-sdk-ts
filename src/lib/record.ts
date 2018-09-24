@@ -1,3 +1,5 @@
+// tslint:disable:no-any
+
 import * as Immutable from "immutable";
 
 /**

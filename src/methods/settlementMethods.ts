@@ -19,22 +19,21 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
             const settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID.toHex())).toNumber();
             orderStatus = settlementStatusToOrderStatus(settlementStatus);
             if (orderStatus === OrderStatus.SETTLED) {
-                orderStatus = await sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
-                    if (storedOrder === null) {
-                        // This order is potentially an atomic swap where settled isn't actually settled.
-                        // So for now just return confirmed.
-                        return OrderStatus.CONFIRMED;
-                    } else if (storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+                const storedOrder = await sdk._storage.getOrder(orderID64);
+                if (storedOrder === null) {
+                    // This order is potentially an atomic swap where settled isn't actually settled.
+                    // So for now just return confirmed.
+                    orderStatus = OrderStatus.CONFIRMED;
+                } else if (storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+                    orderStatus = storedOrder.status;
+                    if (sdk.atomConnected()) {
                         try {
-                            if (sdk.atomConnected()) {
-                                return await getOrderStatus(orderID);
-                            }
+                            orderStatus = await getOrderStatus(orderID);
                         } catch (error) {
                             console.error(error);
                         }
-                        return storedOrder.status;
                     }
-                });
+                }
             }
             break;
         default:
