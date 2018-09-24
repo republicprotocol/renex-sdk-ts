@@ -2,21 +2,40 @@ import { BN } from "bn.js";
 
 import RenExSDK from "../index";
 
+import { getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
-import { MatchDetails, OrderID, OrderStatus, TraderOrder } from "../types";
+import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 
 export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
-    // Convert orderID from base64 to hex
-    const orderID = new EncodedData(orderID64, Encodings.BASE64).toHex();
+    // Convert orderID from base64
+    const orderID = new EncodedData(orderID64, Encodings.BASE64);
 
     let orderStatus: OrderStatus;
 
-    const orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID)).toNumber());
+    const orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
     switch (orderbookStatus) {
         case OrderStatus.CONFIRMED:
-            const settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID)).toNumber();
+            const settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID.toHex())).toNumber();
             orderStatus = settlementStatusToOrderStatus(settlementStatus);
+            if (orderStatus === OrderStatus.SETTLED) {
+                orderStatus = await sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
+                    if (storedOrder === null) {
+                        // This order is potentially an atomic swap where settled isn't actually settled.
+                        // So for now just return confirmed.
+                        return OrderStatus.CONFIRMED;
+                    } else if (storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+                        try {
+                            if (sdk.atomConnected()) {
+                                return await getOrderStatus(orderID);
+                            }
+                        } catch (error) {
+                            console.error(error);
+                        }
+                        return storedOrder.status;
+                    }
+                });
+            }
             break;
         default:
             orderStatus = orderbookStatus;
