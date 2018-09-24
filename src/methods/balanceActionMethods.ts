@@ -38,8 +38,8 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
     const balanceActionStatus: TransactionStatus = await getTransactionStatus(sdk, txHash);
 
     // Update local storage (without awaiting)
-    sdk._storage.getBalanceAction(txHash).then(async (balanceAction: BalanceAction) => {
-        if (balanceAction !== null) {
+    sdk._storage.getBalanceAction(txHash).then(async (balanceAction: BalanceAction | undefined) => {
+        if (balanceAction) {
             balanceAction.status = balanceActionStatus;
             await sdk._storage.setBalanceAction(balanceAction);
         }

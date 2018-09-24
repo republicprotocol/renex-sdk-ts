@@ -300,7 +300,7 @@ function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string
 async function getDarknodePublicKey(
     darknodeRegistryContract: DarknodeRegistryContract, darknode: string
 ): Promise<NodeRSAType | null> {
-    const darknodeKeyHex = await darknodeRegistryContract.getDarknodePublicKey(darknode);
+    const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
 
     if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
         console.error(`Unable to retrieve public key for ${darknode}`);

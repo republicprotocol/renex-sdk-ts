@@ -20,7 +20,7 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
             orderStatus = settlementStatusToOrderStatus(settlementStatus);
             if (orderStatus === OrderStatus.SETTLED) {
                 const storedOrder = await sdk._storage.getOrder(orderID64);
-                if (storedOrder === null) {
+                if (storedOrder === undefined) {
                     // This order is potentially an atomic swap where settled isn't actually settled.
                     // So for now just return confirmed.
                     orderStatus = OrderStatus.CONFIRMED;
@@ -41,8 +41,8 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     }
 
     // Update local storage (without awaiting)
-    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
-        if (storedOrder !== null) {
+    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder | undefined) => {
+        if (storedOrder) {
             storedOrder.status = orderStatus;
             await sdk._storage.setOrder(storedOrder);
         }
@@ -86,8 +86,8 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
         };
 
     // Update local storage (without awaiting)
-    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
-        if (storedOrder !== null) {
+    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder | undefined) => {
+        if (storedOrder) {
             storedOrder.matchDetails = orderMatchDetails;
             await sdk._storage.setOrder(storedOrder);
         }

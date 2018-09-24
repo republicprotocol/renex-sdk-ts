@@ -37,7 +37,7 @@ const parse = (param: string | Buffer | typeof DefaultEncodedData, encoding?: En
             };
         } else if (param instanceof Buffer && encoding === Encodings.BUFFER) {
             param = {
-                value: param as Buffer,
+                value: param,
                 encoding,
             };
         }

@@ -36,8 +36,11 @@ class LocalStorage implements Storage {
     public async setOrder(order: TraderOrder): Promise<void> {
         await this.orders.setItem(order.id, serializeTraderOrder(order));
     }
-    public async getOrder(orderID: OrderID): Promise<TraderOrder> {
-        const serialized: string = await this.orders.getItem(orderID) as string;
+    public async getOrder(orderID: OrderID): Promise<TraderOrder | undefined> {
+        const serialized = await this.orders.getItem<string | undefined>(orderID);
+        if (!serialized) {
+            return undefined;
+        }
         return deserializeTraderOrder(serialized);
     }
     public async getOrders(): Promise<TraderOrder[]> {
@@ -56,8 +59,11 @@ class LocalStorage implements Storage {
     public async setBalanceAction(balanceAction: BalanceAction): Promise<void> {
         await this.balanceActions.setItem(balanceAction.txHash, serializeBalanceAction(balanceAction));
     }
-    public async getBalanceAction(txHash: string): Promise<BalanceAction> {
-        const serialized: string = await this.balanceActions.getItem(txHash) as string;
+    public async getBalanceAction(txHash: string): Promise<BalanceAction | undefined> {
+        const serialized = await this.balanceActions.getItem<string | undefined>(txHash);
+        if (!serialized) {
+            return undefined;
+        }
         return deserializeBalanceAction(serialized);
     }
     public async getBalanceActions(): Promise<BalanceAction[]> {

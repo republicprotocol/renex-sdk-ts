@@ -153,15 +153,16 @@ export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise
 
     let orders = await ingress.getOrders(sdk._contracts.orderbook, filter.start, filter.limit);
 
-    if (filter.address) {
-        orders = orders.filter(order => filter.status === order[1]).toList();
-    }
-
     if (filter.status) {
-        orders = orders.filter(order => order[2].toLowerCase() === filter.status.toLowerCase()).toList();
+        orders = orders.filter((order: [string, OrderStatus, string]) => order[1] === filter.status).toList();
     }
 
-    return orders.map(order => ({
+    const filterAddress = filter.address;
+    if (filterAddress) {
+        orders = orders.filter((order: [string, OrderStatus, string]) => order[2].toLowerCase() === filterAddress.toLowerCase()).toList();
+    }
+
+    return orders.map((order: [string, OrderStatus, string]) => ({
         id: order[0],
         status: order[1],
         trader: order[2],
