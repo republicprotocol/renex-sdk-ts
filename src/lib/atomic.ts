@@ -2,6 +2,7 @@ import axios from "axios";
 import Web3 from "web3";
 
 // import { second, sleep } from "@Library/conversion";
+import { OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { AtomAuthorizationRequest, authorizeSwapper, checkAtomAuthorization } from "./ingress";
@@ -62,7 +63,7 @@ export const AtomicSwapStatusDisplay = {
 
 interface StatusResponse {
     order_id: string;
-    status: AtomicSwapStatus;
+    status: OrderStatus;
 }
 
 interface WhoamiResponse {
@@ -193,7 +194,7 @@ export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
     // TODO: Check response.signature against Atom's address
 }
 
-export async function getOrderStatus(orderID: EncodedData): Promise<AtomicSwapStatus> {
+export async function getOrderStatus(orderID: EncodedData): Promise<OrderStatus> {
 
     let response: StatusResponse;
     try {

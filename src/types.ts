@@ -1,7 +1,6 @@
 import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
-import { AtomicSwapStatus } from "./lib/atomic";
 
 export { AtomicConnectionStatus, AtomicSwapStatus } from "./lib/atomic";
 export { NetworkData } from "./lib/network";
@@ -86,7 +85,6 @@ export interface Order {
     readonly id: OrderID;
     readonly trader: string;
     status: OrderStatus;
-    atomicSwapStatus?: AtomicSwapStatus;
     matchDetails?: MatchDetails;
 }
 

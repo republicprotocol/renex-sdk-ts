@@ -35,27 +35,6 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
     });
 };
 
-/* Atomic Order Status */
-
-export const atomicSwapStatus = async (sdk: RenExSDK, orderID64: string): Promise<AtomicSwapStatus> => {
-    const orderID = new EncodedData(orderID64, Encodings.BASE64);
-
-    const connectionStatus = sdk.atomConnectionStatus();
-    if (!sdk.atomConnected()) { throw new Error("Not connected to Atomic"); }
-
-    const swapStatus: AtomicSwapStatus = await getOrderStatus(orderID);
-
-    // Update local storage (without awaiting)
-    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder) => {
-        if (storedOrder !== null) {
-            storedOrder.atomicSwapStatus = swapStatus;
-            await sdk._storage.setOrder(storedOrder);
-        }
-    }).catch(console.error);
-
-    return swapStatus;
-};
-
 /* Atomic balances */
 
 export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];

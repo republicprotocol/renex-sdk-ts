@@ -17,7 +17,7 @@ import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExToken
 import { AtomicSwapStatus } from "./lib/atomic";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomConnectionStatus, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, atomicSwapStatus, authorizeAtom, connectToAtom, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
+import { atomConnected, atomConnectionStatus, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, connectToAtom, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
@@ -112,7 +112,6 @@ class RenExSDK {
     // Atomic functions
     public atomConnectionStatus = (): AtomicConnectionStatus => atomConnectionStatus(this);
     public atomConnected = (): boolean => atomConnected(this);
-    public atomicSwapStatus = (orderID: OrderID): Promise<AtomicSwapStatus> => atomicSwapStatus(this, orderID);
     public connectToAtom = (): Promise<AtomicConnectionStatus> => connectToAtom(this);
     public authorizeAtom = () => authorizeAtom(this);
     public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
