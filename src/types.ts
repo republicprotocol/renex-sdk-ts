@@ -14,14 +14,14 @@ export interface Transaction { receipt: any; tx: string; logs: any[]; }
 
 export type OrderID = string;
 export enum OrderStatus {
-    NOT_SUBMITTED = "not submitted",
-    FAILED_TO_OPEN = "failed to open",
-    OPEN = "open",
-    CONFIRMED = "confirmed",
-    CANCELED = "canceled",
-    SETTLED = "settled",
-    SLASHED = "slashed",
-    EXPIRED = "expired",
+    NOT_SUBMITTED = "NOT_SUBMITTED",
+    FAILED_TO_OPEN = "FAILED_TO_OPEN",
+    OPEN = "OPEN",
+    CONFIRMED = "CONFIRMED",
+    CANCELED = "CANCELED",
+    SETTLED = "SETTLED",
+    SLASHED = "SLASHED",
+    EXPIRED = "EXPIRED",
 }
 export enum AtomicOrderStatus {
 }
