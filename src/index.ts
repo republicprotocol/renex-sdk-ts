@@ -82,7 +82,6 @@ class RenExSDK {
             this._storage = new MemoryStorage();
         }
 
-        // TODO: Remove once Wyre is set-up for Mainnet
         const kovanEngine = new ProviderEngine();
         kovanEngine.addProvider(new FetchSubprovider({ rpcUrl: "https://kovan.infura.io/8ZCgtqu4tkIIRHh9hFZj" }));
         kovanEngine.start();
