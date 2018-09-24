@@ -27,16 +27,8 @@ import WyreJSON from "./ABIs/Wyre.json";
 
 export const ETH_CODE = 1;
 
-export const withKovanProvider = <T extends { setProvider(provider: Provider): void; }>(artifact: T): T => {
-    const engine = new ProviderEngine();
-    engine.addProvider(new FetchSubprovider({ rpcUrl: "https://kovan.infura.io/8ZCgtqu4tkIIRHh9hFZj" }));
-    engine.start();
-    artifact.setProvider(engine);
-    return artifact;
-};
-
-export const withProvider = <T extends { setProvider(provider: Provider): void; }>(web3: Web3, artifact: T): T => {
-    artifact.setProvider(web3.currentProvider);
+export const withProvider = <T extends { setProvider(provider: Provider): void; }>(provider: Provider, artifact: T): T => {
+    artifact.setProvider(provider);
     return artifact;
 };
 

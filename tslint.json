@@ -35,7 +35,7 @@
     "ter-indent": false,
     "space-before-function-paren": false,
     "trailing-comma": true,
-    "strict-type-predicates": false,
+    "strict-type-predicates": true,
     "no-floating-promises": true
   }
 }
