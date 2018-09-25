@@ -13,10 +13,23 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
 
     let orderStatus: OrderStatus;
 
-    const orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
+    let orderbookStatus;
+    try {
+        orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
+    } catch (err) {
+        console.error(`Unable to call orderState in status`);
+        throw err;
+    }
     switch (orderbookStatus) {
         case OrderStatus.CONFIRMED:
-            const settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID.toHex())).toNumber();
+
+            let settlementStatus;
+            try {
+                settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID.toHex())).toNumber();
+            } catch (error) {
+                console.error(error);
+                throw error;
+            }
             orderStatus = settlementStatusToOrderStatus(settlementStatus);
             if (orderStatus === OrderStatus.SETTLED) {
                 const storedOrder = await sdk._storage.getOrder(orderID64);

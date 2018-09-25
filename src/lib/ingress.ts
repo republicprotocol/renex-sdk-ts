@@ -147,7 +147,13 @@ export async function requestWithdrawalSignature(ingressURL: string, address: st
 }
 
 async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
-    const orders = await orderbook.getOrders(offset, limit);
+    let orders;
+    try {
+        orders = await orderbook.getOrders(offset, limit);
+    } catch (error) {
+        console.log(`Failed to get call getOrders in ordersBatch`);
+        throw error;
+    }
     const orderIDs = orders[0];
     const tradersAddresses = orders[1];
     const orderStatuses = orders[2];
@@ -161,7 +167,13 @@ async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: 
 }
 
 export async function getOrders(orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
-    const orderCount = new BN(await orderbook.ordersCount()).toNumber();
+    let orderCount;
+    try {
+        orderCount = new BN(await orderbook.ordersCount()).toNumber();
+    } catch (error) {
+        console.error(`Failed to call orderCount in getOrders`);
+        throw error;
+    }
 
     // If limit is 0 then we treat is as no limit
     const limit = limitIn || orderCount - (startIn || 0);
@@ -373,6 +385,7 @@ async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContrac
 async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<List<Pool>> {
     const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
+    console.log(`Minimum pod size: ${minimumPodSize} from ${darknodeRegistryContract.address}`);
     const epoch = await darknodeRegistryContract.currentEpoch();
 
     if (!darknodes.length) {
