@@ -4,7 +4,7 @@ import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { BalanceActionType, OrderStatus, TokenDetails, TransactionStatus, OrderSettlement } from "../types";
+import { BalanceActionType, OrderSettlement, OrderStatus, TokenDetails, TransactionStatus } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
