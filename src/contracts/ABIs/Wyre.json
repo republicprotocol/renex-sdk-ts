@@ -115,7 +115,7 @@
                 "type": "address"
             },
             {
-                "name": "_tokenld",
+                "name": "_tokenId",
                 "type": "uint256"
             }
         ],
@@ -185,7 +185,7 @@
             }
         ],
         "payable": false,
-        "stateMutability": "View",
+        "stateMutability": "view",
         "type": "function"
     },
     {
