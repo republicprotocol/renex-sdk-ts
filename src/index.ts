@@ -59,14 +59,7 @@ class RenExSDK {
         wyre: WyreContract,
     };
 
-    public _cachedTokenDetails: Map<number, Promise<{ addr: string, decimals: IntInput, registered: boolean }>> = new Map()
-        .set(0, { addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true })
-        .set(1, { addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true })
-        .set(256, { addr: "0x4f3AfEC4E5a3F2A6a1A411DEF7D7dFe50eE057bF", decimals: new BN(9), registered: true })
-        .set(257, { addr: "0x8dd5fbCe2F6a956C3022bA3663759011Dd51e73E", decimals: new BN(18), registered: true })
-        .set(65536, { addr: "0x408e41876cCCDC0F92210600ef50372656052a38", decimals: new BN(18), registered: true })
-        .set(65537, { addr: "0xE41d2489571d322189246DaFA5ebDe1F4699F498", decimals: new BN(18), registered: true })
-        .set(65538, { addr: "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07", decimals: new BN(18), registered: true });
+    public _cachedTokenDetails: Map<number, Promise<{ addr: string, decimals: IntInput, registered: boolean }>> = new Map();
 
     private _web3: Web3;
     private _address: string;
@@ -82,6 +75,15 @@ class RenExSDK {
         this._networkData = networkData;
         this._address = address;
         this._config = generateConfig(options);
+
+        this._cachedTokenDetails = this._cachedTokenDetails
+            .set(0, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
+            .set(1, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
+            .set(256, Promise.resolve({ addr: this._networkData.tokens.DGX, decimals: new BN(9), registered: true }))
+            .set(257, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
+            .set(65536, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
+            .set(65537, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
+            .set(65538, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
 
         if (address) {
             this._storage = new LocalStorage(address);
