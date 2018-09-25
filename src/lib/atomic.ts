@@ -1,4 +1,5 @@
 import axios from "axios";
+import crypto from "crypto";
 import Web3 from "web3";
 
 // import { second, sleep } from "@Library/conversion";
@@ -59,26 +60,33 @@ interface BalancesResponse {
     bitcoin: BalanceObject;
 }
 
-export async function _connectToAtom(web3: Web3, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
 
-    const challenge = "cha";
-
-    let response: WhoamiResponse;
-    try {
-        response = (await axios.get(`${API}/whoami/${challenge}`)).data;
-    } catch (error) {
-        return AtomicConnectionStatus.NotConnected;
-    }
-
+export async function challengeSwapper(): Promise<WhoamiResponse> {
+    const challenge = crypto.randomBytes(20).toString("hex");
+    const response: WhoamiResponse = await axios.get(`${API}/whoami/${challenge}`).then(resp => resp.data);
     if (response === undefined ||
         response.whoAmI === undefined ||
         response.whoAmI.authorizedAddresses === undefined ||
         response.whoAmI.authorizedAddresses === null) {
+        throw new Error("Failed the swapper whoami challenge.");
+    }
+    return response;
+}
+export async function _connectToAtom(web3: Web3, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
+
+    let response: WhoamiResponse;
+    try {
+        response = await challengeSwapper();
+    } catch (error) {
         return AtomicConnectionStatus.NotConnected;
     }
 
     const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => addr.toLowerCase());
     if (authorizedAddresses.indexOf(address.toLowerCase()) === -1) {
+        return new EncodedData(addr, Encodings.HEX).toHex().toLowerCase();
+    });
+    const comparisonAddress = new EncodedData(address, Encodings.HEX).toHex().toLowerCase();
+    if (authorizedAddresses.indexOf(comparisonAddress) === -1) {
         // TODO: Inform user address is not authorized
         return AtomicConnectionStatus.NotAuthorized;
     }
