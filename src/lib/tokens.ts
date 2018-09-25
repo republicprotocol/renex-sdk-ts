@@ -1,15 +1,5 @@
 import { BN } from "bn.js";
 
-export enum Token {
-    BTC = 0,
-    ETH = 1,
-    DGX = 256,
-    ABC = 257,
-    REN = 65536,
-    PQR = 65537,
-    XYZ = 65538,
-}
-
 /**
  * Combine two 32-bit token identifiers into a single 64-bit number.
  *
