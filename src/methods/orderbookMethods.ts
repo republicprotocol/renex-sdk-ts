@@ -1,4 +1,4 @@
-import BigNumber from "bignumber.js";
+import { BigNumber } from "bignumber.js";
 
 import { BN } from "bn.js";
 
@@ -10,6 +10,7 @@ import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
+import { Token } from "../lib/market";
 import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
 import { usableAtomicBalance } from "./atomicMethods";
@@ -37,6 +38,14 @@ const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeco
     };
 };
 
+export const orderFeeNumerator = async (sdk: RenExSDK): Promise<BN> => {
+    return Promise.resolve(new BN(2));
+};
+
+export const orderFeeDenominator = async (sdk: RenExSDK): Promise<BN> => {
+    return Promise.resolve(new BN(1000));
+};
+
 export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Promise<TraderOrder> => {
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
@@ -50,9 +59,11 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     const priorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? receiveToken.decimals : spendToken.decimals;
     const convertedVolume = adjustDecimals(new BigNumber(orderInputs.volume.toString()), nonPriorityDecimals, priorityDecimals);
     const priorityVolume = new BN(new BigNumber(convertedVolume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
+    const nonPriorityToken = orderInputs.receiveToken < orderInputs.spendToken ? orderInputs.spendToken : orderInputs.receiveToken;
 
     const spendVolume = parity === OrderParity.BUY ? priorityVolume : orderInputs.volume;
     const receiveVolume = parity === OrderParity.BUY ? orderInputs.volume : priorityVolume;
+    const nonPriorityVolume = orderInputs.receiveToken < orderInputs.spendToken ? spendVolume : receiveVolume;
 
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
     let balance;
@@ -75,6 +86,16 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     }
     if (orderInputs.volume.lt(orderInputs.minimumVolume)) {
         throw new Error("Volume must be greater or equal to minimum volume");
+    }
+    const feeNumerator = await orderFeeNumerator(sdk);
+    const feeDenominator = await orderFeeDenominator(sdk);
+    const feeToken = orderInputs.orderSettlement === OrderSettlement.RenExAtomic && nonPriorityToken === Token.ETH ? Token.ETH : orderInputs.receiveToken;
+    const feeAmount = (nonPriorityToken === Token.ETH || parity === OrderParity.BUY ? nonPriorityVolume : priorityVolume).div(feeDenominator).mul(feeNumerator);
+    if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+        const usableFeeBalance = await usableBalance(sdk, feeToken);
+        if (feeAmount.gt(usableFeeBalance)) {
+            throw new Error("Insufficient balance for fees");
+        }
     }
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
@@ -134,6 +155,8 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
             receiveVolume,
             date: unixSeconds,
             parity,
+            feeAmount,
+            feeToken,
         },
     };
 
