@@ -12,7 +12,7 @@ import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing } from "../lib/tokens";
-import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder, Transaction, SimpleConsole, NullConsole } from "../types";
+import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder, Transaction } from "../types";
 import { usableAtomicBalance } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { usableBalance } from "./balancesMethods";
@@ -61,9 +61,19 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
     let balance;
     simpleConsole.log("Verifying trader balance...");
     if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
-        balance = await usableBalance(sdk, orderInputs.spendToken);
+        try {
+            balance = await usableBalance(sdk, orderInputs.spendToken);
+        } catch (err) {
+            simpleConsole.error(err.message || err);
+            throw err;
+        }
     } else {
-        balance = await usableAtomicBalance(sdk, orderInputs.spendToken);
+        try {
+            balance = await usableAtomicBalance(sdk, orderInputs.spendToken);
+        } catch (err) {
+            simpleConsole.error(err.message || err);
+            throw err;
+        }
     }
     if (spendVolume.gt(balance)) {
         simpleConsole.error(ErrInsufficientBalance);
@@ -117,17 +127,37 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
 
     if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
         simpleConsole.log("Submitting order to Atomic Swapper...");
-        await submitOrderToAtom(orderID);
+        try {
+            await submitOrderToAtom(orderID);
+        } catch (err) {
+            simpleConsole.error(err.message || err);
+            throw err;
+        }
     }
 
     // Create order fragment mapping
     simpleConsole.log("Building order mapping...");
+
+    let orderFragmentMappings;
+    try {
+        orderFragmentMappings = await ingress.buildOrderMapping(sdk.web3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole);
+    } catch (err) {
+        simpleConsole.error(err.message || err);
+        throw err;
+    }
+
     const request = new ingress.OpenOrderRequest({
         address: sdk.address().slice(2),
-        orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole)]
+        orderFragmentMappings: [orderFragmentMappings]
     });
     simpleConsole.log("Submitting order fragments...");
-    const signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
+    let signature;
+    try {
+        signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
+    } catch (err) {
+        simpleConsole.error(err.message || err);
+        throw err;
+    }
 
     // Submit order and the signature to the orderbook
     simpleConsole.log("Creating transaction...");
@@ -135,7 +165,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
     try {
         txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
     } catch (err) {
-        simpleConsole.error(err.message ? err.message : err);
+        simpleConsole.error(err.message || err);
         throw err;
     }
 

@@ -266,9 +266,8 @@ export async function buildOrderMapping(
                 // Retrieve darknode RSA public key from Darknode contract
                 let darknodeKey = null;
                 try {
-                    darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
+                    darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
                 } catch (error) {
-                    console.error(error);
                     Promise.reject(error);
                 }
 
@@ -317,12 +316,12 @@ function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string
 }
 
 async function getDarknodePublicKey(
-    darknodeRegistryContract: DarknodeRegistryContract, darknode: string
+    darknodeRegistryContract: DarknodeRegistryContract, darknode: string, simpleConsole: SimpleConsole,
 ): Promise<NodeRSAType | null> {
     const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
 
     if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
-        console.error(`Unable to retrieve public key for ${darknode}`);
+        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
         return null;
     }
 
