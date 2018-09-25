@@ -14,6 +14,7 @@ import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
 import { usableAtomicBalance } from "./atomicMethods";
 import { usableBalance } from "./balancesMethods";
+import { onTxHash } from "./balanceActionMethods";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -121,14 +122,14 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
 
     // Submit order and the signature to the orderbook
     console.log("Opening order...");
-    const tx = await sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() });
+    const txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
 
     const completeOrder = {
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.address(),
         id: orderID.toBase64(),
-        transactionHash: tx.tx,
+        transactionHash: txHash,
         computedOrderDetails: {
             spendVolume,
             receiveVolume,
