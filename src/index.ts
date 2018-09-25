@@ -1,6 +1,4 @@
 import Web3 from "web3";
-import ProviderEngine from "web3-provider-engine";
-import FetchSubprovider from "web3-provider-engine/subproviders/fetch";
 
 import { BN } from "bn.js";
 import { Provider } from "web3/types";
@@ -68,7 +66,6 @@ class RenExSDK {
         .set(65538, { addr: "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07", decimals: new BN(18), registered: true });
 
     private _web3: Web3;
-    private _kovanProvider: Provider;
     private _address: string;
     private _config: Config;
 
@@ -88,11 +85,6 @@ class RenExSDK {
         } else {
             this._storage = new MemoryStorage();
         }
-
-        const kovanEngine = new ProviderEngine();
-        kovanEngine.addProvider(new FetchSubprovider({ rpcUrl: "https://kovan.infura.io/8ZCgtqu4tkIIRHh9hFZj" }));
-        kovanEngine.start();
-        this._kovanProvider = kovanEngine;
 
         this._contracts = {
             renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(networkData.contracts[0].renExSettlement),
