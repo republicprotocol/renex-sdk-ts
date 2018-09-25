@@ -16,7 +16,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
+import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, lockedBalance, lockedBalances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
@@ -29,6 +29,7 @@ import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order,
 export * from "./types";
 
 export enum AtomicConnectionStatus {
+    InvalidSwapper = "invalid_swapper",
     NotConnected = "not_connected",
     NotAuthorized = "not_authorized",
     AtomNotAuthorized = "atom_not_authorized",
@@ -45,6 +46,7 @@ class RenExSDK {
 
     public _networkData: NetworkData;
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
+    public _atomConnectedAddress: string = "";
 
     public _storage: Storage;
     public _contracts: {
@@ -121,6 +123,7 @@ class RenExSDK {
     public atomConnected = (): boolean => atomConnected(this);
     public currentAtomConnectionStatus = (): AtomicConnectionStatus => currentAtomConnectionStatus(this);
     public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
+    public resetAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => resetAtomConnection(this);
     public authorizeAtom = () => authorizeAtom(this);
     public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
     public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);

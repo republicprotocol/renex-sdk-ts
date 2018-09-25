@@ -1,4 +1,5 @@
 import axios from "axios";
+import crypto from "crypto";
 import Web3 from "web3";
 
 // import { second, sleep } from "@Library/conversion";
@@ -18,6 +19,7 @@ export const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
 export const ErrorUnableToRetrieveBalances = "Unable to retrieve Atomic balances";
 
 export enum AtomicConnectionStatus {
+    InvalidSwapper = "invalid_swapper",
     NotConnected = "not_connected",
     NotAuthorized = "not_authorized",
     AtomNotAuthorized = "atom_not_authorized",
@@ -59,26 +61,41 @@ interface BalancesResponse {
     bitcoin: BalanceObject;
 }
 
-export async function _connectToAtom(web3: Web3, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
+export function checkSigner(web3: Web3, response: WhoamiResponse): string {
+    const message = JSON.stringify(response.whoAmI);
+    const whoamiString = "\x19Ethereum Signed Message:\n" + message.length + message;
+    const hash = web3.utils.keccak256(whoamiString);
+    const r = "0x" + response.signature.slice(0, 64);
+    const s = "0x" + response.signature.slice(64, 128);
+    const recovery = "0x" + response.signature.slice(128, 130);
+    const v = "0x" + (parseInt(recovery, 16) + 27).toString(16);
+    // tslint:disable-next-line:no-any
+    return (web3.eth.accounts as any).recover({
+        messageHash: hash,
+        r,
+        s,
+        v,
+    });
+}
 
-    const challenge = "cha";
-
-    let response: WhoamiResponse;
-    try {
-        response = (await axios.get(`${API}/whoami/${challenge}`)).data;
-    } catch (error) {
-        return AtomicConnectionStatus.NotConnected;
-    }
-
+export async function challengeSwapper(): Promise<WhoamiResponse> {
+    const challenge = crypto.randomBytes(20).toString("hex");
+    const response: WhoamiResponse = await axios.get(`${API}/whoami/${challenge}`).then(resp => resp.data);
     if (response === undefined ||
         response.whoAmI === undefined ||
         response.whoAmI.authorizedAddresses === undefined ||
         response.whoAmI.authorizedAddresses === null) {
-        return AtomicConnectionStatus.NotConnected;
+        throw new Error("Failed the swapper whoami challenge.");
     }
+    return response;
+}
 
-    const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => addr.toLowerCase());
-    if (authorizedAddresses.indexOf(address.toLowerCase()) === -1) {
+export async function _connectToAtom(response: WhoamiResponse, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
+    const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => {
+        return new EncodedData(addr, Encodings.HEX).toHex().toLowerCase();
+    });
+    const comparisonAddress = new EncodedData(address, Encodings.HEX).toHex().toLowerCase();
+    if (authorizedAddresses.indexOf(comparisonAddress) === -1) {
         // TODO: Inform user address is not authorized
         return AtomicConnectionStatus.NotAuthorized;
     }
