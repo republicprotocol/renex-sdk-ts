@@ -223,6 +223,7 @@ export function getOrderID(web3: Web3, order: Order): EncodedData {
 export async function buildOrderMapping(
     web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: Order
 ): Promise<Map<string, List<OrderFragment>>> {
+    console.log("Retrieving pods...");
     const pods = await getPods(web3, darknodeRegistryContract);
 
     const priceCoExp = priceToCoExp(order.price);
@@ -251,7 +252,13 @@ export async function buildOrderMapping(
                 console.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58()}...`);
 
                 // Retrieve darknode RSA public key from Darknode contract
-                const darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
+                let darknodeKey = null;
+                try {
+                    darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
+                } catch (error) {
+                    console.error(error);
+                    Promise.reject(error);
+                }
 
                 let orderFragment = new OrderFragment({
                     orderId: order.id,
