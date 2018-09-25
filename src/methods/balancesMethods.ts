@@ -66,12 +66,14 @@ export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
     })));
 };
 
-export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return usableBalances(sdk, [token]).then(b => b[0]);
+export const lockedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+    return sdk.lockedBalances([token]).then(b => b[0]);
 };
 
-export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    const usedOrderBalances = sdk.listTraderOrders().then(orders => {
+export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+
+    // Add balances from orders that are open or not settled
+    const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
         const usedFunds = new Map<number, BN>();
         orders.forEach(order => {
             if (order.status === OrderStatus.NOT_SUBMITTED ||
@@ -89,7 +91,8 @@ export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
         return usedFunds;
     });
 
-    const pendingBalances = sdk.listBalanceActions().then(balanceActions => {
+    // Add balances from pending withdrawals
+    const pendingBalancesPromise = sdk.listBalanceActions().then(balanceActions => {
         const pendingFunds = new Map<number, BN>();
         balanceActions.forEach(action => {
             if (action.action === BalanceActionType.Withdraw && action.status === TransactionStatus.Pending) {
@@ -104,17 +107,24 @@ export const usableBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
         return pendingFunds;
     });
 
-    return Promise.all([balances(sdk, tokens), usedOrderBalances, pendingBalances]).then(([
-        startingBalance,
-        orderBalance,
-        withdrawnBalance,
-    ]) => {
-        tokens.forEach((token, index) => {
-            const ob = orderBalance.get(token) || new BN(0);
-            const wb = withdrawnBalance.get(token) || new BN(0);
-            // Don't let this balance value be negative.
-            startingBalance[index] = BN.max(new BN(0), startingBalance[index].sub(wb.add(ob)));
-        });
-        return startingBalance;
+    const [usedOrderBalances, pendingBalances] = await Promise.all([usedOrderBalancesPromise, pendingBalancesPromise]);
+
+    return tokens.map(token => {
+        const usedOrderBalance = usedOrderBalances.get(token) || new BN(0);
+        const pendingBalance = pendingBalances.get(token) || new BN(0);
+        return usedOrderBalance.add(pendingBalance);
     });
+};
+
+export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+    const locked = await sdk.lockedBalances([token]).then(b => b[0]);
+    const tokenBalance = await sdk.balance(token);
+    let usable = tokenBalance.sub(locked);
+
+    // If usable balance is less than zero, set to 0
+    if (usable.lt(new BN(0))) {
+        usable = new BN(0);
+    }
+
+    return tokenBalance.sub(locked);
 };

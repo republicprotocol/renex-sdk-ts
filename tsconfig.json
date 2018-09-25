@@ -13,7 +13,7 @@
         "target": "esnext",
         "module": "commonjs",
         "declaration": true,
-        "declarationDir": "./types",
+        "declarationDir": "./lib/types",
         "sourceMap": true,
         "outDir": "./dist",
         "rootDirs": ["./src", "./test"],

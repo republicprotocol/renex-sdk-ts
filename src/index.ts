@@ -18,7 +18,7 @@ import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
 import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
-import { balance, balances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance, usableBalances } from "./methods/balancesMethods";
+import { balance, balances, lockedBalance, lockedBalances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance } from "./methods/balancesMethods";
 import { transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
@@ -104,8 +104,9 @@ class RenExSDK {
     public nondepositedBalances = (tokens: number[]): Promise<BN[]> => nondepositedBalances(this, tokens);
     public balance = (token: number): Promise<BN> => balance(this, token);
     public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
+    public lockedBalance = (token: number): Promise<BN> => lockedBalance(this, token);
+    public lockedBalances = (tokens: number[]): Promise<BN[]> => lockedBalances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
-    public usableBalances = (tokens: number[]): Promise<BN[]> => usableBalances(this, tokens);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
     public withdraw = (token: number, value: IntInput, withoutIngressSignature = false): Promise<BalanceAction> =>
