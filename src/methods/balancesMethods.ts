@@ -4,7 +4,7 @@ import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { BalanceActionType, OrderStatus, TokenDetails, TransactionStatus } from "../types";
+import { BalanceActionType, OrderStatus, TokenDetails, TransactionStatus, OrderSettlement } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
@@ -76,9 +76,11 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
     const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
         const usedFunds = new Map<number, BN>();
         orders.forEach(order => {
-            if (order.status === OrderStatus.NOT_SUBMITTED ||
-                order.status === OrderStatus.OPEN ||
-                order.status === OrderStatus.CONFIRMED) {
+            if (order.orderInputs.orderSettlement === OrderSettlement.RenEx &&
+                (order.status === OrderStatus.NOT_SUBMITTED ||
+                    order.status === OrderStatus.OPEN ||
+                    order.status === OrderStatus.CONFIRMED
+                )) {
                 const token = order.orderInputs.spendToken;
                 const usedTokenBalance = usedFunds.get(token);
                 if (usedTokenBalance) {
