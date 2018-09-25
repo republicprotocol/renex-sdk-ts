@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
+import { PromiEvent } from "web3/types";
 
 import * as ingress from "../lib/ingress";
 
@@ -11,7 +12,7 @@ import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing } from "../lib/tokens";
-import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
+import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder, Transaction, SimpleConsole, NullConsole } from "../types";
 import { usableAtomicBalance } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { usableBalance } from "./balancesMethods";
@@ -38,11 +39,12 @@ const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeco
     };
 };
 
-export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Promise<TraderOrder> => {
+export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpleConsole = NullConsole): Promise<TraderOrder> => {
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
     // Initialize required contracts
+    simpleConsole.log("Retrieving token details...");
     const receiveToken = await sdk.tokenDetails(new BN(orderInputs.receiveToken).toNumber());
     const spendToken = await sdk.tokenDetails(new BN(orderInputs.spendToken).toNumber());
 
@@ -57,24 +59,30 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
 
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
     let balance;
+    simpleConsole.log("Verifying trader balance...");
     if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
         balance = await usableBalance(sdk, orderInputs.spendToken);
     } else {
         balance = await usableAtomicBalance(sdk, orderInputs.spendToken);
     }
     if (spendVolume.gt(balance)) {
+        simpleConsole.error(ErrInsufficientBalance);
         throw new Error(ErrInsufficientBalance);
     }
     if (orderInputs.price.lte(new BigNumber(0))) {
+        simpleConsole.error("Invalid price");
         throw new Error("Invalid price");
     }
     if (orderInputs.volume.lte(new BN(0))) {
+        simpleConsole.error("Invalid volume");
         throw new Error("Invalid volume");
     }
     if (orderInputs.minimumVolume.lte(new BN(0))) {
+        simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }
     if (orderInputs.volume.lt(orderInputs.minimumVolume)) {
+        simpleConsole.error("Volume must be greater or equal to minimum volume");
         throw new Error("Volume must be greater or equal to minimum volume");
     }
 
@@ -108,21 +116,28 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
     if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+        simpleConsole.log("Submitting order to Atomic Swapper...");
         await submitOrderToAtom(orderID);
     }
 
     // Create order fragment mapping
-    console.log("Building order mapping...");
+    simpleConsole.log("Building order mapping...");
     const request = new ingress.OpenOrderRequest({
         address: sdk.address().slice(2),
-        orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3(), sdk._contracts.darknodeRegistry, ingressOrder)]
+        orderFragmentMappings: [await ingress.buildOrderMapping(sdk.web3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole)]
     });
-    console.log("Submitting order fragments...");
+    simpleConsole.log("Submitting order fragments...");
     const signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
 
     // Submit order and the signature to the orderbook
-    console.log("Opening order...");
-    const txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
+    simpleConsole.log("Creating transaction...");
+    let txHash: string;
+    try {
+        txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
+    } catch (err) {
+        simpleConsole.error(err.message ? err.message : err);
+        throw err;
+    }
 
     const completeOrder = {
         orderInputs,
@@ -143,10 +158,10 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs): Prom
     return completeOrder;
 };
 
-export const cancelOrder = async (sdk: RenExSDK, orderID: OrderID): Promise<void> => {
+export const cancelOrder = (sdk: RenExSDK, orderID: OrderID): PromiEvent<Transaction> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 
-    await sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address() });
+    return sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address() });
 };
 
 export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise<Order[]> => {

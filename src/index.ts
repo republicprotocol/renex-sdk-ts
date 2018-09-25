@@ -1,17 +1,9 @@
 import Web3 from "web3";
 
 import { BN } from "bn.js";
-import { Provider } from "web3/types";
+import { PromiEvent, Provider } from "web3/types";
 
 import LocalStorage from "./storage/localStorage";
-
-import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
-import { ERC20Contract } from "./contracts/bindings/erc20";
-import { OrderbookContract } from "./contracts/bindings/orderbook";
-import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
-import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
-import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
-import { WyreContract } from "./contracts/bindings/wyre";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
@@ -24,8 +16,18 @@ import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, TokenCode, TokenDetails, TraderOrder, TransactionStatus } from "./types";
+import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
+// Contract bindings
+import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
+import { ERC20Contract } from "./contracts/bindings/erc20";
+import { OrderbookContract } from "./contracts/bindings/orderbook";
+import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
+import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
+import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
+import { WyreContract } from "./contracts/bindings/wyre";
+
+// Export all types
 export * from "./types";
 
 export enum AtomicConnectionStatus {
@@ -117,8 +119,8 @@ class RenExSDK {
         withdraw(this, token, value, withoutIngressSignature)
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public openOrder = (order: OrderInputs): Promise<Order> => openOrder(this, order);
-    public cancelOrder = (orderID: OrderID): Promise<void> => cancelOrder(this, orderID);
+    public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole): Promise<Order> => openOrder(this, order, simpleConsole);
+    public cancelOrder = (orderID: OrderID): PromiEvent<Transaction> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
 
     // Atomic functions

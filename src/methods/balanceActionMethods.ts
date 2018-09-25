@@ -50,8 +50,10 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
 
 // tslint:disable-next-line:no-any
 export const onTxHash = (tx: PromiEvent<Transaction>): Promise<string> => {
-    return new Promise<string>((resolve) => {
-        tx.on("transactionHash", resolve);
+    return new Promise<string>((resolve, reject) => {
+        tx
+            .on("transactionHash", resolve)
+            .catch(reject);
     });
 };
 
