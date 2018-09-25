@@ -29,6 +29,7 @@ import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order,
 export * from "./types";
 
 export enum AtomicConnectionStatus {
+    InvalidSwapper = "invalid_swapper",
     NotConnected = "not_connected",
     NotAuthorized = "not_authorized",
     AtomNotAuthorized = "atom_not_authorized",
@@ -45,6 +46,7 @@ class RenExSDK {
 
     public _networkData: NetworkData;
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
+    public _atomConnectedAddress: string = "";
 
     public _storage: Storage;
     public _contracts: {

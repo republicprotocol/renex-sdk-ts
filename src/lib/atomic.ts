@@ -19,6 +19,7 @@ export const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
 export const ErrorUnableToRetrieveBalances = "Unable to retrieve Atomic balances";
 
 export enum AtomicConnectionStatus {
+    InvalidSwapper = "invalid_swapper",
     NotConnected = "not_connected",
     NotAuthorized = "not_authorized",
     AtomNotAuthorized = "atom_not_authorized",
@@ -60,6 +61,22 @@ interface BalancesResponse {
     bitcoin: BalanceObject;
 }
 
+export function checkSigner(web3: Web3, response: WhoamiResponse): string {
+    const message = JSON.stringify(response.whoAmI);
+    const whoamiString = "\x19Ethereum Signed Message:\n" + message.length + message;
+    const hash = web3.utils.keccak256(whoamiString);
+    const r = "0x" + response.signature.slice(0, 64);
+    const s = "0x" + response.signature.slice(64, 128);
+    const recovery = "0x" + response.signature.slice(128, 130);
+    const v = "0x" + (parseInt(recovery, 16) + 27).toString(16);
+    // tslint:disable-next-line:no-any
+    return (web3.eth.accounts as any).recover({
+        messageHash: hash,
+        r,
+        s,
+        v,
+    });
+}
 
 export async function challengeSwapper(): Promise<WhoamiResponse> {
     const challenge = crypto.randomBytes(20).toString("hex");
@@ -72,17 +89,9 @@ export async function challengeSwapper(): Promise<WhoamiResponse> {
     }
     return response;
 }
-export async function _connectToAtom(web3: Web3, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
 
-    let response: WhoamiResponse;
-    try {
-        response = await challengeSwapper();
-    } catch (error) {
-        return AtomicConnectionStatus.NotConnected;
-    }
-
-    const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => addr.toLowerCase());
-    if (authorizedAddresses.indexOf(address.toLowerCase()) === -1) {
+export async function _connectToAtom(response: WhoamiResponse, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
+    const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => {
         return new EncodedData(addr, Encodings.HEX).toHex().toLowerCase();
     });
     const comparisonAddress = new EncodedData(address, Encodings.HEX).toHex().toLowerCase();
