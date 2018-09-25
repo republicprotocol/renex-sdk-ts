@@ -13,8 +13,8 @@ import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/error
 import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder } from "../types";
 import { usableAtomicBalance } from "./atomicMethods";
-import { usableBalance } from "./balancesMethods";
 import { onTxHash } from "./balanceActionMethods";
+import { usableBalance } from "./balancesMethods";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
