@@ -20,6 +20,12 @@ export const atomConnected = (sdk: RenExSDK): boolean => {
     );
 };
 
+export const resetAtomConnection = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
+    sdk._atomConnectedAddress = "";
+    sdk._atomConnectionStatus = AtomicConnectionStatus.NotConnected;
+    return refreshAtomConnectionStatus(sdk);
+};
+
 export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     let status = sdk._atomConnectionStatus;
     try {
