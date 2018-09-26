@@ -365,7 +365,7 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
 }
 
 /*
- * Retrieve all the darknodes in the darknode registry contract.
+ * Retrieve all the darknodes registered in the current epoch.
  * The getDarknodes() function will always return an array of {count} with empty
  * values being the NULL address. These addresses must be filtered out.
  * When the {start} value is not the NULL address, it is always returned as the
@@ -416,15 +416,16 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
     // FIXME: (setting to 1 if 0)
     const numberOfPods = Math.floor(darknodes.length / minimumPodSize) || 1;
     for (let i = 0; i < numberOfPods; i++) {
+        console.log("a");
         pools = pools.push(new Pool());
     }
 
     for (let i = 0; i < darknodes.length; i++) {
-        let isRegistered = await darknodeRegistryContract.isRegistered(darknodes[x.toNumber()]);
-        while (!isRegistered || positionInOcean.get(x.toNumber()) !== -1) {
+        console.log(`b: ${i}`);
+        while (positionInOcean.get(x.toNumber()) !== -1) {
+            console.log(`c`);
             x = x.add(new BN(1));
             x = x.mod(numberOfDarknodes);
-            isRegistered = await darknodeRegistryContract.isRegistered(darknodes[x.toNumber()]);
         }
 
         positionInOcean = positionInOcean.set(x.toNumber(), i);
@@ -440,6 +441,7 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
     }
 
     for (let i = 0; i < pools.size; i++) {
+        console.log(`d: ${i}`);
         let hashData = List<Buffer>();
         for (const darknode of pools.get(i).darknodes.toArray()) {
             hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
