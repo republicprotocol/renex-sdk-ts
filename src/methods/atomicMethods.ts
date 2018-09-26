@@ -27,32 +27,29 @@ export const resetAtomConnection = async (sdk: RenExSDK): Promise<AtomicConnecti
 };
 
 export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    let status = sdk._atomConnectionStatus;
-    let response;
+    sdk._atomConnectionStatus = await getAtomConnectionStatus(sdk);
+    return sdk._atomConnectionStatus;
+};
+
+const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     try {
-        response = await challengeSwapper();
-    } catch (err) {
-        status = AtomicConnectionStatus.NotConnected;
-    }
-    if (response) {
+        const response = await challengeSwapper();
         const signerAddress = checkSigner(sdk.web3(), response);
         if (sdk._atomConnectedAddress === "") {
             const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
-            if (expectedEthAddress === signerAddress) {
-                sdk._atomConnectedAddress = signerAddress;
-            } else {
+            if (expectedEthAddress !== signerAddress) {
                 // The signer and the balances address is different
-                status = AtomicConnectionStatus.InvalidSwapper;
+                return AtomicConnectionStatus.InvalidSwapper;
             }
+            sdk._atomConnectedAddress = signerAddress;
         } else if (sdk._atomConnectedAddress !== signerAddress) {
             // A new address was used to sign swapper messages
-            status = AtomicConnectionStatus.InvalidSwapper;
-        } else {
-            status = await _connectToAtom(response, sdk._networkData.ingress, sdk.address());
+            return AtomicConnectionStatus.InvalidSwapper;
         }
+        return _connectToAtom(response, sdk._networkData.ingress, sdk.address());
+    } catch (err) {
+        return AtomicConnectionStatus.NotConnected;
     }
-    sdk._atomConnectionStatus = status;
-    return sdk._atomConnectionStatus;
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
