@@ -36,6 +36,7 @@ interface WhoamiResponse {
     whoAmI: {
         challenge: string;
         version: string;
+        network: string;
         authorizedAddresses: string[];
         supportedCurrencies: string[];
     };
