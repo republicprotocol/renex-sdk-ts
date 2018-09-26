@@ -28,8 +28,13 @@ export const resetAtomConnection = async (sdk: RenExSDK): Promise<AtomicConnecti
 
 export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     let status = sdk._atomConnectionStatus;
+    let response;
     try {
-        const response = await challengeSwapper();
+        response = await challengeSwapper();
+    } catch (err) {
+        status = AtomicConnectionStatus.NotConnected;
+    }
+    if (response) {
         const signerAddress = checkSigner(sdk.web3(), response);
         if (sdk._atomConnectedAddress === "") {
             const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
@@ -45,9 +50,6 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
         } else {
             status = await _connectToAtom(response, sdk._networkData.ingress, sdk.address());
         }
-    } catch (error) {
-        console.error(error);
-        status = AtomicConnectionStatus.NotConnected;
     }
     sdk._atomConnectionStatus = status;
     return sdk._atomConnectionStatus;
