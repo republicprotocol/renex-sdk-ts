@@ -13,7 +13,7 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
-import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType } from "../types";
+import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType, SimpleConsole } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
@@ -151,7 +151,7 @@ async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: 
     try {
         orders = await orderbook.getOrders(offset, limit);
     } catch (error) {
-        console.log(`Failed to get call getOrders in ordersBatch`);
+        console.error(`Failed to get call getOrders in ordersBatch`);
         throw error;
     }
     const orderIDs = orders[0];
@@ -233,10 +233,9 @@ export function getOrderID(web3: Web3, order: Order): EncodedData {
 }
 
 export async function buildOrderMapping(
-    web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: Order
+    web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: Order, simpleConsole: SimpleConsole,
 ): Promise<Map<string, List<OrderFragment>>> {
-    console.log("Retrieving pods...");
-    const pods = await getPods(web3, darknodeRegistryContract);
+    const pods = await getPods(web3, darknodeRegistryContract, simpleConsole);
 
     const priceCoExp = priceToCoExp(order.price);
     const volumeCoExp = volumeToCoExp(order.volume);
@@ -247,6 +246,7 @@ export async function buildOrderMapping(
             const n = pool.darknodes.size;
             const k = Math.floor((2 * (n + 1)) / 3);
 
+            simpleConsole.log("Splitting Shamir secret shares...");
             const tokenShares = shamir.split(n, k, new BN(order.tokens));
             const priceCoShares = shamir.split(n, k, new BN(priceCoExp.co));
             const priceExpShares = shamir.split(n, k, new BN(priceCoExp.exp));
@@ -261,14 +261,13 @@ export async function buildOrderMapping(
             // Loop through each darknode in the pool
             for (let i = 0; i < n; i++) {
                 const darknode = pool.darknodes.get(i);
-                console.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58()}...`);
+                simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
 
                 // Retrieve darknode RSA public key from Darknode contract
                 let darknodeKey = null;
                 try {
-                    darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode);
+                    darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
                 } catch (error) {
-                    console.error(error);
                     Promise.reject(error);
                 }
 
@@ -317,12 +316,12 @@ function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string
 }
 
 async function getDarknodePublicKey(
-    darknodeRegistryContract: DarknodeRegistryContract, darknode: string
+    darknodeRegistryContract: DarknodeRegistryContract, darknode: string, simpleConsole: SimpleConsole,
 ): Promise<NodeRSAType | null> {
     const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
 
     if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
-        console.error(`Unable to retrieve public key for ${darknode}`);
+        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
         return null;
     }
 
@@ -389,10 +388,10 @@ async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContrac
 /*
  * Calculate pod arrangement based on current epoch
  */
-async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<List<Pool>> {
+async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pool>> {
     const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
-    console.log(`Minimum pod size: ${minimumPodSize} from ${darknodeRegistryContract.address}`);
+    simpleConsole.log(`Using minimum pod size ${minimumPodSize}...`);
     const epoch = await darknodeRegistryContract.currentEpoch();
 
     if (!darknodes.length) {
@@ -410,6 +409,8 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
     for (let i = 0; i < darknodes.length; i++) {
         positionInOcean = positionInOcean.set(i, -1);
     }
+
+    simpleConsole.log(`Calculating pods...`);
 
     let pools = List<Pool>();
     // FIXME: (setting to 1 if 0)
@@ -456,6 +457,8 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
 
         pools = pools.set(i, pool);
     }
+
+    simpleConsole.log(`Finished calculating pods...`);
 
     return pools;
 }

@@ -147,3 +147,13 @@ export interface BalanceAction {
 export interface Options {
     minimumTradeVolume?: IntInput;
 }
+
+export interface SimpleConsole {
+    error(message?: string): void;
+    log(message?: string): void;
+}
+
+export const NullConsole: SimpleConsole = {
+    error: (message) => null,
+    log: (message) => null,
+};

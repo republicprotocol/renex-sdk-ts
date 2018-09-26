@@ -1,5 +1,5 @@
 import { BN } from "bn.js";
-import { TransactionReceipt } from "web3/types";
+import { PromiEvent, TransactionReceipt } from "web3/types";
 
 import RenExSDK from "../index";
 import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, TransactionStatus } from "../types";
@@ -48,6 +48,15 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
     return balanceActionStatus;
 };
 
+// tslint:disable-next-line:no-any
+export const onTxHash = (tx: PromiEvent<Transaction>): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+        tx
+            .on("transactionHash", resolve)
+            .catch(reject);
+    });
+};
+
 export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<BalanceAction> => {
     value = new BN(value);
 
@@ -71,10 +80,10 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
 
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            const transaction: Transaction = await sdk._contracts.renExBalances
-                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address() });
+            const transactionHash = await onTxHash(sdk._contracts.renExBalances
+                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address() }));
 
-            balanceAction.txHash = transaction.tx;
+            balanceAction.txHash = transactionHash;
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
@@ -94,19 +103,20 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             // if there are any pending deposits for the same token
             const allowance = new BN(await tokenContract.allowance(sdk.address(), sdk._contracts.renExBalances.address, { from: sdk.address() }));
             if (allowance.lt(value)) {
-                await tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: sdk.address() });
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: sdk.address() }));
             }
-            const transaction: Transaction = await sdk._contracts.renExBalances.deposit(
+            const transactionHash = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 value,
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
+                    gas: token === 256 ? 350000 : 150000,
                     from: sdk.address(),
                 }
-            );
+            ));
 
-            balanceAction.txHash = transaction.tx;
+            balanceAction.txHash = transactionHash;
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
@@ -160,16 +170,16 @@ export const withdraw = async (
 
     try {
         const signature = await requestWithdrawalSignature(sdk._networkData.ingress, sdk.address(), token);
-        const transaction = await sdk._contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address() });
 
-        // TODO: Store balanceAction before confirmation with on("transactionHash").
+        const transactionHash = await onTxHash(sdk._contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address() }));
 
         // Update balance action
-        balanceAction.txHash = transaction.tx;
+        balanceAction.txHash = transactionHash;
 
         sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
         return balanceAction;
+
     } catch (error) {
         if (error.tx) {
             balanceAction.txHash = error.tx;
