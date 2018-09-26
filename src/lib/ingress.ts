@@ -122,7 +122,7 @@ export async function submitOrderFragments(
     request: OpenOrderRequest,
 ): Promise<EncodedData> {
     try {
-        const resp = await axios.post(`${ingressURL}/orders`, request.toJS())
+        const resp = await axios.post(`${ingressURL}/orders`, request.toJS());
         if (resp.status !== 201) {
             throw new Error(`Unexpected status code returned by Ingress (STATUS ${resp.status})`);
         }
