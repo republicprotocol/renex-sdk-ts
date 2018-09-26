@@ -78,6 +78,8 @@ export interface ComputedOrderDetails {
     spendVolume: BN;
     date: number;
     parity: OrderParity;
+    feeAmount: BN;
+    feeToken: TokenCode;
 }
 
 export interface Order {

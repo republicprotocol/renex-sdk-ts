@@ -20,37 +20,32 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
         console.error(`Unable to call orderState in status`);
         throw err;
     }
-    switch (orderbookStatus) {
-        case OrderStatus.CONFIRMED:
-
-            let settlementStatus;
-            try {
-                settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID.toHex())).toNumber();
-            } catch (error) {
-                console.error(error);
-                throw error;
-            }
-            orderStatus = settlementStatusToOrderStatus(settlementStatus);
-            if (orderStatus === OrderStatus.SETTLED) {
-                const storedOrder = await sdk._storage.getOrder(orderID64);
-                if (storedOrder === undefined) {
-                    // This order is potentially an atomic swap where settled isn't actually settled.
-                    // So for now just return confirmed.
-                    orderStatus = OrderStatus.CONFIRMED;
-                } else if (storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+    if (orderbookStatus === OrderStatus.CONFIRMED) {
+        let settlementStatus: number;
+        try {
+            settlementStatus = new BN(await sdk._contracts.renExSettlement.orderStatus(orderID.toHex())).toNumber();
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+        orderStatus = settlementStatusToOrderStatus(settlementStatus);
+        if (orderStatus === OrderStatus.SETTLED) {
+            const storedOrder = await sdk._storage.getOrder(orderID64);
+            if (storedOrder === undefined) {
+                // This order is potentially an atomic swap where settled isn't actually settled.
+                // So for now just return confirmed.
+                orderStatus = OrderStatus.CONFIRMED;
+            } else if (storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic && sdk.atomConnected()) {
+                try {
+                    orderStatus = await getOrderStatus(orderID);
+                } catch (error) {
+                    console.error(error);
                     orderStatus = storedOrder.status;
-                    if (sdk.atomConnected()) {
-                        try {
-                            orderStatus = await getOrderStatus(orderID);
-                        } catch (error) {
-                            console.error(error);
-                        }
-                    }
                 }
             }
-            break;
-        default:
-            orderStatus = orderbookStatus;
+        }
+    } else {
+        orderStatus = orderbookStatus;
     }
 
     // Update local storage (without awaiting)
