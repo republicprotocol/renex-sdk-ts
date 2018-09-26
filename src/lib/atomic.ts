@@ -80,6 +80,7 @@ export function checkSigner(web3: Web3, response: WhoamiResponse): string {
 
 export async function challengeSwapper(): Promise<WhoamiResponse> {
     const challenge = crypto.randomBytes(20).toString("hex");
+
     const response: WhoamiResponse = await axios.get(`${API}/whoami/${challenge}`).then(resp => resp.data);
     if (response === undefined ||
         response.whoAmI === undefined ||
@@ -164,13 +165,11 @@ export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
     try {
         response = (await axios.post(`${API}/orders`, data)).data;
     } catch (error) {
-        console.error(error);
-        throw new Error("ErrorUnableToOpen");
+        throw error;
     }
 
     if (response.orderID !== data.orderID) {
-        console.error("Invalid order ID returned by Atom");
-        throw new Error("ErrorUnableToOpen");
+        throw new Error("Invalid order ID returned by Atom");
     }
 
     // TODO: Check response.signature against Atom's address

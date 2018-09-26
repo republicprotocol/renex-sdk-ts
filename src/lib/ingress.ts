@@ -122,13 +122,21 @@ export async function submitOrderFragments(
     request: OpenOrderRequest,
 ): Promise<EncodedData> {
     try {
-        const resp = await axios.post(`${ingressURL}/orders`, request.toJS());
+        const resp = await axios.post(`${ingressURL}/orders`, request.toJS())
         if (resp.status !== 201) {
-            throw new Error("Unexpected status code: " + resp.status);
+            throw new Error(`Unexpected status code returned by Ingress (STATUS ${resp.status})`);
         }
         return new EncodedData(resp.data.signature, Encodings.BASE64);
     } catch (error) {
-        return Promise.reject(error);
+        if (error.response) {
+            if (error.response.status === 401) {
+                throw new Error("KYC verification failed in Ingress");
+            } else {
+                throw new Error(`Ingress returned status ${error.response.status} with reason: ${error.response.data}`);
+            }
+        } else {
+            throw error;
+        }
     }
 }
 
@@ -416,14 +424,11 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
     // FIXME: (setting to 1 if 0)
     const numberOfPods = Math.floor(darknodes.length / minimumPodSize) || 1;
     for (let i = 0; i < numberOfPods; i++) {
-        console.log("a");
         pools = pools.push(new Pool());
     }
 
     for (let i = 0; i < darknodes.length; i++) {
-        console.log(`b: ${i}`);
         while (positionInOcean.get(x.toNumber()) !== -1) {
-            console.log(`c`);
             x = x.add(new BN(1));
             x = x.mod(numberOfDarknodes);
         }
@@ -441,7 +446,6 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
     }
 
     for (let i = 0; i < pools.size; i++) {
-        console.log(`d: ${i}`);
         let hashData = List<Buffer>();
         for (const darknode of pools.get(i).darknodes.toArray()) {
             hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));

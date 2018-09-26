@@ -153,7 +153,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
             await submitOrderToAtom(orderID);
         } catch (err) {
             simpleConsole.error(err.message || err);
-            throw err;
+            throw new Error("Error sending order to Atomic Swapper");
         }
     }
 
