@@ -76,17 +76,27 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
     const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
         const usedFunds = new Map<number, BN>();
         orders.forEach(order => {
-            if (order.orderInputs.orderSettlement === OrderSettlement.RenEx &&
-                (order.status === OrderStatus.NOT_SUBMITTED ||
-                    order.status === OrderStatus.OPEN ||
-                    order.status === OrderStatus.CONFIRMED
-                )) {
-                const token = order.orderInputs.spendToken;
-                const usedTokenBalance = usedFunds.get(token);
-                if (usedTokenBalance) {
-                    usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+            if (order.status === OrderStatus.NOT_SUBMITTED ||
+                order.status === OrderStatus.OPEN ||
+                order.status === OrderStatus.CONFIRMED
+            ) {
+                if (order.orderInputs.orderSettlement === OrderSettlement.RenEx) {
+                    const token = order.orderInputs.spendToken;
+                    const usedTokenBalance = usedFunds.get(token);
+                    if (usedTokenBalance) {
+                        usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                    } else {
+                        usedFunds.set(token, order.computedOrderDetails.spendVolume);
+                    }
                 } else {
-                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
+                    // Include atomic swap fees in usable balance calculation
+                    const token = order.computedOrderDetails.feeToken;
+                    const feeTokenBalance = usedFunds.get(token);
+                    if (feeTokenBalance) {
+                        usedFunds.set(token, feeTokenBalance.add(order.computedOrderDetails.feeAmount));
+                    } else {
+                        usedFunds.set(token, order.computedOrderDetails.feeAmount);
+                    }
                 }
             }
         });
