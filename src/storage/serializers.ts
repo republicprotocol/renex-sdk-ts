@@ -18,6 +18,7 @@ export const deserializeTraderOrder = (orderString: string): TraderOrder => {
 
     order.computedOrderDetails.receiveVolume = new BN(order.computedOrderDetails.receiveVolume, "hex");
     order.computedOrderDetails.spendVolume = new BN(order.computedOrderDetails.spendVolume, "hex");
+    order.computedOrderDetails.feeAmount = new BN(order.computedOrderDetails.feeAmount, "hex");
 
     order.orderInputs.minimumVolume = new BN(order.orderInputs.minimumVolume, "hex");
     order.orderInputs.nonce = new BN(order.orderInputs.nonce, "hex");
