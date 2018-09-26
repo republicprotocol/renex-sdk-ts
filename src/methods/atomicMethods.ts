@@ -2,9 +2,9 @@ import { BN } from "bn.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
-import { _authorizeAtom, _connectToAtom, AtomicConnectionStatus, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
+import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
 import { Token } from "../lib/market";
-import { OrderSettlement, OrderStatus } from "../types";
+import { AtomicConnectionStatus, OrderSettlement, OrderStatus } from "../types";
 
 /* Atomic Connection */
 
@@ -44,9 +44,10 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
             sdk._atomConnectedAddress = signerAddress;
         } else if (sdk._atomConnectedAddress !== signerAddress) {
             // A new address was used to sign swapper messages
-            return AtomicConnectionStatus.InvalidSwapper;
+            return AtomicConnectionStatus.ChangedSwapper;
         }
-        return _connectToAtom(response, sdk._networkData.ingress, sdk.address());
+        const x = _connectToAtom(response, sdk._networkData.ingress, sdk.address());
+        return x;
     } catch (err) {
         return AtomicConnectionStatus.NotConnected;
     }

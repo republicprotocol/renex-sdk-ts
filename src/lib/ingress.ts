@@ -70,7 +70,7 @@ export class OrderFragment extends Record({
     index: 0,
 }) { }
 
-export class Pool extends Record({
+export class Pod extends Record({
     id: "",
     darknodes: List<string>(),
     orderFragments: List<OrderFragment>(),
@@ -250,11 +250,11 @@ export async function buildOrderMapping(
     const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
 
     const fragmentPromises = (pods)
-        .map(async (pool: Pool): Promise<Pool> => {
-            const n = pool.darknodes.size;
+        .map(async (pod: Pod): Promise<Pod> => {
+            const n = pod.darknodes.size;
             const k = Math.floor((2 * (n + 1)) / 3);
 
-            simpleConsole.log("Splitting Shamir secret shares...");
+            simpleConsole.log(`Splitting Shamir secret shares for ${pod.id.slice(0, 8)}...`);
             const tokenShares = shamir.split(n, k, new BN(order.tokens));
             const priceCoShares = shamir.split(n, k, new BN(priceCoExp.co));
             const priceExpShares = shamir.split(n, k, new BN(priceCoExp.exp));
@@ -266,9 +266,9 @@ export async function buildOrderMapping(
 
             let orderFragments = List<OrderFragment>();
 
-            // Loop through each darknode in the pool
+            // Loop through each darknode in the pod
             for (let i = 0; i < n; i++) {
-                const darknode = pool.darknodes.get(i);
+                const darknode = pod.darknodes.get(i);
                 simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
 
                 // Retrieve darknode RSA public key from Darknode contract
@@ -304,15 +304,15 @@ export async function buildOrderMapping(
                 orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
                 orderFragments = orderFragments.push(orderFragment);
             }
-            return pool.set("orderFragments", orderFragments);
+            return pod.set("orderFragments", orderFragments);
         });
 
     // Reduce must happen serially
     return fragmentPromises.reduce(
-        async (poolsPromise: Promise<Map<string, List<OrderFragment>>>, poolPromise: Promise<Pool>) => {
-            const pools = await poolsPromise;
-            const pool = await poolPromise;
-            return pools.set(pool.id, pool.orderFragments);
+        async (fragmentMappingsPromise: Promise<Map<string, List<OrderFragment>>>, podPromise: Promise<Pod>) => {
+            const fragmentMappings = await fragmentMappingsPromise;
+            const pod = await podPromise;
+            return fragmentMappings.set(pod.id, pod.orderFragments);
         },
         Promise.resolve(Map<string, List<OrderFragment>>())
     );
@@ -396,7 +396,7 @@ async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContrac
 /*
  * Calculate pod arrangement based on current epoch
  */
-async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pool>> {
+async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
     const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
     simpleConsole.log(`Using minimum pod size ${minimumPodSize}...`);
@@ -420,11 +420,11 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
 
     simpleConsole.log(`Calculating pods...`);
 
-    let pools = List<Pool>();
+    let pods = List<Pod>();
     // FIXME: (setting to 1 if 0)
     const numberOfPods = Math.floor(darknodes.length / minimumPodSize) || 1;
     for (let i = 0; i < numberOfPods; i++) {
-        pools = pools.push(new Pool());
+        pods = pods.push(new Pod());
     }
 
     for (let i = 0; i < darknodes.length; i++) {
@@ -434,37 +434,35 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
         }
 
         positionInOcean = positionInOcean.set(x.toNumber(), i);
-        const poolIndex = i % numberOfPods;
+        const podIndex = i % numberOfPods;
 
-        const pool = new Pool({
-            darknodes: pools.get(poolIndex).darknodes.push(darknodes[x.toNumber()])
+        const pod = new Pod({
+            darknodes: pods.get(podIndex).darknodes.push(darknodes[x.toNumber()])
         });
-        pools = pools.set(poolIndex, pool);
+        pods = pods.set(podIndex, pod);
 
         x = x.add(epochVal);
         x = x.mod(numberOfDarknodes);
     }
 
-    for (let i = 0; i < pools.size; i++) {
+    for (let i = 0; i < pods.size; i++) {
         let hashData = List<Buffer>();
-        for (const darknode of pools.get(i).darknodes.toArray()) {
+        for (const darknode of pods.get(i).darknodes.toArray()) {
             hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
         }
 
         const id = new EncodedData(web3.utils.keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
-        const pool = new Pool({
+        const pod = new Pod({
             id: id.toBase64(),
-            darknodes: pools.get(i).darknodes
+            darknodes: pods.get(i).darknodes
         });
 
-        // console.log(pool.id, JSON.stringify(pool.darknodes.map((node: string) =>
+        // console.log(pod.id, JSON.stringify(pod.darknodes.map((node: string) =>
         //     new EncodedData("0x1B20" + node.slice(2), Encodings.HEX).toBase58()
         // ).toArray()));
 
-        pools = pools.set(i, pool);
+        pods = pods.set(i, pod);
     }
 
-    simpleConsole.log(`Finished calculating pods...`);
-
-    return pools;
+    return pods;
 }

@@ -1,5 +1,6 @@
 export const ErrUnimplemented = "Method not implemented.";
 export const ErrCanceledByUser = "Transaction canceled";
+export const ErrSignatureCanceledByUser = "Signature canceled";
 export const ErrUnsignedTransaction = "Unable to sign transaction";
 export const ErrInvalidOrderDetails = "Something went wrong while encoding order";
 export const ErrNumericalPrecision = "Unsupported precision numbers";

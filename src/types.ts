@@ -2,7 +2,6 @@ import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
 
-export { AtomicConnectionStatus } from "./lib/atomic";
 export { NetworkData } from "./lib/network";
 
 // These are temporary types to ensure that all user inputs are converted
@@ -157,3 +156,13 @@ export const NullConsole: SimpleConsole = {
     error: (message) => null,
     log: (message) => null,
 };
+
+export enum AtomicConnectionStatus {
+    InvalidSwapper = "invalid_swapper",
+    ChangedSwapper = "changed_swapper",
+    NotConnected = "not_connected",
+    NotAuthorized = "not_authorized",
+    AtomNotAuthorized = "atom_not_authorized",
+    ConnectedUnlocked = "connected_unlocked",
+    ConnectedLocked = "connected_locked",
+}

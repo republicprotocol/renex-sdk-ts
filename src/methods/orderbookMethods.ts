@@ -172,7 +172,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
         address: sdk.address().slice(2),
         orderFragmentMappings: [orderFragmentMappings]
     });
-    simpleConsole.log("Submitting order fragments...");
+    simpleConsole.log("Sending order fragments...");
     let signature;
     try {
         signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);

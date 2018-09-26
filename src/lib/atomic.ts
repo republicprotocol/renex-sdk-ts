@@ -3,9 +3,9 @@ import crypto from "crypto";
 import Web3 from "web3";
 
 // import { second, sleep } from "@Library/conversion";
-import { OrderStatus } from "../types";
+import { AtomicConnectionStatus, OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
-import { ErrCanceledByUser, ErrUnsignedTransaction } from "./errors";
+import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { AtomAuthorizationRequest, authorizeSwapper, checkAtomAuthorization } from "./ingress";
 // import { Order } from "@Library/ingress";
 // import { NetworkData } from "@Library/network";
@@ -17,15 +17,6 @@ export const ErrorUnableToConnect = "Unable to connect go Atom back-end";
 export const ErrorAddressNotAuthorized = "Ethereum address not authorized for Atom";
 export const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
 export const ErrorUnableToRetrieveBalances = "Unable to retrieve Atomic balances";
-
-export enum AtomicConnectionStatus {
-    InvalidSwapper = "invalid_swapper",
-    NotConnected = "not_connected",
-    NotAuthorized = "not_authorized",
-    AtomNotAuthorized = "atom_not_authorized",
-    ConnectedUnlocked = "connected_unlocked",
-    ConnectedLocked = "connected_locked",
-}
 
 interface StatusResponse {
     order_id: string;
@@ -136,7 +127,7 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
         signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
     } catch (error) {
         if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrCanceledByUser));
+            return Promise.reject(new Error(ErrSignatureCanceledByUser));
         }
         return Promise.reject(new Error(ErrUnsignedTransaction));
     }

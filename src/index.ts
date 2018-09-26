@@ -16,7 +16,7 @@ import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerat
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicConnectionStatus, BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -29,15 +29,6 @@ import { WyreContract } from "./contracts/bindings/wyre";
 
 // Export all types
 export * from "./types";
-
-export enum AtomicConnectionStatus {
-    InvalidSwapper = "invalid_swapper",
-    NotConnected = "not_connected",
-    NotAuthorized = "not_authorized",
-    AtomNotAuthorized = "atom_not_authorized",
-    ConnectedUnlocked = "connected_unlocked",
-    ConnectedLocked = "connected_locked",
-}
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
