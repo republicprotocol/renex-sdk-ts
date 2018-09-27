@@ -117,7 +117,7 @@ class RenExSDK {
     public orderFeeDenominator = (): Promise<BN> => orderFeeDenominator(this);
     public orderFeeNumerator = (): Promise<BN> => orderFeeNumerator(this);
 
-    public getGasPrice = (): Promise<number> => getGasPrice(this);
+    public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Atomic functions
     public atomConnected = (): boolean => atomConnected(this);
