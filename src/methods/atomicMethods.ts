@@ -54,12 +54,9 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    return sdk.atomicAddress(Token.ETH).then(ethAtomAddress => {
-        return _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address()).then(status => {
-            sdk._atomConnectionStatus = status;
-            return status;
-        });
-    });
+    const ethAtomAddress = await sdk.atomicAddress(Token.ETH);
+    await _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address());
+    return refreshAtomConnectionStatus(sdk);
 };
 
 /* Atomic balances */
