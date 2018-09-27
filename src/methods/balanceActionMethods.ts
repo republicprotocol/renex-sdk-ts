@@ -113,7 +113,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
-                    gas: token === 256 ? 350000 : 150000,
+                    gas: token === 256 ? 500000 : 150000,
                     gasPrice,
                     from: sdk.address(),
                 }
