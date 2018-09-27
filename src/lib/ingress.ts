@@ -254,7 +254,7 @@ export async function buildOrderMapping(
             const n = pod.darknodes.size;
             const k = Math.floor((2 * (n + 1)) / 3);
 
-            simpleConsole.log(`Splitting Shamir secret shares for ${pod.id.slice(0, 8)}...`);
+            simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
             const tokenShares = shamir.split(n, k, new BN(order.tokens));
             const priceCoShares = shamir.split(n, k, new BN(priceCoExp.co));
             const priceExpShares = shamir.split(n, k, new BN(priceCoExp.exp));
