@@ -29,7 +29,7 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: number, value
     }
 };
 
-export const getGasPrice = async (sdk: RenExSDK): Promise<number> => {
+export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> => {
     const maxGasPrice = 60000000000;
     try {
         const resp = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
@@ -40,7 +40,11 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number> => {
         throw new Error("cannot retrieve gas price from ethgasstation");
     } catch (error) {
         console.error(error);
-        const gasPrice = await sdk.web3().eth.getGasPrice() * 1.1;
-        return gasPrice;
+        try {
+            return await sdk.web3().eth.getGasPrice() * 1.1;
+        } catch (error) {
+            console.error(error);
+            return undefined;
+        }
     }
 };
