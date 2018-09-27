@@ -49,6 +49,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         throw new Error(ErrInsufficientBalance);
     }
 
+    const address = sdk.address();
     const tokenDetails = await sdk.tokenDetails(token);
     const gasPrice = await sdk.getGasPrice();
 
@@ -58,21 +59,32 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         time: Math.floor(new Date().getTime() / 1000),
         status: TransactionStatus.Pending,
         token,
-        trader: sdk.address(),
+        trader: address,
         txHash: "",
         nonce: undefined,
     };
 
     try {
         if (tokenIsEthereum(tokenDetails)) {
-            const transactionHash = await onTxHash(sdk._contracts.renExBalances
-                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address(), gasPrice }));
+
+            const transactionHash = await onTxHash(sdk._contracts.renExBalances.deposit(
+                tokenDetails.address,
+                value,
+                { value: value.toString(), from: address, gasPrice },
+            ));
+
+            // We set the nonce after the transaction is created. We don't set
+            // it before hand in case the user signs other transactions while
+            // the wallet popup (or equivalent) is open. We rely on the wallet's
+            // nonce tracking to return the correct nonce immediately.
+            try {
+                balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+            } catch (err) {
+                // Log the error but leave the nonce as undefined
+                console.error(err);
+            }
 
             balanceAction.txHash = transactionHash;
-
-            // Set balanceAction nonce after creating, to guarantee it's not
-            // less than its real nonce
-            balanceAction.nonce = await sdk.web3().eth.getTransactionCount(sdk.address());
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
@@ -90,10 +102,11 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             // twice in a row rapidly (after already having an allowance set)
             // There's no way to check pending state - alternative is to see
             // if there are any pending deposits for the same token
-            const allowance = new BN(await tokenContract.allowance(sdk.address(), sdk._contracts.renExBalances.address, { from: sdk.address(), gasPrice }));
+            const allowance = new BN(await tokenContract.allowance(address, sdk._contracts.renExBalances.address, { from: address, gasPrice }));
             if (allowance.lt(value)) {
-                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: sdk.address(), gasPrice }));
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: address, gasPrice }));
             }
+
             const transactionHash = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 value,
@@ -102,15 +115,23 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                     // if the ethereum node hasn't seen the previous transaction
                     gas: token === 256 ? 500000 : 150000,
                     gasPrice,
-                    from: sdk.address(),
+                    from: address,
+                    // nonce: balanceAction.nonce,
                 }
             ));
 
             balanceAction.txHash = transactionHash;
 
-            // Set balanceAction nonce after creating, to guarantee it's not
-            // less than its real nonce
-            balanceAction.nonce = await sdk.web3().eth.getTransactionCount(sdk.address());
+            // We set the nonce after the transaction is created. We don't set
+            // it before hand in case the user signs other transactions while
+            // the wallet popup (or equivalent) is open. We rely on the wallet's
+            // nonce tracking to return the correct nonce immediately.
+            try {
+                balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+            } catch (err) {
+                // Log the error but leave the nonce as undefined
+                console.error(err);
+            }
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
@@ -151,6 +172,7 @@ export const withdraw = async (
         throw new Error(ErrInsufficientBalance);
     }
 
+    const address = sdk.address();
     const tokenDetails = await sdk.tokenDetails(token);
     const gasPrice = await sdk.getGasPrice();
 
@@ -160,22 +182,34 @@ export const withdraw = async (
         time: Math.floor(new Date().getTime() / 1000),
         status: TransactionStatus.Pending,
         token,
-        trader: sdk.address(),
+        trader: address,
         txHash: "",
         nonce: undefined,
     };
 
     try {
-        const signature = await requestWithdrawalSignature(sdk._networkData.ingress, sdk.address(), token);
+        const signature = await requestWithdrawalSignature(sdk._networkData.ingress, address, token);
 
-        const transactionHash = await onTxHash(sdk._contracts.renExBalances.withdraw(tokenDetails.address, value, signature.toHex(), { from: sdk.address(), gasPrice }));
+        const transactionHash = await onTxHash(sdk._contracts.renExBalances.withdraw(
+            tokenDetails.address,
+            value,
+            signature.toHex(),
+            { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
+        ));
 
         // Update balance action
         balanceAction.txHash = transactionHash;
 
-        // Set balanceAction nonce after creating, to guarantee it's not
-        // less than its real nonce
-        balanceAction.nonce = await sdk.web3().eth.getTransactionCount(sdk.address());
+        // We set the nonce after the transaction is created. We don't set
+        // it before hand in case the user signs other transactions while
+        // the wallet popup (or equivalent) is open. We rely on the wallet's
+        // nonce tracking to return the correct nonce immediately.
+        try {
+            balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+        } catch (err) {
+            // Log the error but leave the nonce as undefined
+            console.error(err);
+        }
 
         sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 

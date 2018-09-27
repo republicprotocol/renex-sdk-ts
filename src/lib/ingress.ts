@@ -395,7 +395,7 @@ async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContrac
 async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
     const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
-    simpleConsole.log(`Using minimum pod size ${minimumPodSize}...`);
+    simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
     const epoch = await darknodeRegistryContract.currentEpoch();
 
     if (!darknodes.length) {
@@ -414,7 +414,7 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
         positionInOcean = positionInOcean.set(i, -1);
     }
 
-    simpleConsole.log(`Calculating pods...`);
+    simpleConsole.log(`Calculating pods`);
 
     let pods = List<Pod>();
     // FIXME: (setting to 1 if 0)
