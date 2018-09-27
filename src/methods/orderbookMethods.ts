@@ -182,7 +182,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
     }
 
     // Submit order and the signature to the orderbook
-    simpleConsole.log("Creating transaction...");
+    simpleConsole.log("Waiting for transaction signature...");
     let txHash: string;
     try {
         txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
@@ -190,6 +190,8 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
         simpleConsole.error(err.message || err);
         throw err;
     }
+
+    simpleConsole.log("Order submitted.");
 
     const completeOrder = {
         orderInputs,
