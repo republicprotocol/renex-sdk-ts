@@ -44,6 +44,14 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
                 }
             }
         }
+    } else if (orderbookStatus === OrderStatus.OPEN) {
+        const storedOrder = await sdk._storage.getOrder(orderID64);
+        // Note: Date.now() returns milliseconds
+        if (storedOrder && storedOrder.orderInputs.expiry < (Date.now() / 1000)) {
+            orderStatus = OrderStatus.CANCELED;
+        } else {
+            orderStatus = orderbookStatus;
+        }
     } else {
         orderStatus = orderbookStatus;
     }
