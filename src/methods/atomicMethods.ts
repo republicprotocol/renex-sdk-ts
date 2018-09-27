@@ -67,9 +67,6 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
 export const atomicBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    if (!atomConnected(sdk)) {
-        return Promise.resolve(tokens.map(token => new BN(0)));
-    }
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {
@@ -88,9 +85,6 @@ export const atomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> =
 };
 
 export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string[]> => {
-    if (!atomConnected(sdk)) {
-        return Promise.resolve(tokens.map(token => ""));
-    }
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {
