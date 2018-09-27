@@ -124,7 +124,7 @@ class RenExSDK {
     public currentAtomConnectionStatus = (): AtomicConnectionStatus => currentAtomConnectionStatus(this);
     public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
     public resetAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => resetAtomConnection(this);
-    public authorizeAtom = () => authorizeAtom(this);
+    public authorizeAtom = (): Promise<AtomicConnectionStatus> => authorizeAtom(this);
     public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
     public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
     public usableAtomicBalance = (token: number): Promise<BN> => usableAtomicBalance(this, token);
