@@ -11,7 +11,7 @@ import { NetworkData } from "./lib/network";
 import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, lockedBalance, lockedBalances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance } from "./methods/balancesMethods";
-import { transfer } from "./methods/generalMethods";
+import { getGasPrice, transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerator } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
@@ -116,6 +116,8 @@ class RenExSDK {
 
     public orderFeeDenominator = (): Promise<BN> => orderFeeDenominator(this);
     public orderFeeNumerator = (): Promise<BN> => orderFeeNumerator(this);
+
+    public getGasPrice = (): Promise<number> => getGasPrice(this);
 
     // Atomic functions
     public atomConnected = (): boolean => atomConnected(this);
