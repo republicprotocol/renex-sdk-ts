@@ -183,9 +183,10 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
 
     // Submit order and the signature to the orderbook
     simpleConsole.log("Waiting for transaction signature...");
+    const gasPrice = await sdk.getGasPrice();
     let txHash: string;
     try {
-        txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
+        txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address(), gasPrice }));
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
@@ -216,7 +217,9 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
 
 export const cancelOrder = (sdk: RenExSDK, orderID: OrderID): PromiEvent<Transaction> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
-
+    sdk.getGasPrice().then((gasPrice: number) => {
+        return sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address(), gasPrice });
+    });
     return sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address() });
 };
 
