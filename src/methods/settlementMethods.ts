@@ -48,7 +48,7 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
         const storedOrder = await sdk._storage.getOrder(orderID64);
         // Note: Date.now() returns milliseconds
         if (storedOrder && storedOrder.orderInputs.expiry < (Date.now() / 1000)) {
-            orderStatus = OrderStatus.CANCELED;
+            orderStatus = OrderStatus.EXPIRED;
         } else {
             orderStatus = orderbookStatus;
         }
