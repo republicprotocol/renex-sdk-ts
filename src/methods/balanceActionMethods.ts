@@ -9,6 +9,7 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { nondepositedBalance, usableBalance } from "./balancesMethods";
+import { getGasPrice } from "./generalMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -67,6 +68,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
     }
 
     const tokenDetails = await sdk.tokenDetails(token);
+    const gasPrice = await sdk.getGasPrice();
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Deposit,
@@ -81,7 +83,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
     try {
         if (tokenIsEthereum(tokenDetails)) {
             const transactionHash = await onTxHash(sdk._contracts.renExBalances
-                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address() }));
+                .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address(), gasPrice }));
 
             balanceAction.txHash = transactionHash;
 
@@ -101,9 +103,9 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             // twice in a row rapidly (after already having an allowance set)
             // There's no way to check pending state - alternative is to see
             // if there are any pending deposits for the same token
-            const allowance = new BN(await tokenContract.allowance(sdk.address(), sdk._contracts.renExBalances.address, { from: sdk.address() }));
+            const allowance = new BN(await tokenContract.allowance(sdk.address(), sdk._contracts.renExBalances.address, { from: sdk.address(), gasPrice }));
             if (allowance.lt(value)) {
-                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: sdk.address() }));
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: sdk.address(), gasPrice }));
             }
             const transactionHash = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
@@ -112,6 +114,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
                     gas: token === 256 ? 350000 : 150000,
+                    gasPrice,
                     from: sdk.address(),
                 }
             ));
@@ -157,7 +160,9 @@ export const withdraw = async (
         throw new Error(ErrInsufficientBalance);
     }
 
-    const details = await sdk.tokenDetails(token);
+    const tokenDetails = await sdk.tokenDetails(token);
+    const gasPrice = await sdk.getGasPrice();
+
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Withdraw,
         amount: value,
@@ -171,7 +176,7 @@ export const withdraw = async (
     try {
         const signature = await requestWithdrawalSignature(sdk._networkData.ingress, sdk.address(), token);
 
-        const transactionHash = await onTxHash(sdk._contracts.renExBalances.withdraw(details.address, value, signature.toHex(), { from: sdk.address() }));
+        const transactionHash = await onTxHash(sdk._contracts.renExBalances.withdraw(tokenDetails.address, value, signature.toHex(), { from: sdk.address(), gasPrice }));
 
         // Update balance action
         balanceAction.txHash = transactionHash;
