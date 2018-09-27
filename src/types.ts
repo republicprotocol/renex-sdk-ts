@@ -128,7 +128,8 @@ export enum BalanceActionType {
 export enum TransactionStatus {
     Pending = "pending",
     Done = "done",
-    Failed = "failed"
+    Failed = "failed",
+    Replaced = "replaced",
 }
 
 // If BalanceAction, then it's serialize / deserialize functions should be
@@ -141,6 +142,7 @@ export interface BalanceAction {
     token: TokenCode;
     trader: string;
     txHash: string;
+    nonce: number | undefined;
 }
 
 export interface Options {

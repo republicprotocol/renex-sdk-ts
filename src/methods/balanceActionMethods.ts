@@ -1,5 +1,5 @@
 import { BN } from "bn.js";
-import { PromiEvent, TransactionReceipt } from "web3/types";
+import { PromiEvent } from "web3/types";
 
 import RenExSDK from "../index";
 import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, TransactionStatus } from "../types";
@@ -9,29 +9,11 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { nondepositedBalance, usableBalance } from "./balancesMethods";
-import { getGasPrice } from "./generalMethods";
+import { getTransactionStatus } from "./generalMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
     return token.address.toLowerCase() === ETH_ADDR.toLowerCase();
-};
-
-export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
-    const receipt: TransactionReceipt | null = await sdk.web3().eth.getTransactionReceipt(txHash);
-
-    if (receipt !== null && receipt.blockHash !== "") {
-
-        // Status type is string, but actually returns back as a boolean
-        // tslint:disable-next-line:no-any
-        const receiptStatus: any = receipt.status;
-        if (receiptStatus === "0" || receiptStatus === 0 || receiptStatus === false) {
-            return TransactionStatus.Failed;
-        } else {
-            return TransactionStatus.Done;
-        }
-    } else {
-        return TransactionStatus.Pending;
-    }
 };
 
 export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
@@ -78,6 +60,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         token,
         trader: sdk.address(),
         txHash: "",
+        nonce: undefined,
     };
 
     try {
@@ -86,6 +69,10 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 .deposit(tokenDetails.address, value, { value: value.toString(), from: sdk.address(), gasPrice }));
 
             balanceAction.txHash = transactionHash;
+
+            // Set balanceAction nonce after creating, to guarantee it's not
+            // less than its real nonce
+            balanceAction.nonce = await sdk.web3().eth.getTransactionCount(sdk.address());
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
@@ -120,6 +107,10 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
             ));
 
             balanceAction.txHash = transactionHash;
+
+            // Set balanceAction nonce after creating, to guarantee it's not
+            // less than its real nonce
+            balanceAction.nonce = await sdk.web3().eth.getTransactionCount(sdk.address());
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
@@ -171,6 +162,7 @@ export const withdraw = async (
         token,
         trader: sdk.address(),
         txHash: "",
+        nonce: undefined,
     };
 
     try {
@@ -180,6 +172,10 @@ export const withdraw = async (
 
         // Update balance action
         balanceAction.txHash = transactionHash;
+
+        // Set balanceAction nonce after creating, to guarantee it's not
+        // less than its real nonce
+        balanceAction.nonce = await sdk.web3().eth.getTransactionCount(sdk.address());
 
         sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
