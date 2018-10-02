@@ -66,7 +66,7 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
         // Check if order is expired
         const storedOrder = await sdk._storage.getOrder(orderID64);
         // Note: Date.now() returns milliseconds
-        if (storedOrder && storedOrder.orderInputs.expiry < (Date.now() / 1000)) {
+        if (storedOrder && (storedOrder.orderInputs.expiry < (Date.now() / 1000))) {
             orderStatus = OrderStatus.EXPIRED;
         } else {
             orderStatus = orderbookStatus;

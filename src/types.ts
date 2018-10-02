@@ -88,8 +88,8 @@ export interface Order {
     matchDetails?: MatchDetails;
 }
 
-// If TraderOrder, then it's serialize / deserialize functions should be
-// updated as well.
+// If TraderOrder is changed, then it's serialize / deserialize functions should
+// be updated as well.
 export interface TraderOrder extends Order {
     readonly computedOrderDetails: ComputedOrderDetails;
     readonly orderInputs: OrderInputsAll;
@@ -132,8 +132,8 @@ export enum TransactionStatus {
     Replaced = "replaced",
 }
 
-// If BalanceAction, then it's serialize / deserialize functions should be
-// updated as well.
+// If BalanceAction is changed, then it's serialize / deserialize functions
+// should be updated as well.
 export interface BalanceAction {
     action: BalanceActionType;
     amount: BN;
