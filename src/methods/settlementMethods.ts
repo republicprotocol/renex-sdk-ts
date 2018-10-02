@@ -24,9 +24,11 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
         return OrderStatus.SETTLED;
     }
 
+    const storedStatus = !storedOrder.status ? OrderStatus.CONFIRMED : storedOrder.status;
+
     // If RenEx Swapper is not connected, return previous status
     if (!sdk.atomConnected()) {
-        return storedOrder.status;
+        return storedStatus;
     }
 
     // Ask RenEx Swapper for status
@@ -41,7 +43,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
         return orderStatus;
     } catch (error) {
         // Return previous status;
-        return storedOrder.status;
+        return storedStatus;
     }
 };
 
@@ -59,7 +61,7 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
         throw err;
     }
     if (orderbookStatus === OrderStatus.CONFIRMED) {
-        return settlementStatus(sdk, orderID);
+        orderStatus = await settlementStatus(sdk, orderID);
     } else if (orderbookStatus === OrderStatus.OPEN) {
         // Check if order is expired
         const storedOrder = await sdk._storage.getOrder(orderID64);
