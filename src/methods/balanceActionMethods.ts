@@ -32,15 +32,19 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
 };
 
 // tslint:disable-next-line:no-any
-export const onTxHash = (tx: PromiEvent<Transaction>): Promise<string> => {
-    return new Promise<string>((resolve, reject) => {
+export const onTxHash = (tx: PromiEvent<Transaction>): Promise<{ txHash: string, promiEvent: PromiEvent<Transaction> }> => {
+    return new Promise((resolve, reject) => {
         tx
-            .on("transactionHash", resolve)
+            .once("transactionHash", (txHash) => resolve({ txHash, promiEvent: tx }))
             .catch(reject);
     });
 };
 
-export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Promise<BalanceAction> => {
+export const deposit = async (
+    sdk: RenExSDK,
+    token: number,
+    value: IntInput,
+): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BN(value);
 
     // Check that we can deposit that amount
@@ -67,7 +71,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
     try {
         if (tokenIsEthereum(tokenDetails)) {
 
-            const transactionHash = await onTxHash(sdk._contracts.renExBalances.deposit(
+            const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 value,
                 { value: value.toString(), from: address, gasPrice },
@@ -84,11 +88,11 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 console.error(err);
             }
 
-            balanceAction.txHash = transactionHash;
+            balanceAction.txHash = txHash;
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
-            return balanceAction;
+            return { balanceAction, promiEvent };
         } else {
             // ERC20 token
             let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
@@ -107,7 +111,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: address, gasPrice }));
             }
 
-            const transactionHash = await onTxHash(sdk._contracts.renExBalances.deposit(
+            const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 value,
                 {
@@ -120,7 +124,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
                 }
             ));
 
-            balanceAction.txHash = transactionHash;
+            balanceAction.txHash = txHash;
 
             // We set the nonce after the transaction is created. We don't set
             // it before hand in case the user signs other transactions while
@@ -135,7 +139,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
 
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
-            return balanceAction;
+            return { balanceAction, promiEvent };
 
             // TODO: https://github.com/MetaMask/metamask-extension/issues/3425
         }
@@ -143,7 +147,7 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
         if (error.tx) {
             balanceAction.txHash = error.tx;
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
-            return balanceAction;
+            return { balanceAction, promiEvent: null };
         }
 
         if (error.message.match("Insufficient funds")) {
@@ -157,8 +161,11 @@ export const deposit = async (sdk: RenExSDK, token: number, value: IntInput): Pr
 };
 
 export const withdraw = async (
-    sdk: RenExSDK, token: number, value: IntInput, withoutIngressSignature: boolean
-): Promise<BalanceAction> => {
+    sdk: RenExSDK,
+    token: number,
+    value: IntInput,
+    withoutIngressSignature: boolean,
+): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BN(value);
 
     // Trustless withdrawals are not implemented yet
@@ -190,7 +197,7 @@ export const withdraw = async (
     try {
         const signature = await requestWithdrawalSignature(sdk._networkData.ingress, address, token);
 
-        const transactionHash = await onTxHash(sdk._contracts.renExBalances.withdraw(
+        const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
             value,
             signature.toHex(),
@@ -198,7 +205,7 @@ export const withdraw = async (
         ));
 
         // Update balance action
-        balanceAction.txHash = transactionHash;
+        balanceAction.txHash = txHash;
 
         // We set the nonce after the transaction is created. We don't set
         // it before hand in case the user signs other transactions while
@@ -213,13 +220,13 @@ export const withdraw = async (
 
         sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
-        return balanceAction;
+        return { balanceAction, promiEvent };
 
     } catch (error) {
         if (error.tx) {
             balanceAction.txHash = error.tx;
             sdk._storage.setBalanceAction(balanceAction).catch(console.error);
-            return balanceAction;
+            return { balanceAction, promiEvent: null };
         }
 
         if (error.message.match("Insufficient funds")) {

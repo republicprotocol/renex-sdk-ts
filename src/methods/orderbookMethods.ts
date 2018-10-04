@@ -25,7 +25,11 @@ const VOLUME_OFFSET = 12;
 // Default time an order is open for (24 hours)
 const DEFAULT_EXPIRY_OFFSET = 60 * 60 * 24;
 
-const populateOrderDefaults = (sdk: RenExSDK, orderInputs: OrderInputs, unixSeconds: number): OrderInputsAll => {
+const populateOrderDefaults = (
+    sdk: RenExSDK,
+    orderInputs: OrderInputs,
+    unixSeconds: number,
+): OrderInputsAll => {
     return {
         spendToken: orderInputs.spendToken,
         receiveToken: orderInputs.receiveToken,
@@ -48,7 +52,11 @@ export const orderFeeDenominator = async (sdk: RenExSDK): Promise<BN> => {
     return Promise.resolve(new BN(1000));
 };
 
-export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpleConsole = NullConsole): Promise<TraderOrder> => {
+export const openOrder = async (
+    sdk: RenExSDK,
+    orderInputsIn: OrderInputs,
+    simpleConsole = NullConsole,
+): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
@@ -185,8 +193,9 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
     simpleConsole.log("Waiting for transaction signature");
     const gasPrice = await sdk.getGasPrice();
     let txHash: string;
+    let promiEvent;
     try {
-        txHash = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address() }));
+        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address(), gasPrice })));
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
@@ -194,7 +203,7 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
 
     simpleConsole.log("Order submitted.");
 
-    const completeOrder = {
+    const traderOrder = {
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.address(),
@@ -210,20 +219,27 @@ export const openOrder = async (sdk: RenExSDK, orderInputsIn: OrderInputs, simpl
         },
     };
 
-    sdk._storage.setOrder(completeOrder).catch(console.error);
+    sdk._storage.setOrder(traderOrder).catch(console.error);
 
-    return completeOrder;
+    return { traderOrder, promiEvent };
 };
 
-export const cancelOrder = (sdk: RenExSDK, orderID: OrderID): PromiEvent<Transaction> => {
+export const cancelOrder = async (
+    sdk: RenExSDK,
+    orderID: OrderID,
+): Promise<{ promiEvent: PromiEvent<Transaction> | null }> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
-    sdk.getGasPrice().then((gasPrice: number) => {
-        return sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address(), gasPrice });
-    });
-    return sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address() });
+
+    const gasPrice = await sdk.getGasPrice();
+    return {
+        promiEvent: sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address(), gasPrice })
+    };
 };
 
-export const getOrders = async (sdk: RenExSDK, filter: GetOrdersFilter): Promise<Order[]> => {
+export const getOrders = async (
+    sdk: RenExSDK,
+    filter: GetOrdersFilter,
+): Promise<Order[]> => {
     const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
     if (filter.status && !filterableStatuses.includes(filter.status)) {
         throw new Error(ErrUnsupportedFilterStatus);
