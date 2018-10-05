@@ -1,9 +1,9 @@
 import axios from "axios";
-import Web3 from "web3";
 
 import { BN } from "bn.js";
+import { Transaction, TransactionReceipt } from "web3/types";
 
-import RenExSDK, { IntInput } from "../index";
+import RenExSDK, { IntInput, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, ETH_CODE, withProvider } from "../contracts/contracts";
@@ -46,5 +46,74 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
             console.error(error);
             return undefined;
         }
+    }
+};
+
+/**
+ * Returns the status of a transaction from its transaction hash.
+ *
+ * @param {RenExSDK} sdk
+ * @param {string} txHash
+ * @returns {Promise<TransactionStatus>} One of "pending", "confirmed",
+ *          "failed", or "replaced"
+ */
+export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
+
+    let receipt: TransactionReceipt | null = await sdk.web3().eth.getTransactionReceipt(txHash);
+
+    // If the transaction hasn't been confirmed yet, it will either have a null
+    // receipt, or it will have an empty blockhash.
+
+    if (!receipt) {
+        // If the receipt doesn't have a blockHash, check if its nonce is lower
+        // than the trader's current nonce. This implies that the transaction
+        // has been overwritten.
+
+        // Get the current trader's nonce
+        const traderNonce = await sdk.web3().eth.getTransactionCount(sdk.address());
+
+        // Get transaction's nonce
+        let transaction;
+        try {
+            transaction = await sdk._storage.getBalanceAction(txHash);
+        } catch (err) {
+            return TransactionStatus.Pending;
+        }
+
+        if (transaction === undefined || transaction.nonce === undefined) {
+            return TransactionStatus.Pending;
+        }
+
+        // Check if the trader's nonce is higher than the transaction's nonce
+        if (traderNonce > transaction.nonce) {
+            // Check the transaction receipt again in case the transaction was
+            // confirmed in the time between fetching the transaction and
+            // getting the nonce. We could retrieve the nonce before the receipt
+            // but most of the time we do not expect this scenario to happen.
+            // This isn't perfect since the requests may hit different nodes.
+            // One solution is to call `getTransactionStatus` again after a
+            // delay if it has returned "replaced", to confirm the result.
+            receipt = await sdk.web3().eth.getTransactionReceipt(txHash);
+
+            // Check that the transaction isn't confirmed
+            if (!receipt) {
+                return TransactionStatus.Replaced;
+            }
+        } else {
+            return TransactionStatus.Pending;
+        }
+    }
+
+    if (!receipt.blockHash) {
+        return TransactionStatus.Pending;
+    }
+
+    // Status type is string, but actually returns back as a boolean
+    // tslint:disable-next-line:no-any
+    const receiptStatus: any = receipt.status;
+    if (receiptStatus === "0" || receiptStatus === 0 || receiptStatus === false) {
+        return TransactionStatus.Failed;
+    } else {
+        return TransactionStatus.Done;
     }
 };

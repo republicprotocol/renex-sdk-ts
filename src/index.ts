@@ -105,14 +105,23 @@ class RenExSDK {
     public lockedBalances = (tokens: number[]): Promise<BN[]> => lockedBalances(this, tokens);
     public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
-    public deposit = (token: number, value: IntInput): Promise<BalanceAction> => deposit(this, token, value);
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature = false): Promise<BalanceAction> =>
-        withdraw(this, token, value, withoutIngressSignature)
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole): Promise<Order> => openOrder(this, order, simpleConsole);
-    public cancelOrder = (orderID: OrderID): PromiEvent<Transaction> => cancelOrder(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
+
+    // Transaction Methods
+    public deposit = (token: number, value: IntInput):
+        Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
+        deposit(this, token, value)
+    public withdraw = (token: number, value: IntInput, withoutIngressSignature = false):
+        Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
+        withdraw(this, token, value, withoutIngressSignature)
+    public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole):
+        Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> =>
+        openOrder(this, order, simpleConsole)
+    public cancelOrder = (orderID: OrderID):
+        Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
+        cancelOrder(this, orderID)
 
     public orderFeeDenominator = (): Promise<BN> => orderFeeDenominator(this);
     public orderFeeNumerator = (): Promise<BN> => orderFeeNumerator(this);
