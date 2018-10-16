@@ -8,7 +8,7 @@ import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
-import { nondepositedBalance, usableBalance } from "./balancesMethods";
+import { balances } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
@@ -48,8 +48,8 @@ export const deposit = async (
     value = new BN(value);
 
     // Check that we can deposit that amount
-    const balance = await nondepositedBalance(sdk, token);
-    if (value.gt(balance)) {
+    const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
+    if (tokenBalance && value.gt(tokenBalance.nondeposited)) {
         throw new Error(ErrInsufficientBalance);
     }
 
@@ -174,8 +174,8 @@ export const withdraw = async (
     }
 
     // Check the balance before withdrawal attempt
-    const balance = await usableBalance(sdk, token);
-    if (value.gt(balance)) {
+    const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
+    if (tokenBalance && value.gt(tokenBalance.free)) {
         throw new Error(ErrInsufficientBalance);
     }
 

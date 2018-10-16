@@ -120,6 +120,14 @@ export interface TokenDetails {
     registered: boolean;
 }
 
+export interface Balance {
+    free: BN;
+    used: BN;
+    nondeposited: BN;
+}
+
+export type BalanceDetails = Map<TokenCode, Balance>;
+
 export enum BalanceActionType {
     Withdraw = "withdraw",
     Deposit = "deposit",

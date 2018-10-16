@@ -4,7 +4,7 @@ import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { BalanceActionType, OrderSettlement, OrderStatus, TokenDetails, TransactionStatus } from "../types";
+import { Balance, BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, TokenDetails, TransactionStatus } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
@@ -24,7 +24,7 @@ export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenD
     return details;
 };
 
-export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     if (token === 1) {
         return new BN(await sdk.web3().eth.getBalance(sdk.address()));
     } else {
@@ -38,39 +38,35 @@ export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise
     }
 };
 
-export const nondepositedBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const nondepositedBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
     // Loop through all tokens, returning 0 for any that throw an error
     return Promise.all(tokens.map(async (token: number) => {
         try {
             return await nondepositedBalance(sdk, token);
         } catch (err) {
-            console.error(`Unable to retrieve non-deposited balance for token #${token}`);
+            console.error(`Unable to retrieve non-deposited balance for token #${token}. ${err}`);
             return new BN(0);
         }
     }));
 };
 
-export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
+const totalBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
     const details = await sdk.tokenDetails(token);
     return new BN(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
 };
 
-export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const totalBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
     // Loop through all tokens, returning 0 for any that throw an error
     return Promise.all(tokens.map((async (token) => {
         try {
-            return sdk.balance(token);
+            return totalBalance(sdk, token);
         } catch (err) {
             return new BN(0);
         }
     })));
 };
 
-export const lockedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return sdk.lockedBalances([token]).then(b => b[0]);
-};
-
-export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
 
     // Add balances from orders that are open or not settled
     const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
@@ -128,15 +124,27 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
     });
 };
 
-export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    const locked = await sdk.lockedBalances([token]).then(b => b[0]);
-    const tokenBalance = await sdk.balance(token);
-    let usable = tokenBalance.sub(locked);
-
-    // If usable balance is less than zero, set to 0
-    if (usable.lt(new BN(0))) {
-        usable = new BN(0);
-    }
-
-    return tokenBalance.sub(locked);
+export const balances = async (sdk: RenExSDK, tokens: number[]): Promise<BalanceDetails> => {
+    return Promise.all([
+        totalBalances(sdk, tokens),
+        lockedBalances(sdk, tokens),
+        nondepositedBalances(sdk, tokens)
+    ]).then(([total, locked, nondeposited]) => {
+        const balanceDetails = new Map<number, Balance>();
+        tokens.forEach((token, index) => {
+            const tokenBalance = total[index];
+            const tokenLocked = locked[index];
+            let usable = tokenBalance.sub(tokenLocked);
+            // If usable balance is less than zero, set to 0
+            if (usable.lt(new BN(0))) {
+                usable = new BN(0);
+            }
+            balanceDetails.set(token, {
+                free: usable,
+                used: tokenLocked,
+                nondeposited: nondeposited[index],
+            });
+        });
+        return balanceDetails;
+    });
 };

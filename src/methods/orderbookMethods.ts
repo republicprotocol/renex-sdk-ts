@@ -16,7 +16,7 @@ import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder, Transaction } from "../types";
 import { usableAtomicBalance } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
-import { usableBalance } from "./balancesMethods";
+import { balances } from "./balancesMethods";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -76,15 +76,19 @@ export const openOrder = async (
     const receiveVolume = parity === OrderParity.BUY ? orderInputs.volume : priorityVolume;
     const nonPriorityVolume = orderInputs.receiveToken < orderInputs.spendToken ? spendVolume : receiveVolume;
 
+    const feeNumerator = await orderFeeNumerator(sdk);
+    const feeDenominator = await orderFeeDenominator(sdk);
+    const feeToken = orderInputs.orderSettlement === OrderSettlement.RenExAtomic && nonPriorityToken === Token.ETH ? Token.ETH : orderInputs.receiveToken;
+    const feeAmount = (nonPriorityToken === Token.ETH || parity === OrderParity.BUY ? nonPriorityVolume : priorityVolume).div(feeDenominator).mul(feeNumerator);
+
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
-    let balance;
+    const retrievedBalances = await balances(sdk, [orderInputs.spendToken, feeToken]);
+    let balance = new BN(0);
     simpleConsole.log("Verifying trader balance");
     if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
-        try {
-            balance = await usableBalance(sdk, orderInputs.spendToken);
-        } catch (err) {
-            simpleConsole.error(err.message || err);
-            throw err;
+        const spendTokenBalance = retrievedBalances.get(orderInputs.spendToken);
+        if (spendTokenBalance) {
+            balance = spendTokenBalance.free;
         }
     } else {
         try {
@@ -114,13 +118,10 @@ export const openOrder = async (
         simpleConsole.error("Volume must be greater or equal to minimum volume");
         throw new Error("Volume must be greater or equal to minimum volume");
     }
-    const feeNumerator = await orderFeeNumerator(sdk);
-    const feeDenominator = await orderFeeDenominator(sdk);
-    const feeToken = orderInputs.orderSettlement === OrderSettlement.RenExAtomic && nonPriorityToken === Token.ETH ? Token.ETH : orderInputs.receiveToken;
-    const feeAmount = (nonPriorityToken === Token.ETH || parity === OrderParity.BUY ? nonPriorityVolume : priorityVolume).div(feeDenominator).mul(feeNumerator);
+
     if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
-        const usableFeeBalance = await usableBalance(sdk, feeToken);
-        if (feeAmount.gt(usableFeeBalance)) {
+        const usableFeeTokenBalance = retrievedBalances.get(feeToken);
+        if (usableFeeTokenBalance && feeAmount.gt(usableFeeTokenBalance.free)) {
             simpleConsole.error("Insufficient balance for fees");
             throw new Error("Insufficient balance for fees");
         }

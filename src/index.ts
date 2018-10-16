@@ -10,13 +10,13 @@ import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
 import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
-import { balance, balances, lockedBalance, lockedBalances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance } from "./methods/balancesMethods";
+import { balances, tokenDetails } from "./methods/balancesMethods";
 import { getGasPrice, transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerator } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicConnectionStatus, BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicConnectionStatus, Balance, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -97,13 +97,7 @@ class RenExSDK {
 
     public tokenDetails = (token: number): Promise<TokenDetails> => tokenDetails(this, token);
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
-    public nondepositedBalance = (token: number): Promise<BN> => nondepositedBalance(this, token);
-    public nondepositedBalances = (tokens: number[]): Promise<BN[]> => nondepositedBalances(this, tokens);
-    public balance = (token: number): Promise<BN> => balance(this, token);
-    public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
-    public lockedBalance = (token: number): Promise<BN> => lockedBalance(this, token);
-    public lockedBalances = (tokens: number[]): Promise<BN[]> => lockedBalances(this, tokens);
-    public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
+    public balances = (tokens: number[]): Promise<BalanceDetails> => balances(this, tokens);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
