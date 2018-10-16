@@ -54,7 +54,7 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const ethAtomAddress = await atomicAddresses(sdk, [Token.ETH]).then(addrs => addrs[0]);
+    const ethAtomAddress = await atomicAddresses([Token.ETH]).then(addrs => addrs[0]);
     await _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address());
     return refreshAtomConnectionStatus(sdk);
 };
@@ -77,7 +77,7 @@ export const atomicBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> =
     });
 };
 
-export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string[]> => {
+export const atomicAddresses = (tokens: number[]): Promise<string[]> => {
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {

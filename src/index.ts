@@ -130,7 +130,7 @@ class RenExSDK {
     public authorizeAtom = (): Promise<AtomicConnectionStatus> => authorizeAtom(this);
     public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
     public usableAtomicBalances = (tokens: number[]): Promise<BN[]> => usableAtomicBalances(this, tokens);
-    public atomicAddresses = (tokens: number[]): Promise<string[]> => atomicAddresses(this, tokens);
+    public atomicAddresses = (tokens: number[]): Promise<string[]> => atomicAddresses(tokens);
     public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedTokens(this);
 
     // Storage functions
