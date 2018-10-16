@@ -8,7 +8,7 @@ import LocalStorage from "./storage/localStorage";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
+import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalances } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances, tokenDetails } from "./methods/balancesMethods";
 import { getGasPrice, transfer } from "./methods/generalMethods";
@@ -128,11 +128,8 @@ class RenExSDK {
     public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
     public resetAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => resetAtomConnection(this);
     public authorizeAtom = (): Promise<AtomicConnectionStatus> => authorizeAtom(this);
-    public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
     public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
-    public usableAtomicBalance = (token: number): Promise<BN> => usableAtomicBalance(this, token);
     public usableAtomicBalances = (tokens: number[]): Promise<BN[]> => usableAtomicBalances(this, tokens);
-    public atomicAddress = (token: number): Promise<string> => atomicAddress(this, token);
     public atomicAddresses = (tokens: number[]): Promise<string[]> => atomicAddresses(this, tokens);
     public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedTokens(this);
 

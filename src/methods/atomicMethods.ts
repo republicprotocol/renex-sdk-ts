@@ -54,7 +54,7 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const ethAtomAddress = await sdk.atomicAddress(Token.ETH);
+    const ethAtomAddress = await atomicAddresses(sdk, [Token.ETH]).then(addrs => addrs[0]);
     await _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address());
     return refreshAtomConnectionStatus(sdk);
 };
@@ -77,10 +77,6 @@ export const atomicBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> =
     });
 };
 
-export const atomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return atomicBalances(sdk, [token]).then(balances => balances[0]);
-};
-
 export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string[]> => {
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
@@ -93,10 +89,6 @@ export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string
             return "";
         });
     });
-};
-
-export const atomicAddress = async (sdk: RenExSDK, token: number): Promise<string> => {
-    return atomicAddresses(sdk, [token]).then(addresses => addresses[0]);
 };
 
 export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
@@ -131,8 +123,4 @@ export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Pro
         });
         return startingBalance;
     });
-};
-
-export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return usableAtomicBalances(sdk, [token]).then(balances => balances[0]);
 };
