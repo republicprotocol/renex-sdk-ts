@@ -41,6 +41,16 @@ export enum OrderParity {
     SELL = 1,
 }
 
+export enum Token {
+    BTC = "BTC",
+    ETH = "ETH",
+    DGX = "DGX",
+    TUSD = "TUSD",
+    REN = "REN",
+    ZRX = "ZRX",
+    OMG = "OMG",
+}
+
 export type TokenCode = string;
 
 export interface OrderInputs {

@@ -8,7 +8,7 @@ import LocalStorage from "./storage/localStorage";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { supportedTokens, Token } from "./lib/tokens";
+import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances, tokenDetails } from "./methods/balancesMethods";
@@ -17,7 +17,7 @@ import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerat
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";

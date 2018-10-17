@@ -3,8 +3,7 @@ import { BN } from "bn.js";
 import RenExSDK, { TokenCode } from "../index";
 
 import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
-import { Token } from "../lib/tokens";
-import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus } from "../types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
 
 /* Atomic Connection */
 

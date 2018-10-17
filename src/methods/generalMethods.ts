@@ -6,9 +6,8 @@ import { Transaction, TransactionReceipt } from "web3/types";
 import RenExSDK, { IntInput, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
-import { ERC20, ETH_CODE, withProvider } from "../contracts/contracts";
-import { Token } from "../lib/tokens";
-import { TokenCode } from "../types";
+import { ERC20, withProvider } from "../contracts/contracts";
+import { Token, TokenCode } from "../types";
 
 export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: IntInput): Promise<void> => {
     const gasPrice = await sdk.getGasPrice();

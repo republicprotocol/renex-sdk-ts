@@ -2,13 +2,12 @@ import { BN } from "bn.js";
 import { PromiEvent } from "web3/types";
 
 import RenExSDK from "../index";
-import { BalanceAction, BalanceActionType, IntInput, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
+import { BalanceAction, BalanceActionType, IntInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
-import { Token } from "../lib/tokens";
 import { balances } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 
