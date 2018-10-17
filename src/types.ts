@@ -41,7 +41,7 @@ export enum OrderParity {
     SELL = 1,
 }
 
-export type TokenCode = number;
+export type TokenCode = string;
 
 export interface OrderInputs {
     // Required fields

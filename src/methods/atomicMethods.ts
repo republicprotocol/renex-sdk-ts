@@ -3,7 +3,7 @@ import { BN } from "bn.js";
 import RenExSDK, { TokenCode } from "../index";
 
 import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
-import { Token } from "../lib/market";
+import { Token } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus } from "../types";
 
 /* Atomic Connection */
@@ -61,7 +61,7 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 
 /* Atomic balances */
 
-export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
+export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
 const retrieveAtomicBalances = (tokens: number[]): Promise<BN[]> => {
     return getAtomicBalances().then(balances => {

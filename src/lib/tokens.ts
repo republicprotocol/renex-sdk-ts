@@ -1,4 +1,21 @@
+import RenExSDK from "../index";
+
 import { BN } from "bn.js";
+import { TokenCode } from "types";
+
+export enum Token {
+    BTC = "BTC",
+    ETH = "ETH",
+    DGX = "DGX",
+    TUSD = "TUSD",
+    REN = "REN",
+    ZRX = "ZRX",
+    OMG = "OMG",
+}
+
+export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
+    return Promise.resolve([Token.BTC, Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG]);
+}
 
 /**
  * Combine two 32-bit token identifiers into a single 64-bit number.
