@@ -14,7 +14,7 @@ import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/error
 import { Token } from "../lib/market";
 import { generateTokenPairing } from "../lib/tokens";
 import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder, Transaction } from "../types";
-import { usableAtomicBalances } from "./atomicMethods";
+import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances } from "./balancesMethods";
 
@@ -92,7 +92,10 @@ export const openOrder = async (
         }
     } else {
         try {
-            balance = await usableAtomicBalances(sdk, [orderInputs.spendToken]).then(b => b[0]);
+            const atomicBalance = await atomicBalances(sdk, [orderInputs.spendToken]).then(b => b.get(orderInputs.spendToken));
+            if (atomicBalance) {
+                balance = atomicBalance.free;
+            }
         } catch (err) {
             simpleConsole.error(err.message || err);
             throw err;

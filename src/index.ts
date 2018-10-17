@@ -8,7 +8,7 @@ import LocalStorage from "./storage/localStorage";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalances } from "./methods/atomicMethods";
+import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances, tokenDetails } from "./methods/balancesMethods";
 import { getGasPrice, transfer } from "./methods/generalMethods";
@@ -16,7 +16,7 @@ import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerat
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -128,8 +128,7 @@ class RenExSDK {
     public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
     public resetAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => resetAtomConnection(this);
     public authorizeAtom = (): Promise<AtomicConnectionStatus> => authorizeAtom(this);
-    public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
-    public usableAtomicBalances = (tokens: number[]): Promise<BN[]> => usableAtomicBalances(this, tokens);
+    public atomicBalances = (tokens: number[]): Promise<Map<number, AtomicBalanceDetails>> => atomicBalances(this, tokens);
     public atomicAddresses = (tokens: number[]): Promise<string[]> => atomicAddresses(tokens);
     public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedTokens(this);
 

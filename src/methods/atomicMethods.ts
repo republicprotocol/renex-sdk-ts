@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
 import { Token } from "../lib/market";
-import { AtomicConnectionStatus, OrderSettlement, OrderStatus } from "../types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus } from "../types";
 
 /* Atomic Connection */
 
@@ -63,7 +63,7 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 
 export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
-export const atomicBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const retrieveAtomicBalances = (tokens: number[]): Promise<BN[]> => {
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {
@@ -91,8 +91,8 @@ export const atomicAddresses = (tokens: number[]): Promise<string[]> => {
     });
 };
 
-export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    const usedOrderBalances = sdk.listTraderOrders().then(orders => {
+const usedAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+    return sdk.listTraderOrders().then(orders => {
         const usedFunds = new Map<number, BN>();
         orders.forEach(order => {
             if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&
@@ -109,18 +109,22 @@ export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Pro
                 }
             }
         });
-        return usedFunds;
+        return tokens.map(token => usedFunds.get(token) || new BN(0));
     });
+};
 
-    return Promise.all([atomicBalances(sdk, tokens), usedOrderBalances]).then(([
+export const atomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<Map<number, AtomicBalanceDetails>> => {
+    return Promise.all([retrieveAtomicBalances(tokens), usedAtomicBalances(sdk, tokens)]).then(([
         startingBalance,
-        orderBalance,
+        usedBalance,
     ]) => {
+        let atomicBalance = new Map<number, AtomicBalanceDetails>();
         tokens.forEach((token, index) => {
-            const ob = orderBalance.get(token) || new BN(0);
-            // Don't let this balance value be negative.
-            startingBalance[index] = BN.max(new BN(0), startingBalance[index].sub(ob));
+            atomicBalance = atomicBalance.set(token, {
+                used: usedBalance[index],
+                free: BN.max(new BN(0), startingBalance[index].sub(usedBalance[index])),
+            });
         });
-        return startingBalance;
+        return atomicBalance;
     });
 };

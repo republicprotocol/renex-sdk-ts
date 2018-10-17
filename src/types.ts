@@ -126,6 +126,10 @@ export interface BalanceDetails {
     nondeposited: BN;
 }
 
+export interface AtomicBalanceDetails {
+    free: BN;
+    used: BN;
+}
 
 export enum BalanceActionType {
     Withdraw = "withdraw",
