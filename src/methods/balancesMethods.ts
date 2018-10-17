@@ -4,7 +4,7 @@ import RenExSDK from "../index";
 
 import { ERC20Contract } from "contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { Balance, BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, TokenDetails, TransactionStatus } from "../types";
+import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, TokenDetails, TransactionStatus } from "../types";
 
 export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
@@ -124,13 +124,13 @@ const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> =>
     });
 };
 
-export const balances = async (sdk: RenExSDK, tokens: number[]): Promise<BalanceDetails> => {
+export const balances = async (sdk: RenExSDK, tokens: number[]): Promise<Map<number, BalanceDetails>> => {
     return Promise.all([
         totalBalances(sdk, tokens),
         lockedBalances(sdk, tokens),
         nondepositedBalances(sdk, tokens)
     ]).then(([total, locked, nondeposited]) => {
-        const balanceDetails = new Map<number, Balance>();
+        const balanceDetails = new Map<number, BalanceDetails>();
         tokens.forEach((token, index) => {
             const tokenBalance = total[index];
             const tokenLocked = locked[index];

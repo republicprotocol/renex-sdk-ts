@@ -16,7 +16,7 @@ import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerat
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicConnectionStatus, Balance, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -97,7 +97,7 @@ class RenExSDK {
 
     public tokenDetails = (token: number): Promise<TokenDetails> => tokenDetails(this, token);
     public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
-    public balances = (tokens: number[]): Promise<BalanceDetails> => balances(this, tokens);
+    public balances = (tokens: number[]): Promise<Map<number, BalanceDetails>> => balances(this, tokens);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
