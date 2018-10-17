@@ -11,8 +11,7 @@ import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
-import { Token } from "../lib/market";
-import { generateTokenPairing } from "../lib/tokens";
+import { generateTokenPairing, Token, tokenToID } from "../lib/tokens";
 import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
@@ -62,8 +61,8 @@ export const openOrder = async (
 
     // Initialize required contracts
     simpleConsole.log("Retrieving token details");
-    const receiveToken = await sdk.tokenDetails(new BN(orderInputs.receiveToken).toNumber());
-    const spendToken = await sdk.tokenDetails(new BN(orderInputs.spendToken).toNumber());
+    const receiveToken = await sdk.tokenDetails(orderInputs.receiveToken);
+    const spendToken = await sdk.tokenDetails(orderInputs.spendToken);
 
     const parity = orderInputs.receiveToken < orderInputs.spendToken ? OrderParity.SELL : OrderParity.BUY;
     const nonPriorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? spendToken.decimals : receiveToken.decimals;
@@ -140,8 +139,8 @@ export const openOrder = async (
     const minimumVolume = adjustDecimals(orderInputs.minimumVolume, decimals, VOLUME_OFFSET);
 
     const tokens = parity === OrderParity.BUY ?
-        generateTokenPairing(orderInputs.spendToken, orderInputs.receiveToken) :
-        generateTokenPairing(orderInputs.receiveToken, orderInputs.spendToken);
+        generateTokenPairing(tokenToID(orderInputs.spendToken), tokenToID(orderInputs.receiveToken)) :
+        generateTokenPairing(tokenToID(orderInputs.receiveToken), tokenToID(orderInputs.spendToken));
 
     let ingressOrder = new ingress.Order({
         type: orderInputs.type,

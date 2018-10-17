@@ -2,12 +2,13 @@ import { BN } from "bn.js";
 import { PromiEvent } from "web3/types";
 
 import RenExSDK from "../index";
-import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, TransactionStatus } from "../types";
+import { BalanceAction, BalanceActionType, IntInput, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
+import { Token } from "../lib/tokens";
 import { balances } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 
@@ -42,7 +43,7 @@ export const onTxHash = (tx: PromiEvent<Transaction>): Promise<{ txHash: string,
 
 export const deposit = async (
     sdk: RenExSDK,
-    token: number,
+    token: TokenCode,
     value: IntInput,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BN(value);
@@ -117,7 +118,7 @@ export const deposit = async (
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
-                    gas: token === 256 ? 500000 : 150000,
+                    gas: token === Token.DGX ? 500000 : 150000,
                     gasPrice,
                     from: address,
                     // nonce: balanceAction.nonce,
@@ -162,7 +163,7 @@ export const deposit = async (
 
 export const withdraw = async (
     sdk: RenExSDK,
-    token: number,
+    token: TokenCode,
     value: IntInput,
     withoutIngressSignature: boolean,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {

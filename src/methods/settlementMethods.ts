@@ -5,6 +5,7 @@ import RenExSDK from "../index";
 import { getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
+import { idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 
 // This function is called if the Orderbook returns Confirmed
@@ -108,22 +109,22 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
             orderID: orderID64,
             matchedID: matchedID.toBase64(),
 
-            receivedToken: new BN(details.secondaryToken).toNumber(),
+            receivedToken: idToToken(new BN(details.secondaryToken).toNumber()),
             receivedVolume: new BN(details.secondaryVolume),
 
             fee: new BN(details.priorityFee),
-            spentToken: new BN(details.priorityToken).toNumber(),
+            spentToken: idToToken(new BN(details.priorityToken).toNumber()),
             spentVolume: new BN(details.priorityVolume),
         } :
         {
             orderID: orderID64,
             matchedID: matchedID.toBase64(),
 
-            receivedToken: new BN(details.priorityToken).toNumber(),
+            receivedToken: idToToken(new BN(details.priorityToken).toNumber()),
             receivedVolume: new BN(details.priorityVolume),
 
             fee: new BN(details.secondaryFee),
-            spentToken: new BN(details.secondaryToken).toNumber(),
+            spentToken: idToToken(new BN(details.secondaryToken).toNumber()),
             spentVolume: new BN(details.secondaryVolume),
         };
 

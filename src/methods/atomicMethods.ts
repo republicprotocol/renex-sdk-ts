@@ -63,7 +63,7 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 
 export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
-const retrieveAtomicBalances = (tokens: number[]): Promise<BN[]> => {
+const retrieveAtomicBalances = (tokens: TokenCode[]): Promise<BN[]> => {
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {
@@ -77,7 +77,7 @@ const retrieveAtomicBalances = (tokens: number[]): Promise<BN[]> => {
     });
 };
 
-export const atomicAddresses = (tokens: number[]): Promise<string[]> => {
+export const atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => {
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {
@@ -91,9 +91,9 @@ export const atomicAddresses = (tokens: number[]): Promise<string[]> => {
     });
 };
 
-const usedAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BN[]> => {
     return sdk.listTraderOrders().then(orders => {
-        const usedFunds = new Map<number, BN>();
+        const usedFunds = new Map<TokenCode, BN>();
         orders.forEach(order => {
             if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&
                 (order.status === OrderStatus.NOT_SUBMITTED ||
@@ -113,12 +113,12 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]
     });
 };
 
-export const atomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<Map<number, AtomicBalanceDetails>> => {
+export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => {
     return Promise.all([retrieveAtomicBalances(tokens), usedAtomicBalances(sdk, tokens)]).then(([
         startingBalance,
         usedBalance,
     ]) => {
-        let atomicBalance = new Map<number, AtomicBalanceDetails>();
+        let atomicBalance = new Map<TokenCode, AtomicBalanceDetails>();
         tokens.forEach((token, index) => {
             atomicBalance = atomicBalance.set(token, {
                 used: usedBalance[index],

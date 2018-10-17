@@ -13,11 +13,11 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
-import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType, SimpleConsole } from "../types";
+import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType, SimpleConsole, TokenCode } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
-import { generateTokenPairing, splitTokenPairing } from "./tokens";
+import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
 
 const NULL = "0x0000000000000000000000000000000000000000";
 
@@ -136,10 +136,10 @@ export async function submitOrderFragments(
     }
 }
 
-export async function requestWithdrawalSignature(ingressURL: string, address: string, tokenID: number): Promise<EncodedData> {
+export async function requestWithdrawalSignature(ingressURL: string, address: string, token: TokenCode): Promise<EncodedData> {
     const request = new WithdrawRequest({
         address: address.slice(2),
-        tokenID,
+        tokenID: tokenToID(token),
     });
 
     const resp = await axios.post(`${ingressURL}/withdrawals`, request.toJS());

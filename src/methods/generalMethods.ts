@@ -7,10 +7,12 @@ import RenExSDK, { IntInput, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, ETH_CODE, withProvider } from "../contracts/contracts";
+import { Token } from "../lib/tokens";
+import { TokenCode } from "../types";
 
-export const transfer = async (sdk: RenExSDK, addr: string, token: number, valueBig: IntInput): Promise<void> => {
+export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: IntInput): Promise<void> => {
     const gasPrice = await sdk.getGasPrice();
-    if (token === ETH_CODE) {
+    if (token === Token.ETH) {
         sdk.web3().eth.sendTransaction({
             from: sdk.address(),
             to: addr,
