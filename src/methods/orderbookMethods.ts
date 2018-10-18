@@ -12,7 +12,7 @@ import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing, tokenToID, toSmallestUnit } from "../lib/tokens";
-import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
+import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances } from "./balancesMethods";
@@ -32,6 +32,7 @@ const populateOrderDefaults = (
     return {
         spendToken: orderInputs.spendToken,
         receiveToken: orderInputs.receiveToken,
+        side: orderInputs.side,
         price: new BigNumber(orderInputs.price),
         volume: new BigNumber(orderInputs.volume),
         minVolume: new BigNumber(orderInputs.minVolume),
@@ -62,15 +63,14 @@ export const openOrder = async (
     const receivePriority = tokenToID(orderInputs.receiveToken);
     const spendPriority = tokenToID(orderInputs.spendToken);
     const nonPriorityToken = receivePriority < spendPriority ? orderInputs.spendToken : orderInputs.receiveToken;
-    const parity = receivePriority < spendPriority ? OrderParity.SELL : OrderParity.BUY;
     const priorityVolume = orderInputs.volume.times(orderInputs.price);
 
-    const spendVolume = parity === OrderParity.BUY ? priorityVolume : orderInputs.volume;
-    const receiveVolume = parity === OrderParity.BUY ? orderInputs.volume : priorityVolume;
+    const spendVolume = orderInputs.side === OrderSide.BUY ? priorityVolume : orderInputs.volume;
+    const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : priorityVolume;
     const nonPriorityVolume = receivePriority < spendPriority ? spendVolume : receiveVolume;
 
     const feeToken = orderInputs.orderSettlement === OrderSettlement.RenExAtomic && nonPriorityToken === Token.ETH ? Token.ETH : orderInputs.receiveToken;
-    const feeAmount = (nonPriorityToken === Token.ETH || parity === OrderParity.BUY ? nonPriorityVolume : priorityVolume).times(await sdk.orderFees());
+    const feeAmount = (nonPriorityToken === Token.ETH || orderInputs.side === OrderSide.BUY ? nonPriorityVolume : priorityVolume).times(await sdk.orderFees());
 
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
     const retrievedBalances = await balances(sdk, [orderInputs.spendToken, feeToken]);
@@ -125,7 +125,7 @@ export const openOrder = async (
     const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
     const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
 
-    const tokens = parity === OrderParity.BUY ?
+    const tokens = orderInputs.side === OrderSide.BUY ?
         generateTokenPairing(tokenToID(orderInputs.spendToken), tokenToID(orderInputs.receiveToken)) :
         generateTokenPairing(tokenToID(orderInputs.receiveToken), tokenToID(orderInputs.spendToken));
 
@@ -135,7 +135,7 @@ export const openOrder = async (
         expiry: orderInputs.expiry,
         nonce: orderInputs.nonce,
 
-        parity,
+        parity: orderInputs.side === OrderSide.BUY ? ingress.OrderParity.BUY : ingress.OrderParity.SELL,
         tokens,
         price,
         volume,
@@ -203,7 +203,6 @@ export const openOrder = async (
             spendVolume,
             receiveVolume,
             date: unixSeconds,
-            parity,
             feeAmount,
             feeToken,
         },

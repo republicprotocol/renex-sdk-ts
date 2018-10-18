@@ -33,9 +33,9 @@ export enum OrderType {
     LIMIT_IOC = 3,
 }
 
-export enum OrderParity {
-    BUY = 0,
-    SELL = 1,
+export enum OrderSide {
+    BUY = "buy",
+    SELL = "sell",
 }
 
 export enum Token {
@@ -54,6 +54,7 @@ export interface OrderInputs {
     // Required fields
     spendToken: TokenCode;
     receiveToken: TokenCode;
+    side: OrderSide;
     price: NumberInput;
     volume: NumberInput;
     minVolume: NumberInput;
@@ -83,7 +84,6 @@ export interface ComputedOrderDetails {
     receiveVolume: BigNumber;
     spendVolume: BigNumber;
     date: number;
-    parity: OrderParity;
     feeAmount: BigNumber;
     feeToken: TokenCode;
 }
