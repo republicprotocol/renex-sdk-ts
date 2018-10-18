@@ -1,5 +1,7 @@
 import Web3 from "web3";
 
+import BigNumber from "bignumber.js";
+
 import { BN } from "bn.js";
 import { PromiEvent, Provider } from "web3/types";
 
@@ -7,6 +9,7 @@ import LocalStorage from "./storage/localStorage";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
+import { normalizePrice, normalizeVolume } from "./lib/conversion";
 import { NetworkData } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
@@ -54,6 +57,11 @@ class RenExSDK {
     };
 
     public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: IntInput, registered: boolean }>> = new Map();
+
+    public utils = {
+        normalizePrice: (price: BigNumber): BigNumber => normalizePrice(price),
+        normalizevolume: (volume: BigNumber, roundDown: boolean): BigNumber => normalizeVolume(volume, roundDown),
+    };
 
     private _web3: Web3;
     private _address: string;
