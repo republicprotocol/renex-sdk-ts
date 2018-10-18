@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
 import RenExSDK from "../index";
@@ -85,6 +86,12 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     }).catch(console.error);
 
     return orderStatus;
+};
+
+export const orderFees = async (sdk: RenExSDK): Promise<BigNumber> => {
+    const numerator = new BigNumber(await sdk._contracts.renExSettlement.DARKNODE_FEES_NUMERATOR());
+    const denominator = new BigNumber(await sdk._contracts.renExSettlement.DARKNODE_FEES_DENOMINATOR());
+    return numerator.dividedBy(denominator);
 };
 
 export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {

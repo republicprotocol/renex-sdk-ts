@@ -17,7 +17,7 @@ import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActi
 import { balances, tokenDetails } from "./methods/balancesMethods";
 import { getGasPrice, transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerator } from "./methods/orderbookMethods";
-import { matchDetails, status } from "./methods/settlementMethods";
+import { matchDetails, orderFees, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
 import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
@@ -130,6 +130,7 @@ class RenExSDK {
 
     public orderFeeDenominator = (): Promise<BN> => orderFeeDenominator(this);
     public orderFeeNumerator = (): Promise<BN> => orderFeeNumerator(this);
+    public orderFees = (): Promise<BigNumber> => orderFees(this);
 
     public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
