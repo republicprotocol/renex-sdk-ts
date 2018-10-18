@@ -1,9 +1,6 @@
 import BigNumber from "bignumber.js";
 
-interface Tuple {
-    c: number;
-    q: number;
-}
+import { Tuple } from "./ingress";
 
 /**
  * Calculate price tuple from a decimal string
@@ -11,7 +8,7 @@ interface Tuple {
  * https://github.com/republicprotocol/republic-go/blob/smpc/docs/orders-and-order-fragments.md
  *
  */
-function priceToTuple(price: BigNumber): Tuple {
+export function priceToTuple(price: BigNumber): Tuple {
     const shift = 10 ** 12;
     const exponentOffset = 26;
     const step = 0.005;
@@ -21,7 +18,7 @@ function priceToTuple(price: BigNumber): Tuple {
     return tuple;
 }
 
-const tupleToPrice = (t: Tuple): BigNumber => {
+export const tupleToPrice = (t: Tuple): BigNumber => {
     const e = new BigNumber(10).pow(t.q - 26 - 12 - 3);
     return new BigNumber(t.c).times(5).times(e);
 };
@@ -30,7 +27,7 @@ export const normalizePrice = (p: BigNumber): BigNumber => {
     return tupleToPrice(priceToTuple(p));
 };
 
-function volumeToTuple(volume: BigNumber, roundDown = true): Tuple {
+export function volumeToTuple(volume: BigNumber, roundDown = true): Tuple {
     const shift = 10 ** 12;
     const exponentOffset = 0;
     const step = 0.2;
@@ -40,7 +37,7 @@ function volumeToTuple(volume: BigNumber, roundDown = true): Tuple {
     return tuple;
 }
 
-const tupleToVolume = (t: Tuple): BigNumber => {
+export const tupleToVolume = (t: Tuple): BigNumber => {
     const e = new BigNumber(10).pow(t.q - 12);
     return new BigNumber(t.c).times(0.2).times(e);
 };
@@ -76,7 +73,7 @@ function floatToTuple(shift: number, exponentOffset: number, step: number, value
 
     const q = exponentOffset + exp;
 
-    return { c, q };
+    return new Tuple({ c, q });
 }
 
 function significantDigits(n: BigNumber, digits: number, simplify = false, roundDown = true) {
