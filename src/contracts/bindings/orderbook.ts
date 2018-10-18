@@ -5,30 +5,30 @@ import { Log, PromiEvent, Provider, TransactionReceipt, Tx } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
 
-type BNLike = string | number | BN;
+type BigNumber = string | number | BN;
 
 export interface OrderbookContract {
     renounceOwnership(options?: Tx): PromiEvent<Transaction>;
     ren(options?: Tx): Promise<string>;
     owner(options?: Tx): Promise<string>;
-    orders(index_0: string, options?: Tx): Promise<{ state: BNLike, trader: string, confirmer: string, settlementID: BNLike, priority: BNLike, blockNumber: BNLike, matchedOrder: string, 0: BNLike, 1: string, 2: string, 3: BNLike, 4: BNLike, 5: BNLike, 6: string }>;
+    orders(index_0: string, options?: Tx): Promise<{ state: BigNumber, trader: string, confirmer: string, settlementID: BigNumber, priority: BigNumber, blockNumber: BigNumber, matchedOrder: string, 0: BigNumber, 1: string, 2: string, 3: BigNumber, 4: BigNumber, 5: BigNumber, 6: string }>;
     darknodeRegistry(options?: Tx): Promise<string>;
     settlementRegistry(options?: Tx): Promise<string>;
     transferOwnership(_newOwner: string, options?: Tx): PromiEvent<Transaction>;
     VERSION(options?: Tx): Promise<string>;
     updateDarknodeRegistry(_newDarknodeRegistry: string, options?: Tx): PromiEvent<Transaction>;
-    openOrder(_settlementID: BNLike, _signature: string, _orderID: string, options?: Tx): PromiEvent<Transaction>;
+    openOrder(_settlementID: BigNumber, _signature: string, _orderID: string, options?: Tx): PromiEvent<Transaction>;
     confirmOrder(_orderID: string, _matchedOrderID: string, options?: Tx): PromiEvent<Transaction>;
     cancelOrder(_orderID: string, options?: Tx): PromiEvent<Transaction>;
-    orderState(_orderID: string, options?: Tx): Promise<BNLike>;
+    orderState(_orderID: string, options?: Tx): Promise<BigNumber>;
     orderMatch(_orderID: string, options?: Tx): Promise<string>;
-    orderPriority(_orderID: string, options?: Tx): Promise<BNLike>;
+    orderPriority(_orderID: string, options?: Tx): Promise<BigNumber>;
     orderTrader(_orderID: string, options?: Tx): Promise<string>;
     orderConfirmer(_orderID: string, options?: Tx): Promise<string>;
-    orderBlockNumber(_orderID: string, options?: Tx): Promise<BNLike>;
-    orderDepth(_orderID: string, options?: Tx): Promise<BNLike>;
-    ordersCount(options?: Tx): Promise<BNLike>;
-    getOrders(_offset: BNLike, _limit: BNLike, options?: Tx): Promise<{ 0: string[], 1: string[], 2: BNLike[] }>;
+    orderBlockNumber(_orderID: string, options?: Tx): Promise<BigNumber>;
+    orderDepth(_orderID: string, options?: Tx): Promise<BigNumber>;
+    ordersCount(options?: Tx): Promise<BigNumber>;
+    getOrders(_offset: BigNumber, _limit: BigNumber, options?: Tx): Promise<{ 0: string[], 1: string[], 2: BigNumber[] }>;
     address: string;
 }
 

@@ -5,16 +5,16 @@ import { Log, PromiEvent, Provider, TransactionReceipt, Tx } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
 
-type BNLike = string | number | BN;
+type BigNumber = string | number | BN;
 
 export interface RenExTokensContract {
     renounceOwnership(options?: Tx): PromiEvent<Transaction>;
     owner(options?: Tx): Promise<string>;
     transferOwnership(_newOwner: string, options?: Tx): PromiEvent<Transaction>;
-    tokens(index_0: number | BNLike, options?: Tx): Promise<{ addr: string, decimals: BNLike, registered: boolean, 0: string, 1: BNLike, 2: boolean }>;
+    tokens(index_0: number | BigNumber, options?: Tx): Promise<{ addr: string, decimals: BigNumber, registered: boolean, 0: string, 1: BigNumber, 2: boolean }>;
     VERSION(options?: Tx): Promise<string>;
-    registerToken(_tokenCode: number | BNLike, _tokenAddress: string, _tokenDecimals: number | BNLike, options?: Tx): PromiEvent<Transaction>;
-    deregisterToken(_tokenCode: number | BNLike, options?: Tx): PromiEvent<Transaction>;
+    registerToken(_tokenCode: number | BigNumber, _tokenAddress: string, _tokenDecimals: number | BigNumber, options?: Tx): PromiEvent<Transaction>;
+    deregisterToken(_tokenCode: number | BigNumber, options?: Tx): PromiEvent<Transaction>;
     address: string;
 }
 
