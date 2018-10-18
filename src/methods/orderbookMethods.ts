@@ -34,7 +34,7 @@ const populateOrderDefaults = (
         receiveToken: orderInputs.receiveToken,
         price: new BigNumber(orderInputs.price),
         volume: new BigNumber(orderInputs.volume),
-        minimumVolume: new BigNumber(orderInputs.minimumVolume),
+        minVolume: new BigNumber(orderInputs.minVolume),
 
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
@@ -104,11 +104,11 @@ export const openOrder = async (
         simpleConsole.error("Invalid volume");
         throw new Error("Invalid volume");
     }
-    if (orderInputs.minimumVolume.lte(new BigNumber(0))) {
+    if (orderInputs.minVolume.lte(new BigNumber(0))) {
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }
-    if (orderInputs.volume.lt(orderInputs.minimumVolume)) {
+    if (orderInputs.volume.lt(orderInputs.minVolume)) {
         simpleConsole.error("Volume must be greater or equal to minimum volume");
         throw new Error("Volume must be greater or equal to minimum volume");
     }
@@ -123,7 +123,7 @@ export const openOrder = async (
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
     const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderInputs.minimumVolume, 0, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
 
     const tokens = parity === OrderParity.BUY ?
         generateTokenPairing(tokenToID(orderInputs.spendToken), tokenToID(orderInputs.receiveToken)) :

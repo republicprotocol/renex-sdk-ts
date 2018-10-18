@@ -56,7 +56,7 @@ export interface OrderInputs {
     receiveToken: TokenCode;
     price: NumberInput;
     volume: NumberInput;
-    minimumVolume: NumberInput;
+    minVolume: NumberInput;
 
     // Optional fields
     type?: OrderInputsAll["type"];
@@ -70,7 +70,7 @@ export interface OrderInputsAll extends OrderInputs {
     // Restrict type
     price: BigNumber;
     volume: BigNumber;
-    minimumVolume: BigNumber;
+    minVolume: BigNumber;
 
     // Change to non-optional
     type: OrderType;
@@ -164,7 +164,7 @@ export interface BalanceAction {
 }
 
 export interface Options {
-    minimumTradeVolume?: NumberInput;
+    minTradeVolume?: NumberInput;
 }
 
 export interface SimpleConsole {
