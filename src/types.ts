@@ -4,10 +4,7 @@ import { BN } from "bn.js";
 
 export { NetworkData } from "./lib/network";
 
-// These are temporary types to ensure that all user inputs are converted
-// correctly.
-export type IntInput = number | string | BN;
-export type FloatInput = number | string | BigNumber;
+export type NumberInput = number | string | BigNumber;
 
 // tslint:disable-next-line:no-any
 export interface Transaction { receipt: any; tx: string; logs: any[]; }
@@ -57,9 +54,9 @@ export interface OrderInputs {
     // Required fields
     spendToken: TokenCode;
     receiveToken: TokenCode;
-    price: FloatInput;
-    volume: IntInput;
-    minimumVolume: IntInput;
+    price: NumberInput;
+    volume: NumberInput;
+    minimumVolume: NumberInput;
 
     // Optional fields
     type?: OrderInputsAll["type"];
@@ -72,8 +69,8 @@ export interface OrderInputs {
 export interface OrderInputsAll extends OrderInputs {
     // Restrict type
     price: BigNumber;
-    volume: BN;
-    minimumVolume: BN;
+    volume: BigNumber;
+    minimumVolume: BigNumber;
 
     // Change to non-optional
     type: OrderType;
@@ -83,11 +80,11 @@ export interface OrderInputsAll extends OrderInputs {
 }
 
 export interface ComputedOrderDetails {
-    receiveVolume: BN;
-    spendVolume: BN;
+    receiveVolume: BigNumber;
+    spendVolume: BigNumber;
     date: number;
     parity: OrderParity;
-    feeAmount: BN;
+    feeAmount: BigNumber;
     feeToken: TokenCode;
 }
 
@@ -117,9 +114,9 @@ export interface MatchDetails {
     orderID: string;
     matchedID: string;
 
-    receivedVolume: BN;
-    spentVolume: BN;
-    fee: BN;
+    receivedVolume: BigNumber;
+    spentVolume: BigNumber;
+    fee: BigNumber;
     receivedToken: TokenCode;
     spentToken: TokenCode;
 }
@@ -131,14 +128,14 @@ export interface TokenDetails {
 }
 
 export interface BalanceDetails {
-    free: BN;
-    used: BN;
-    nondeposited: BN;
+    free: BigNumber;
+    used: BigNumber;
+    nondeposited: BigNumber;
 }
 
 export interface AtomicBalanceDetails {
-    free: BN;
-    used: BN;
+    free: BigNumber;
+    used: BigNumber;
 }
 
 export enum BalanceActionType {
@@ -157,7 +154,7 @@ export enum TransactionStatus {
 // should be updated as well.
 export interface BalanceAction {
     action: BalanceActionType;
-    amount: BN;
+    amount: BigNumber;
     time: number;
     status: TransactionStatus;
     token: TokenCode;
@@ -167,7 +164,7 @@ export interface BalanceAction {
 }
 
 export interface Options {
-    minimumTradeVolume?: IntInput;
+    minimumTradeVolume?: NumberInput;
 }
 
 export interface SimpleConsole {

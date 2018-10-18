@@ -1,8 +1,9 @@
-import { BN } from "bn.js";
+import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
 import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
+import { fromSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
 
 /* Atomic Connection */
@@ -62,17 +63,24 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 
 export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
-const retrieveAtomicBalances = (tokens: TokenCode[]): Promise<BN[]> => {
+const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return getAtomicBalances().then(balances => {
-        return tokens.map(token => {
+        return Promise.all(tokens.map(async token => {
+            const tokenDetails = await sdk.tokenDetails(token);
+            let balance;
             switch (token) {
                 case Token.ETH:
-                    return new BN(balances.ethereum.amount);
+                    balance = new BigNumber(balances.ethereum.amount);
+                    break;
                 case Token.BTC:
-                    return new BN(balances.bitcoin.amount);
+                    balance = new BigNumber(balances.bitcoin.amount);
+                    break;
             }
-            return new BN(0);
-        });
+            if (balance) {
+                return fromSmallestUnit(balance, tokenDetails);
+            }
+            return new BigNumber(0);
+        }));
     });
 };
 
@@ -90,9 +98,9 @@ export const atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => {
     });
 };
 
-const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BN[]> => {
+const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return sdk.listTraderOrders().then(orders => {
-        const usedFunds = new Map<TokenCode, BN>();
+        const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&
                 (order.status === OrderStatus.NOT_SUBMITTED ||
@@ -102,18 +110,18 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<B
                 const token = order.orderInputs.spendToken;
                 const usedTokenBalance = usedFunds.get(token);
                 if (usedTokenBalance) {
-                    usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                    usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
                 } else {
                     usedFunds.set(token, order.computedOrderDetails.spendVolume);
                 }
             }
         });
-        return tokens.map(token => usedFunds.get(token) || new BN(0));
+        return tokens.map(token => usedFunds.get(token) || new BigNumber(0));
     });
 };
 
 export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => {
-    return Promise.all([retrieveAtomicBalances(tokens), usedAtomicBalances(sdk, tokens)]).then(([
+    return Promise.all([retrieveAtomicBalances(sdk, tokens), usedAtomicBalances(sdk, tokens)]).then(([
         startingBalance,
         usedBalance,
     ]) => {
@@ -121,7 +129,7 @@ export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promis
         tokens.forEach((token, index) => {
             atomicBalance = atomicBalance.set(token, {
                 used: usedBalance[index],
-                free: BN.max(new BN(0), startingBalance[index].sub(usedBalance[index])),
+                free: BigNumber.max(new BigNumber(0), startingBalance[index].minus(usedBalance[index])),
             });
         });
         return atomicBalance;

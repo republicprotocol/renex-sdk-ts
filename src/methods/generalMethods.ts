@@ -1,32 +1,33 @@
 import axios from "axios";
+import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
-import { Transaction, TransactionReceipt } from "web3/types";
+import { TransactionReceipt } from "web3/types";
 
-import RenExSDK, { IntInput, TransactionStatus } from "../index";
+import RenExSDK, { NumberInput, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
+import { toSmallestUnit } from "../lib/tokens";
 import { Token, TokenCode } from "../types";
 
-export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: IntInput): Promise<void> => {
+export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
     const gasPrice = await sdk.getGasPrice();
+    const tokenDetails = await sdk.tokenDetails(token);
+    const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
     if (token === Token.ETH) {
         sdk.web3().eth.sendTransaction({
             from: sdk.address(),
             to: addr,
-            value: new BN(valueBig).mul(new BN(10).pow(new BN(18))).toNumber(),
+            value,
             gasPrice
         });
     } else {
-        const tokenDetails = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
         if (!tokenContract) {
             tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
-        const val = new BN(valueBig).mul(new BN(10).pow(new BN(tokenDetails.decimals)));
-        await tokenContract.transfer(addr, val);
+        await tokenContract.transfer(addr, value);
     }
 };
 

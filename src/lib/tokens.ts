@@ -1,7 +1,16 @@
 import RenExSDK from "../index";
 
+import { BigNumber } from "bignumber.js";
 import { BN } from "bn.js";
-import { Token, TokenCode } from "../types";
+import { Token, TokenCode, TokenDetails } from "../types";
+
+export function toSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails) {
+    return amount.times(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+}
+
+export function fromSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails) {
+    return amount.div(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+}
 
 export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
     return Promise.resolve([Token.BTC, Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG]);

@@ -1,8 +1,8 @@
+import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
-import BigNumber from "bignumber.js";
-
 import { BN } from "bn.js";
+
 import { PromiEvent, Provider } from "web3/types";
 
 import LocalStorage from "./storage/localStorage";
@@ -20,7 +20,7 @@ import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerat
 import { matchDetails, orderFees, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, MatchDetails, NumberInput, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -56,7 +56,7 @@ class RenExSDK {
         wyre: WyreContract,
     };
 
-    public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: IntInput, registered: boolean }>> = new Map();
+    public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
 
     public utils = {
         normalizePrice: (price: BigNumber): BigNumber => normalizePrice(price),
@@ -106,7 +106,7 @@ class RenExSDK {
     }
 
     public tokenDetails = (token: TokenCode): Promise<TokenDetails> => tokenDetails(this, token);
-    public transfer = (addr: string, token: TokenCode, value: IntInput): Promise<void> => transfer(this, addr, token, value);
+    public transfer = (addr: string, token: TokenCode, value: NumberInput): Promise<void> => transfer(this, addr, token, value);
     public balances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
@@ -115,10 +115,10 @@ class RenExSDK {
     public supportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
 
     // Transaction Methods
-    public deposit = (token: TokenCode, value: IntInput):
+    public deposit = (token: TokenCode, value: NumberInput):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
         deposit(this, token, value)
-    public withdraw = (token: TokenCode, value: IntInput, withoutIngressSignature = false):
+    public withdraw = (token: TokenCode, value: NumberInput, withoutIngressSignature = false):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
         withdraw(this, token, value, withoutIngressSignature)
     public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole):
@@ -128,8 +128,8 @@ class RenExSDK {
         Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
         cancelOrder(this, orderID)
 
-    public orderFeeDenominator = (): Promise<BN> => orderFeeDenominator(this);
-    public orderFeeNumerator = (): Promise<BN> => orderFeeNumerator(this);
+    public orderFeeDenominator = (): Promise<BigNumber> => orderFeeDenominator(this);
+    public orderFeeNumerator = (): Promise<BigNumber> => orderFeeNumerator(this);
     public orderFees = (): Promise<BigNumber> => orderFees(this);
 
     public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);

@@ -11,7 +11,7 @@ import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
-import { generateTokenPairing, tokenToID } from "../lib/tokens";
+import { generateTokenPairing, tokenToID, toSmallestUnit } from "../lib/tokens";
 import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderParity, OrderSettlement, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
@@ -33,8 +33,8 @@ const populateOrderDefaults = (
         spendToken: orderInputs.spendToken,
         receiveToken: orderInputs.receiveToken,
         price: new BigNumber(orderInputs.price),
-        volume: new BN(orderInputs.volume),
-        minimumVolume: new BN(orderInputs.minimumVolume),
+        volume: new BigNumber(orderInputs.volume),
+        minimumVolume: new BigNumber(orderInputs.minimumVolume),
 
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
@@ -43,12 +43,12 @@ const populateOrderDefaults = (
     };
 };
 
-export const orderFeeNumerator = async (sdk: RenExSDK): Promise<BN> => {
-    return Promise.resolve(new BN(2));
+export const orderFeeNumerator = async (sdk: RenExSDK): Promise<BigNumber> => {
+    return Promise.resolve(new BigNumber(2));
 };
 
-export const orderFeeDenominator = async (sdk: RenExSDK): Promise<BN> => {
-    return Promise.resolve(new BN(1000));
+export const orderFeeDenominator = async (sdk: RenExSDK): Promise<BigNumber> => {
+    return Promise.resolve(new BigNumber(1000));
 };
 
 export const openOrder = async (
@@ -59,30 +59,22 @@ export const openOrder = async (
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
-    // Initialize required contracts
-    simpleConsole.log("Retrieving token details");
-    const receiveToken = await sdk.tokenDetails(orderInputs.receiveToken);
-    const spendToken = await sdk.tokenDetails(orderInputs.spendToken);
-
-    const parity = orderInputs.receiveToken < orderInputs.spendToken ? OrderParity.SELL : OrderParity.BUY;
-    const nonPriorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? spendToken.decimals : receiveToken.decimals;
-    const priorityDecimals = orderInputs.receiveToken < orderInputs.spendToken ? receiveToken.decimals : spendToken.decimals;
-    const convertedVolume = adjustDecimals(new BigNumber(orderInputs.volume.toString()), nonPriorityDecimals, priorityDecimals);
-    const priorityVolume = new BN(new BigNumber(convertedVolume.toString()).times(orderInputs.price).integerValue(BigNumber.ROUND_DOWN).toFixed());
-    const nonPriorityToken = orderInputs.receiveToken < orderInputs.spendToken ? orderInputs.spendToken : orderInputs.receiveToken;
+    const receivePriority = tokenToID(orderInputs.receiveToken);
+    const spendPriority = tokenToID(orderInputs.spendToken);
+    const nonPriorityToken = receivePriority < spendPriority ? orderInputs.spendToken : orderInputs.receiveToken;
+    const parity = receivePriority < spendPriority ? OrderParity.SELL : OrderParity.BUY;
+    const priorityVolume = orderInputs.volume.times(orderInputs.price);
 
     const spendVolume = parity === OrderParity.BUY ? priorityVolume : orderInputs.volume;
     const receiveVolume = parity === OrderParity.BUY ? orderInputs.volume : priorityVolume;
-    const nonPriorityVolume = orderInputs.receiveToken < orderInputs.spendToken ? spendVolume : receiveVolume;
+    const nonPriorityVolume = receivePriority < spendPriority ? spendVolume : receiveVolume;
 
-    const feeNumerator = await orderFeeNumerator(sdk);
-    const feeDenominator = await orderFeeDenominator(sdk);
     const feeToken = orderInputs.orderSettlement === OrderSettlement.RenExAtomic && nonPriorityToken === Token.ETH ? Token.ETH : orderInputs.receiveToken;
-    const feeAmount = (nonPriorityToken === Token.ETH || parity === OrderParity.BUY ? nonPriorityVolume : priorityVolume).div(feeDenominator).mul(feeNumerator);
+    const feeAmount = (nonPriorityToken === Token.ETH || parity === OrderParity.BUY ? nonPriorityVolume : priorityVolume).times(await sdk.orderFees());
 
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
     const retrievedBalances = await balances(sdk, [orderInputs.spendToken, feeToken]);
-    let balance = new BN(0);
+    let balance = new BigNumber(0);
     simpleConsole.log("Verifying trader balance");
     if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
         const spendTokenBalance = retrievedBalances.get(orderInputs.spendToken);
@@ -108,11 +100,11 @@ export const openOrder = async (
         simpleConsole.error("Invalid price");
         throw new Error("Invalid price");
     }
-    if (orderInputs.volume.lte(new BN(0))) {
+    if (orderInputs.volume.lte(new BigNumber(0))) {
         simpleConsole.error("Invalid volume");
         throw new Error("Invalid volume");
     }
-    if (orderInputs.minimumVolume.lte(new BN(0))) {
+    if (orderInputs.minimumVolume.lte(new BigNumber(0))) {
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }
@@ -130,13 +122,8 @@ export const openOrder = async (
     }
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
-
-    // We convert the volume and minimumVolume to 10^12
-    const decimals = orderInputs.receiveToken > orderInputs.spendToken ?
-        new BN(receiveToken.decimals).toNumber() :
-        new BN(spendToken.decimals).toNumber();
-    const volume = adjustDecimals(orderInputs.volume, decimals, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderInputs.minimumVolume, decimals, VOLUME_OFFSET);
+    const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderInputs.minimumVolume, 0, VOLUME_OFFSET);
 
     const tokens = parity === OrderParity.BUY ?
         generateTokenPairing(tokenToID(orderInputs.spendToken), tokenToID(orderInputs.receiveToken)) :

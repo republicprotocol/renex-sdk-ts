@@ -1,13 +1,16 @@
+import BigNumber from "bignumber.js";
+
 import { BN } from "bn.js";
 import { PromiEvent } from "web3/types";
 
 import RenExSDK from "../index";
-import { BalanceAction, BalanceActionType, IntInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
+import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
+import { toSmallestUnit } from "../lib/tokens";
 import { balances } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 
@@ -43,9 +46,9 @@ export const onTxHash = (tx: PromiEvent<Transaction>): Promise<{ txHash: string,
 export const deposit = async (
     sdk: RenExSDK,
     token: TokenCode,
-    value: IntInput,
+    value: NumberInput,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
-    value = new BN(value);
+    value = new BigNumber(value);
 
     // Check that we can deposit that amount
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
@@ -56,6 +59,8 @@ export const deposit = async (
     const address = sdk.address();
     const tokenDetails = await sdk.tokenDetails(token);
     const gasPrice = await sdk.getGasPrice();
+
+    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Deposit,
@@ -73,7 +78,7 @@ export const deposit = async (
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                value,
+                valueBN,
                 { value: value.toString(), from: address, gasPrice },
             ));
 
@@ -107,13 +112,13 @@ export const deposit = async (
             // There's no way to check pending state - alternative is to see
             // if there are any pending deposits for the same token
             const allowance = new BN(await tokenContract.allowance(address, sdk._contracts.renExBalances.address, { from: address, gasPrice }));
-            if (allowance.lt(value)) {
-                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: address, gasPrice }));
+            if (allowance.lt(valueBN)) {
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, valueBN, { from: address, gasPrice }));
             }
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                value,
+                valueBN,
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
@@ -163,10 +168,10 @@ export const deposit = async (
 export const withdraw = async (
     sdk: RenExSDK,
     token: TokenCode,
-    value: IntInput,
+    value: NumberInput,
     withoutIngressSignature: boolean,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
-    value = new BN(value);
+    value = new BigNumber(value);
 
     // Trustless withdrawals are not implemented yet
     if (withoutIngressSignature === true) {
@@ -182,6 +187,8 @@ export const withdraw = async (
     const address = sdk.address();
     const tokenDetails = await sdk.tokenDetails(token);
     const gasPrice = await sdk.getGasPrice();
+
+    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Withdraw,
@@ -199,7 +206,7 @@ export const withdraw = async (
 
         const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
-            value,
+            valueBN,
             signature.toHex(),
             { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
         ));

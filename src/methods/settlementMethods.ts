@@ -117,22 +117,22 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
             matchedID: matchedID.toBase64(),
 
             receivedToken: idToToken(new BN(details.secondaryToken).toNumber()),
-            receivedVolume: new BN(details.secondaryVolume),
+            receivedVolume: new BigNumber(details.secondaryVolume),
 
-            fee: new BN(details.priorityFee),
+            fee: new BigNumber(details.priorityFee),
             spentToken: idToToken(new BN(details.priorityToken).toNumber()),
-            spentVolume: new BN(details.priorityVolume),
+            spentVolume: new BigNumber(details.priorityVolume),
         } :
         {
             orderID: orderID64,
             matchedID: matchedID.toBase64(),
 
             receivedToken: idToToken(new BN(details.priorityToken).toNumber()),
-            receivedVolume: new BN(details.priorityVolume),
+            receivedVolume: new BigNumber(details.priorityVolume),
 
-            fee: new BN(details.secondaryFee),
+            fee: new BigNumber(details.secondaryFee),
             spentToken: idToToken(new BN(details.secondaryToken).toNumber()),
-            spentVolume: new BN(details.secondaryVolume),
+            spentVolume: new BigNumber(details.secondaryVolume),
         };
 
     // If the order is an Atomic Swap, add fees and volumes since fees are
@@ -140,17 +140,17 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     if (storedOrder && storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
         const [receivedVolume, spentVolume] = (details.orderIsBuy) ?
             [
-                new BN(details.secondaryVolume).add(new BN(details.secondaryFee)),
-                new BN(details.priorityVolume).add(new BN(details.priorityFee)),
+                new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),
+                new BigNumber(details.priorityVolume).plus(new BigNumber(details.priorityFee)),
             ] : [
-                new BN(details.priorityVolume).add(new BN(details.priorityFee)),
-                new BN(details.secondaryVolume).add(new BN(details.secondaryFee)),
+                new BigNumber(details.priorityVolume).plus(new BigNumber(details.priorityFee)),
+                new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),
             ];
         orderMatchDetails.receivedVolume = receivedVolume;
         orderMatchDetails.spentVolume = spentVolume;
 
         // TODO: Calculate fees
-        orderMatchDetails.fee = new BN(0);
+        orderMatchDetails.fee = new BigNumber(0);
     }
 
     // Update local storage (without awaiting)
