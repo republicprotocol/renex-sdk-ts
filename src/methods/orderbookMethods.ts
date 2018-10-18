@@ -30,8 +30,8 @@ const populateOrderDefaults = (
     unixSeconds: number,
 ): OrderInputsAll => {
     return {
-        spendToken: orderInputs.spendToken,
-        receiveToken: orderInputs.receiveToken,
+        baseToken: orderInputs.baseToken,
+        quoteToken: orderInputs.quoteToken,
         side: orderInputs.side,
         price: new BigNumber(orderInputs.price),
         volume: new BigNumber(orderInputs.volume),
@@ -60,30 +60,33 @@ export const openOrder = async (
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
     const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
 
-    const receivePriority = tokenToID(orderInputs.receiveToken);
-    const spendPriority = tokenToID(orderInputs.spendToken);
-    const nonPriorityToken = receivePriority < spendPriority ? orderInputs.spendToken : orderInputs.receiveToken;
-    const priorityVolume = orderInputs.volume.times(orderInputs.price);
+    const quoteVolume = orderInputs.volume.times(orderInputs.price);
 
-    const spendVolume = orderInputs.side === OrderSide.BUY ? priorityVolume : orderInputs.volume;
-    const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : priorityVolume;
-    const nonPriorityVolume = receivePriority < spendPriority ? spendVolume : receiveVolume;
+    const spendToken = orderInputs.side === OrderSide.BUY ? orderInputs.quoteToken : orderInputs.baseToken;
+    const receiveToken = orderInputs.side === OrderSide.BUY ? orderInputs.baseToken : orderInputs.quoteToken;
+    const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
+    const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
-    const feeToken = orderInputs.orderSettlement === OrderSettlement.RenExAtomic && nonPriorityToken === Token.ETH ? Token.ETH : orderInputs.receiveToken;
-    const feeAmount = (nonPriorityToken === Token.ETH || orderInputs.side === OrderSide.BUY ? nonPriorityVolume : priorityVolume).times(await sdk.orderFees());
+    const feePercent = await sdk.orderFees();
+    let feeToken = receiveToken;
+    let feeAmount = quoteVolume.times(feePercent);
+    if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic && orderInputs.baseToken === Token.ETH) {
+        feeToken = Token.ETH;
+        feeAmount = orderInputs.volume.times(feePercent);
+    }
 
     // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
-    const retrievedBalances = await balances(sdk, [orderInputs.spendToken, feeToken]);
+    const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
     let balance = new BigNumber(0);
     simpleConsole.log("Verifying trader balance");
     if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
-        const spendTokenBalance = retrievedBalances.get(orderInputs.spendToken);
+        const spendTokenBalance = retrievedBalances.get(spendToken);
         if (spendTokenBalance) {
             balance = spendTokenBalance.free;
         }
     } else {
         try {
-            const atomicBalance = await atomicBalances(sdk, [orderInputs.spendToken]).then(b => b.get(orderInputs.spendToken));
+            const atomicBalance = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
             if (atomicBalance) {
                 balance = atomicBalance.free;
             }
@@ -126,8 +129,8 @@ export const openOrder = async (
     const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
 
     const tokens = orderInputs.side === OrderSide.BUY ?
-        generateTokenPairing(tokenToID(orderInputs.spendToken), tokenToID(orderInputs.receiveToken)) :
-        generateTokenPairing(tokenToID(orderInputs.receiveToken), tokenToID(orderInputs.spendToken));
+        generateTokenPairing(tokenToID(spendToken), tokenToID(receiveToken)) :
+        generateTokenPairing(tokenToID(receiveToken), tokenToID(spendToken));
 
     let ingressOrder = new ingress.Order({
         type: orderInputs.type,
@@ -200,6 +203,8 @@ export const openOrder = async (
         id: orderID.toBase64(),
         transactionHash: txHash,
         computedOrderDetails: {
+            spendToken,
+            receiveToken,
             spendVolume,
             receiveVolume,
             date: unixSeconds,

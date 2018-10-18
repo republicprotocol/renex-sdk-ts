@@ -52,12 +52,12 @@ export type TokenCode = string;
 
 export interface OrderInputs {
     // Required fields
-    spendToken: TokenCode;
-    receiveToken: TokenCode;
-    side: OrderSide;
-    price: NumberInput;
-    volume: NumberInput;
-    minVolume: NumberInput;
+    baseToken: TokenCode;    // The non-priority token
+    quoteToken: TokenCode;   // The priority token
+    side: OrderSide;         // Buy receives baseToken, sell receives quoteToken
+    price: NumberInput;      // In quoteToken for 1 unit of baseToken
+    volume: NumberInput;     // In baseToken
+    minVolume: NumberInput;  // In baseToken
 
     // Optional fields
     type?: OrderInputsAll["type"];
@@ -81,6 +81,8 @@ export interface OrderInputsAll extends OrderInputs {
 }
 
 export interface ComputedOrderDetails {
+    receiveToken: TokenCode;
+    spendToken: TokenCode;
     receiveVolume: BigNumber;
     spendVolume: BigNumber;
     date: number;

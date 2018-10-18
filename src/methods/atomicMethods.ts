@@ -107,7 +107,7 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<B
                     order.status === OrderStatus.OPEN ||
                     order.status === OrderStatus.CONFIRMED)
             ) {
-                const token = order.orderInputs.spendToken;
+                const token = order.computedOrderDetails.spendToken;
                 const usedTokenBalance = usedFunds.get(token);
                 if (usedTokenBalance) {
                     usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));

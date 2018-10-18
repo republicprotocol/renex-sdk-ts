@@ -85,7 +85,7 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
                 order.status === OrderStatus.CONFIRMED
             ) {
                 if (order.orderInputs.orderSettlement === OrderSettlement.RenEx) {
-                    const token = order.orderInputs.spendToken;
+                    const token = order.computedOrderDetails.spendToken;
                     const usedTokenBalance = usedFunds.get(token);
                     if (usedTokenBalance) {
                         usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
