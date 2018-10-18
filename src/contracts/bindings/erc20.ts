@@ -5,15 +5,15 @@ import { Log, PromiEvent, Provider, TransactionReceipt, Tx } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
 
-type BigNumber = string | number | BN;
+type BNLike = string | number | BN;
 
 export interface ERC20Contract {
-    totalSupply(options?: Tx): Promise<BigNumber>;
-    balanceOf(who: string, options?: Tx): Promise<BigNumber>;
-    transfer(to: string, value: BigNumber, options?: Tx): PromiEvent<Transaction>;
-    allowance(owner: string, spender: string, options?: Tx): Promise<BigNumber>;
-    transferFrom(from: string, to: string, value: BigNumber, options?: Tx): PromiEvent<Transaction>;
-    approve(spender: string, value: BigNumber, options?: Tx): PromiEvent<Transaction>;
+    totalSupply(options?: Tx): Promise<BNLike>;
+    balanceOf(who: string, options?: Tx): Promise<BNLike>;
+    transfer(to: string, value: BNLike, options?: Tx): PromiEvent<Transaction>;
+    allowance(owner: string, spender: string, options?: Tx): Promise<BNLike>;
+    transferFrom(from: string, to: string, value: BNLike, options?: Tx): PromiEvent<Transaction>;
+    approve(spender: string, value: BNLike, options?: Tx): PromiEvent<Transaction>;
     address: string;
 }
 

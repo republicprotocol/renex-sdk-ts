@@ -5,43 +5,43 @@ import { Log, PromiEvent, Provider, TransactionReceipt, Tx } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
 
-type BigNumber = string | number | BN;
+type BNLike = string | number | BN;
 
 export interface DarknodeRegistryContract {
-    numDarknodesNextEpoch(options?: Tx): Promise<BigNumber>;
-    numDarknodes(options?: Tx): Promise<BigNumber>;
+    numDarknodesNextEpoch(options?: Tx): Promise<BNLike>;
+    numDarknodes(options?: Tx): Promise<BNLike>;
     nextSlasher(options?: Tx): Promise<string>;
-    nextMinimumEpochInterval(options?: Tx): Promise<BigNumber>;
-    minimumEpochInterval(options?: Tx): Promise<BigNumber>;
-    previousEpoch(options?: Tx): Promise<{ epochhash: BigNumber, blocknumber: BigNumber, 0: BigNumber, 1: BigNumber }>;
-    nextMinimumBond(options?: Tx): Promise<BigNumber>;
-    nextMinimumPodSize(options?: Tx): Promise<BigNumber>;
+    nextMinimumEpochInterval(options?: Tx): Promise<BNLike>;
+    minimumEpochInterval(options?: Tx): Promise<BNLike>;
+    previousEpoch(options?: Tx): Promise<{ epochhash: BNLike, blocknumber: BNLike, 0: BNLike, 1: BNLike }>;
+    nextMinimumBond(options?: Tx): Promise<BNLike>;
+    nextMinimumPodSize(options?: Tx): Promise<BNLike>;
     renounceOwnership(options?: Tx): PromiEvent<Transaction>;
-    numDarknodesPreviousEpoch(options?: Tx): Promise<BigNumber>;
-    currentEpoch(options?: Tx): Promise<{ epochhash: BigNumber, blocknumber: BigNumber, 0: BigNumber, 1: BigNumber }>;
+    numDarknodesPreviousEpoch(options?: Tx): Promise<BNLike>;
+    currentEpoch(options?: Tx): Promise<{ epochhash: BNLike, blocknumber: BNLike, 0: BNLike, 1: BNLike }>;
     ren(options?: Tx): Promise<string>;
     owner(options?: Tx): Promise<string>;
     store(options?: Tx): Promise<string>;
-    minimumBond(options?: Tx): Promise<BigNumber>;
+    minimumBond(options?: Tx): Promise<BNLike>;
     slasher(options?: Tx): Promise<string>;
-    minimumPodSize(options?: Tx): Promise<BigNumber>;
+    minimumPodSize(options?: Tx): Promise<BNLike>;
     transferOwnership(_newOwner: string, options?: Tx): PromiEvent<Transaction>;
     VERSION(options?: Tx): Promise<string>;
-    register(_darknodeID: string, _publicKey: string, _bond: BigNumber, options?: Tx): PromiEvent<Transaction>;
+    register(_darknodeID: string, _publicKey: string, _bond: BNLike, options?: Tx): PromiEvent<Transaction>;
     deregister(_darknodeID: string, options?: Tx): PromiEvent<Transaction>;
     epoch(options?: Tx): PromiEvent<Transaction>;
     transferStoreOwnership(_newOwner: string, options?: Tx): PromiEvent<Transaction>;
-    updateMinimumBond(_nextMinimumBond: BigNumber, options?: Tx): PromiEvent<Transaction>;
-    updateMinimumPodSize(_nextMinimumPodSize: BigNumber, options?: Tx): PromiEvent<Transaction>;
-    updateMinimumEpochInterval(_nextMinimumEpochInterval: BigNumber, options?: Tx): PromiEvent<Transaction>;
+    updateMinimumBond(_nextMinimumBond: BNLike, options?: Tx): PromiEvent<Transaction>;
+    updateMinimumPodSize(_nextMinimumPodSize: BNLike, options?: Tx): PromiEvent<Transaction>;
+    updateMinimumEpochInterval(_nextMinimumEpochInterval: BNLike, options?: Tx): PromiEvent<Transaction>;
     updateSlasher(_slasher: string, options?: Tx): PromiEvent<Transaction>;
     slash(_prover: string, _challenger1: string, _challenger2: string, options?: Tx): PromiEvent<Transaction>;
     refund(_darknodeID: string, options?: Tx): PromiEvent<Transaction>;
     getDarknodeOwner(_darknodeID: string, options?: Tx): Promise<string>;
-    getDarknodeBond(_darknodeID: string, options?: Tx): Promise<BigNumber>;
+    getDarknodeBond(_darknodeID: string, options?: Tx): Promise<BNLike>;
     getDarknodePublicKey(_darknodeID: string, options?: Tx): Promise<string>;
-    getDarknodes(_start: string, _count: BigNumber, options?: Tx): Promise<string[]>;
-    getPreviousDarknodes(_start: string, _count: BigNumber, options?: Tx): Promise<string[]>;
+    getDarknodes(_start: string, _count: BNLike, options?: Tx): Promise<string[]>;
+    getPreviousDarknodes(_start: string, _count: BNLike, options?: Tx): Promise<string[]>;
     isPendingRegistration(_darknodeID: string, options?: Tx): Promise<boolean>;
     isPendingDeregistration(_darknodeID: string, options?: Tx): Promise<boolean>;
     isDeregistered(_darknodeID: string, options?: Tx): Promise<boolean>;
@@ -56,7 +56,7 @@ export interface DarknodeRegistryContract {
 export interface DarknodeRegistryArtifact {
     new(address: string): DarknodeRegistryContract;
     address: string;
-    "new"(_VERSION: string, _renAddress: string, _storeAddress: string, _minimumBond: BigNumber, _minimumPodSize: BigNumber, _minimumEpochInterval: BigNumber, options?: Tx): Promise<DarknodeRegistryContract>;
+    "new"(_VERSION: string, _renAddress: string, _storeAddress: string, _minimumBond: BNLike, _minimumPodSize: BNLike, _minimumEpochInterval: BNLike, options?: Tx): Promise<DarknodeRegistryContract>;
     at(address: string): Promise<DarknodeRegistryContract>;
     deployed(): Promise<DarknodeRegistryContract>;
     setProvider(provider: Provider): void;
