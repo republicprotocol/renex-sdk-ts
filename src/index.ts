@@ -11,7 +11,7 @@ import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExToken
 import { Config, generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume } from "./lib/conversion";
 import { NetworkData } from "./lib/network";
-import { supportedTokens } from "./lib/tokens";
+import { supportedTokens, tokenToID } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances, tokenDetails } from "./methods/balancesMethods";
@@ -61,6 +61,7 @@ class RenExSDK {
     public utils = {
         normalizePrice: (price: BigNumber): BigNumber => normalizePrice(price),
         normalizevolume: (volume: BigNumber, roundDown: boolean): BigNumber => normalizeVolume(volume, roundDown),
+        getTokenPriority: (token: TokenCode): number => tokenToID(token),
     };
 
     private _web3: Web3;
