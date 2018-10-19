@@ -16,6 +16,7 @@ import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsA
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances } from "./balancesMethods";
+import { darknodeFees } from "./settlementMethods";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -59,7 +60,7 @@ export const openOrder = async (
     const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
-    const feePercent = await sdk.orderFees();
+    const feePercent = await darknodeFees(sdk);
     let feeToken = receiveToken;
     let feeAmount = quoteVolume.times(feePercent);
     if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic && orderInputs.baseToken === Token.ETH) {

@@ -89,7 +89,10 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     return orderStatus;
 };
 
-export const orderFees = async (sdk: RenExSDK): Promise<BigNumber> => {
+/**
+ * Returns the percentage fees required by the darknodes.
+ */
+export const darknodeFees = async (sdk: RenExSDK): Promise<BigNumber> => {
     const numerator = new BigNumber(await sdk._contracts.renExSettlement.DARKNODE_FEES_NUMERATOR());
     const denominator = new BigNumber(await sdk._contracts.renExSettlement.DARKNODE_FEES_DENOMINATOR());
     return numerator.dividedBy(denominator);
