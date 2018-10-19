@@ -70,7 +70,7 @@ class RenExSDK {
     };
 
     public utils = {
-        normalizePrice: (price: BigNumber): BigNumber => normalizePrice(price),
+        normalizePrice: (price: BigNumber, roundUp?: boolean): BigNumber => normalizePrice(price, roundUp),
         normalizeVolume: (volume: BigNumber, roundUp?: boolean): BigNumber => normalizeVolume(volume, roundUp),
     };
 

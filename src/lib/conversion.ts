@@ -8,11 +8,11 @@ import { Tuple } from "./ingress";
  * https://github.com/republicprotocol/republic-go/blob/smpc/docs/orders-and-order-fragments.md
  *
  */
-export function priceToTuple(price: BigNumber): Tuple {
+export function priceToTuple(price: BigNumber, roundUp?: boolean): Tuple {
     const shift = 10 ** 12;
     const exponentOffset = 26;
     const step = 0.005;
-    const tuple = floatToTuple(shift, exponentOffset, step, price, 1999);
+    const tuple = floatToTuple(shift, exponentOffset, step, price, 1999, roundUp);
     console.assert(0 <= tuple.c && tuple.c <= 1999, `Expected c (${tuple.c}) to be in [0,1999] in priceToTuple(${price})`);
     console.assert(0 <= tuple.q && tuple.q <= 52, `Expected q (${tuple.q}) to be in [0,52] in priceToTuple(${price})`);
     return tuple;
@@ -23,8 +23,8 @@ export const tupleToPrice = (t: Tuple): BigNumber => {
     return new BigNumber(t.c).times(5).times(e);
 };
 
-export const normalizePrice = (p: BigNumber): BigNumber => {
-    return tupleToPrice(priceToTuple(p));
+export const normalizePrice = (p: BigNumber, roundUp?: boolean): BigNumber => {
+    return tupleToPrice(priceToTuple(p, roundUp));
 };
 
 export function volumeToTuple(volume: BigNumber, roundUp?: boolean): Tuple {
