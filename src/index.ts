@@ -83,10 +83,10 @@ class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, networkData: NetworkData, address: string, options?: Options) {
+    constructor(provider: Provider, networkData: NetworkData, address?: string, options?: Options) {
         this._web3 = new Web3(provider);
         this._networkData = networkData;
-        this._address = address;
+        this._address = address ? address : "";
         this._config = generateConfig(options);
 
         this._cachedTokenDetails = this._cachedTokenDetails
@@ -175,7 +175,6 @@ class RenExSDK {
 
     public updateAddress = (address: string): void => {
         this._address = address;
-
         this._storage = new LocalStorage(address);
     }
 }
