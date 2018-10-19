@@ -14,7 +14,7 @@ import { NetworkData } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
-import { balances, tokenDetails } from "./methods/balancesMethods";
+import { balances, getTokenDetails } from "./methods/balancesMethods";
 import { getGasPrice, transfer } from "./methods/generalMethods";
 import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
@@ -115,7 +115,7 @@ class RenExSDK {
         };
     }
 
-    public tokenDetails = (token: TokenCode): Promise<TokenDetails> => tokenDetails(this, token);
+    public tokenDetails = (token: TokenCode): Promise<TokenDetails> => getTokenDetails(this, token);
     public transfer = (addr: string, token: TokenCode, value: NumberInput): Promise<void> => transfer(this, addr, token, value);
     public balances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
     public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);

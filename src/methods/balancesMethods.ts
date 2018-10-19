@@ -9,7 +9,7 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { fromSmallestUnit, tokenToID } from "../lib/tokens";
 import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
 
-export const tokenDetails = async (sdk: RenExSDK, token: TokenCode): Promise<TokenDetails> => {
+export const getTokenDetails = async (sdk: RenExSDK, token: TokenCode): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
 
     if (!detailsFromContract) {
@@ -28,7 +28,7 @@ export const tokenDetails = async (sdk: RenExSDK, token: TokenCode): Promise<Tok
 };
 
 const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
-    const details = await sdk.tokenDetails(token);
+    const details = await getTokenDetails(sdk, token);
     let balance = new BigNumber(0);
     if (token === Token.ETH) {
         balance = new BigNumber(await sdk.web3().eth.getBalance(sdk.address()));
@@ -57,7 +57,7 @@ const nondepositedBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
 };
 
 const totalBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
-    const details = await sdk.tokenDetails(token);
+    const details = await getTokenDetails(sdk, token);
     const test = new BigNumber(new BN(10));
     const balance = new BigNumber(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
     return fromSmallestUnit(balance, details);

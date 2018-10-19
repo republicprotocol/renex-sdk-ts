@@ -11,7 +11,7 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
-import { balances } from "./balancesMethods";
+import { balances, getTokenDetails } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
@@ -57,7 +57,7 @@ export const deposit = async (
     }
 
     const address = sdk.address();
-    const tokenDetails = await sdk.tokenDetails(token);
+    const tokenDetails = await getTokenDetails(sdk, token);
     const gasPrice = await sdk.getGasPrice();
 
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
@@ -185,7 +185,7 @@ export const withdraw = async (
     }
 
     const address = sdk.address();
-    const tokenDetails = await sdk.tokenDetails(token);
+    const tokenDetails = await getTokenDetails(sdk, token);
     const gasPrice = await sdk.getGasPrice();
 
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());

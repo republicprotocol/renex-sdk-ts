@@ -5,6 +5,7 @@ import RenExSDK, { TokenCode } from "../index";
 import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
 import { fromSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
+import { getTokenDetails } from "./balancesMethods";
 
 /* Atomic Connection */
 
@@ -66,7 +67,7 @@ export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]>
 const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return getAtomicBalances().then(balances => {
         return Promise.all(tokens.map(async token => {
-            const tokenDetails = await sdk.tokenDetails(token);
+            const tokenDetails = await getTokenDetails(sdk, token);
             let balance;
             switch (token) {
                 case Token.ETH:

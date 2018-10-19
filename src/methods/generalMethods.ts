@@ -9,10 +9,11 @@ import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { toSmallestUnit } from "../lib/tokens";
 import { Token, TokenCode } from "../types";
+import { getTokenDetails } from "./balancesMethods";
 
 export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
     const gasPrice = await sdk.getGasPrice();
-    const tokenDetails = await sdk.tokenDetails(token);
+    const tokenDetails = await getTokenDetails(sdk, token);
     const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
     if (token === Token.ETH) {
         sdk.web3().eth.sendTransaction({
