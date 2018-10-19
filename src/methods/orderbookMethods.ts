@@ -9,6 +9,7 @@ import RenExSDK from "../index";
 
 import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
+import { normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing, tokenToID, toSmallestUnit } from "../lib/tokens";
@@ -68,7 +69,6 @@ export const openOrder = async (
         feeAmount = orderInputs.volume.times(feePercent);
     }
 
-    // TODO: check min volume is profitable, and token, price, volume, and min volume are valid
     const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
     let balance = new BigNumber(0);
     simpleConsole.log("Verifying trader balance");
@@ -103,6 +103,16 @@ export const openOrder = async (
     if (orderInputs.minVolume.lt(new BigNumber(0))) {
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
+    }
+    const minEthTradeVolume = sdk.config().minTradeVolume;
+    const absoluteMinVolume = (orderInputs.baseToken === Token.ETH) ? minEthTradeVolume : normalizeVolume(minEthTradeVolume.dividedBy(orderInputs.price), false);
+    if (orderInputs.minVolume.lt(absoluteMinVolume)) {
+        let errMsg = `Minimum volume must be at least ${absoluteMinVolume} ${orderInputs.baseToken}`;
+        if (orderInputs.baseToken !== Token.ETH) {
+            errMsg += ` or ${minEthTradeVolume} ${Token.ETH}`;
+        }
+        simpleConsole.error(errMsg);
+        throw new Error(errMsg);
     }
     if (orderInputs.volume.lt(orderInputs.minVolume)) {
         simpleConsole.error("Volume must be greater or equal to minimum volume");
