@@ -166,7 +166,6 @@ export interface BalanceAction {
 }
 
 export interface Options {
-    minTradeVolume?: NumberInput;
     autoNormalizeOrders?: boolean;
 }
 
