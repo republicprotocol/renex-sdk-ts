@@ -16,7 +16,7 @@ import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentA
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
-import { cancelOrder, getOrders, openOrder } from "./methods/orderbookMethods";
+import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
@@ -138,6 +138,7 @@ class RenExSDK {
         cancelOrder(this, orderID)
 
     public darknodeFees = (): Promise<BigNumber> => darknodeFees(this);
+    public minEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
 
     public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 

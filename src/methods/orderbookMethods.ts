@@ -20,6 +20,7 @@ import { balances } from "./balancesMethods";
 import { darknodeFees } from "./settlementMethods";
 
 // TODO: Read these from the contract
+const MIN_ETH_TRADE_VOLUME = 1;
 const PRICE_OFFSET = 12;
 const VOLUME_OFFSET = 12;
 
@@ -44,6 +45,10 @@ const populateOrderDefaults = (
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
+};
+
+export const getMinEthTradeVolume = async (sdk: RenExSDK): Promise<BigNumber> => {
+    return Promise.resolve(new BigNumber(MIN_ETH_TRADE_VOLUME));
 };
 
 export const openOrder = async (
@@ -104,7 +109,7 @@ export const openOrder = async (
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }
-    const minEthTradeVolume = sdk.config().minTradeVolume;
+    const minEthTradeVolume = await getMinEthTradeVolume(sdk);
     const absoluteMinVolume = (orderInputs.baseToken === Token.ETH) ? minEthTradeVolume : normalizeVolume(minEthTradeVolume.dividedBy(orderInputs.price), false);
     if (orderInputs.minVolume.lt(absoluteMinVolume)) {
         let errMsg = `Minimum volume must be at least ${absoluteMinVolume} ${orderInputs.baseToken}`;
