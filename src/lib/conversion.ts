@@ -27,11 +27,11 @@ export const normalizePrice = (p: BigNumber): BigNumber => {
     return tupleToPrice(priceToTuple(p));
 };
 
-export function volumeToTuple(volume: BigNumber, roundDown = true): Tuple {
+export function volumeToTuple(volume: BigNumber, roundUp?: boolean): Tuple {
     const shift = 10 ** 12;
     const exponentOffset = 0;
     const step = 0.2;
-    const tuple = floatToTuple(shift, exponentOffset, step, volume, 49, roundDown);
+    const tuple = floatToTuple(shift, exponentOffset, step, volume, 49, roundUp);
     console.assert(0 <= tuple.c && tuple.c <= 49, `Expected c (${tuple.c}) to be in [0,49] in volumeToTuple(${volume})`);
     console.assert(0 <= tuple.q && tuple.q <= 52, `Expected q (${tuple.q}) to be in [0,52] in volumeToTuple(${volume})`);
     return tuple;
@@ -42,19 +42,19 @@ export const tupleToVolume = (t: Tuple): BigNumber => {
     return new BigNumber(t.c).times(0.2).times(e);
 };
 
-export const normalizeVolume = (v: BigNumber, roundDown = true): BigNumber => {
-    return tupleToVolume(volumeToTuple(v, roundDown));
+export const normalizeVolume = (v: BigNumber, roundUp = false): BigNumber => {
+    return tupleToVolume(volumeToTuple(v, roundUp));
 };
 
-function floatToTuple(shift: number, exponentOffset: number, step: number, value: BigNumber, max: number, roundDown = true): Tuple {
+function floatToTuple(shift: number, exponentOffset: number, step: number, value: BigNumber, max: number, roundUp?: boolean): Tuple {
     const shifted = value.times(shift);
 
     const digits = -Math.floor(Math.log10(step)) + 1;
     const stepInt = step * 10 ** (digits - 1);
 
     // CALCULATE tuple
-    let [c, exp] = significantDigits(shifted, digits, false, roundDown);
-    if (roundDown) {
+    let [c, exp] = significantDigits(shifted, digits, false, roundUp);
+    if (!roundUp) {
         c = (c - (c % stepInt)) / step;
     } else {
         c = (c + ((stepInt - (c % stepInt)) % stepInt)) / step;
@@ -62,7 +62,7 @@ function floatToTuple(shift: number, exponentOffset: number, step: number, value
 
     // Simplify again if possible - e.g. [1910,32] becomes [191,33]
     let expAdd;
-    [c, expAdd] = significantDigits(new BigNumber(c), digits, false, roundDown);
+    [c, expAdd] = significantDigits(new BigNumber(c), digits, false, roundUp);
     exp += expAdd;
 
     // TODO: Fixme
@@ -76,7 +76,7 @@ function floatToTuple(shift: number, exponentOffset: number, step: number, value
     return new Tuple({ c, q });
 }
 
-function significantDigits(n: BigNumber, digits: number, simplify = false, roundDown = true) {
+function significantDigits(n: BigNumber, digits: number, simplify = false, roundUp?: boolean) {
     if (n.isEqualTo(0)) {
         return [0, 0];
     }
@@ -84,7 +84,7 @@ function significantDigits(n: BigNumber, digits: number, simplify = false, round
     const pow = new BigNumber(10).exponentiatedBy(new BigNumber(exp).toNumber());
 
     let c;
-    if (roundDown) {
+    if (!roundUp) {
         c = Math.floor(n.div(pow.toNumber()).toNumber());
     } else {
         c = Math.ceil(n.div(pow.toNumber()).toNumber());
