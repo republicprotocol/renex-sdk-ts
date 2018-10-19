@@ -8,6 +8,7 @@ import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
 import { idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
+import { atomConnected } from "./atomicMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
@@ -29,7 +30,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
     const storedStatus = !storedOrder.status ? OrderStatus.CONFIRMED : storedOrder.status;
 
     // If RenEx Swapper is not connected, return previous status
-    if (!sdk.atomConnected()) {
+    if (!atomConnected(sdk)) {
         return storedStatus;
     }
 

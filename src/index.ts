@@ -58,6 +58,17 @@ class RenExSDK {
 
     public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
 
+    // Atomic functions
+    public atom = {
+        connected: (): boolean => atomConnected(this),
+        status: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
+        resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
+        authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
+        balances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
+        addresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
+    };
+
     public utils = {
         normalizePrice: (price: BigNumber): BigNumber => normalizePrice(price),
         normalizeVolume: (volume: BigNumber, roundDown?: boolean): BigNumber => normalizeVolume(volume, roundDown),
@@ -112,6 +123,7 @@ class RenExSDK {
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
     public supportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
+    public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
     public deposit = (token: TokenCode, value: NumberInput):
@@ -130,16 +142,6 @@ class RenExSDK {
     public orderFees = (): Promise<BigNumber> => orderFees(this);
 
     public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);
-
-    // Atomic functions
-    public atomConnected = (): boolean => atomConnected(this);
-    public currentAtomConnectionStatus = (): AtomicConnectionStatus => currentAtomConnectionStatus(this);
-    public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
-    public resetAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => resetAtomConnection(this);
-    public authorizeAtom = (): Promise<AtomicConnectionStatus> => authorizeAtom(this);
-    public atomicBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens);
-    public atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens);
-    public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Storage functions
     public listTraderOrders = async (): Promise<TraderOrder[]> =>
