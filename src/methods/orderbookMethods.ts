@@ -9,7 +9,7 @@ import RenExSDK from "../index";
 
 import { submitOrderToAtom } from "../lib/atomic";
 import { adjustDecimals } from "../lib/balances";
-import { normalizeVolume } from "../lib/conversion";
+import { normalizeVolume, normalizePrice } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing, tokenToID, toSmallestUnit } from "../lib/tokens";
@@ -51,13 +51,35 @@ export const getMinEthTradeVolume = async (sdk: RenExSDK): Promise<BigNumber> =>
     return Promise.resolve(new BigNumber(MIN_ETH_TRADE_VOLUME));
 };
 
+const normalizeOrder = (order: OrderInputsAll): OrderInputsAll => {
+    const newOrder: OrderInputsAll = Object.assign(order, {});
+    newOrder.price = normalizePrice(order.price, order.side === OrderSide.SELL);
+    newOrder.volume = normalizeVolume(order.volume);
+    newOrder.minVolume = normalizeVolume(order.minVolume);
+    return newOrder;
+};
+
+const isNormalized = (order: OrderInputsAll): boolean => {
+    const priceEq = order.price.eq(normalizePrice(order.price, order.side === OrderSide.SELL));
+    const volumeEq = order.volume.eq(normalizeVolume(order.volume));
+    const minVolumeEq = order.minVolume.eq(normalizeVolume(order.minVolume));
+    return priceEq && volumeEq && minVolumeEq;
+};
+
 export const openOrder = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
     simpleConsole = NullConsole,
 ): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
-    const orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
+    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
+    if (!isNormalized(orderInputs)) {
+        if (sdk.config().autoNormalizeOrders) {
+            orderInputs = normalizeOrder(orderInputs);
+        } else {
+            throw new Error("Order inputs have not been normalized.");
+        }
+    }
 
     const quoteVolume = orderInputs.volume.times(orderInputs.price);
 
