@@ -36,8 +36,8 @@ const populateOrderDefaults = (
         side: orderInputs.side,
         price: new BigNumber(orderInputs.price),
         volume: new BigNumber(orderInputs.volume),
-        minVolume: new BigNumber(orderInputs.minVolume),
 
+        minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : new BigNumber(0),
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
@@ -100,7 +100,7 @@ export const openOrder = async (
         simpleConsole.error("Invalid volume");
         throw new Error("Invalid volume");
     }
-    if (orderInputs.minVolume.lte(new BigNumber(0))) {
+    if (orderInputs.minVolume.lt(new BigNumber(0))) {
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }

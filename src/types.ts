@@ -57,9 +57,9 @@ export interface OrderInputs {
     side: OrderSide;         // Buy receives baseToken, sell receives quoteToken
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
-    minVolume: NumberInput;  // In baseToken
 
     // Optional fields
+    minVolume?: OrderInputsAll["minVolume"];  // In baseToken
     type?: OrderInputsAll["type"];
     orderSettlement?: OrderInputsAll["orderSettlement"];
     nonce?: OrderInputsAll["nonce"];
