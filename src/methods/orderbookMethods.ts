@@ -44,14 +44,6 @@ const populateOrderDefaults = (
     };
 };
 
-export const orderFeeNumerator = async (sdk: RenExSDK): Promise<BigNumber> => {
-    return Promise.resolve(new BigNumber(2));
-};
-
-export const orderFeeDenominator = async (sdk: RenExSDK): Promise<BigNumber> => {
-    return Promise.resolve(new BigNumber(1000));
-};
-
 export const openOrder = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
