@@ -115,13 +115,13 @@ class RenExSDK {
         };
     }
 
-    public balances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
-    public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
-    public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
-    public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
-    public supportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
-    public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
+    public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
+    public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
+    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
+    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
+    public fetchOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
+    public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
+    public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
     public deposit = (token: TokenCode, value: NumberInput):
