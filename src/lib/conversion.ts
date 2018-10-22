@@ -42,7 +42,7 @@ export const tupleToVolume = (t: Tuple): BigNumber => {
     return new BigNumber(t.c).times(0.2).times(e);
 };
 
-export const normalizeVolume = (v: BigNumber, roundUp = false): BigNumber => {
+export const normalizeVolume = (v: BigNumber, roundUp?: boolean): BigNumber => {
     return tupleToVolume(volumeToTuple(v, roundUp));
 };
 
