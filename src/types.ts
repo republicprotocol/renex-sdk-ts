@@ -22,15 +22,15 @@ export enum OrderStatus {
 }
 
 export enum OrderSettlement {
-    RenEx = 1,
-    RenExAtomic = 2,
+    RenEx = "renex",
+    RenExAtomic = "atomic",
 }
 
 export enum OrderType {
-    MIDPOINT = 0, // FIXME: Unsupported
-    LIMIT = 1,
-    MIDPOINT_IOC = 2, // FIXME: Unsupported
-    LIMIT_IOC = 3,
+    MIDPOINT = "midpoint", // FIXME: Unsupported
+    LIMIT = "limit",
+    MIDPOINT_IOC = "midpoint_ioc", // FIXME: Unsupported
+    LIMIT_IOC = "limit_ioc",
 }
 
 export enum OrderSide {
