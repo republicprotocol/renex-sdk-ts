@@ -8,11 +8,8 @@ import * as ingress from "../lib/ingress";
 import RenExSDK from "../index";
 
 import { submitOrderToAtom } from "../lib/atomic";
-import { adjustDecimals } from "../lib/balances";
-import { normalizeVolume, normalizePrice } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
-import { generateTokenPairing, tokenToID, toSmallestUnit } from "../lib/tokens";
 import { NullConsole, Order, OrderBookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
@@ -22,8 +19,6 @@ import { darknodeFees } from "./settlementMethods";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
-const PRICE_OFFSET = 12;
-const VOLUME_OFFSET = 12;
 
 // Default time an order is open for (24 hours)
 const DEFAULT_EXPIRY_OFFSET = 60 * 60 * 24;
@@ -155,27 +150,7 @@ export const openOrder = async (
         }
     }
 
-    const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
-    const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
-
-    const tokens = orderInputs.side === OrderSide.BUY ?
-        generateTokenPairing(tokenToID(spendToken), tokenToID(receiveToken)) :
-        generateTokenPairing(tokenToID(receiveToken), tokenToID(spendToken));
-
-    let ingressOrder = new ingress.Order({
-        type: orderInputs.type,
-        orderSettlement: orderInputs.orderSettlement,
-        expiry: orderInputs.expiry,
-        nonce: orderInputs.nonce,
-
-        parity: orderInputs.side === OrderSide.BUY ? ingress.OrderParity.BUY : ingress.OrderParity.SELL,
-        tokens,
-        price,
-        volume,
-        minimumVolume,
-    });
-
+    let ingressOrder = ingress.createOrder(orderInputs);
     const orderID = ingress.getOrderID(sdk.web3(), ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 

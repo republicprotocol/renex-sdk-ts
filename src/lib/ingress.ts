@@ -13,17 +13,64 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
-import { OrderID, OrderSettlement, OrderStatus, OrderType, SimpleConsole, TokenCode } from "../types";
+import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
+import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
 
+// TODO: Read these from the contract
+const PRICE_OFFSET = 12;
+const VOLUME_OFFSET = 12;
 const NULL = "0x0000000000000000000000000000000000000000";
+
+export enum OrderSettlement {
+    RenEx = 1,
+    RenExAtomic = 2,
+}
+
+function orderSettlementMapper(settlement: RenExOrderSettlement) {
+    switch (settlement) {
+        case RenExOrderSettlement.RenEx:
+            return OrderSettlement.RenEx;
+        case RenExOrderSettlement.RenExAtomic:
+            return OrderSettlement.RenExAtomic;
+    }
+}
+
+export enum OrderType {
+    MIDPOINT = 0, // FIXME: Unsupported
+    LIMIT = 1,
+    MIDPOINT_IOC = 2, // FIXME: Unsupported
+    LIMIT_IOC = 3,
+}
+
+function orderTypeMapper(orderType: RenExOrderType) {
+    switch (orderType) {
+        case RenExOrderType.MIDPOINT:
+            return OrderType.MIDPOINT;
+        case RenExOrderType.LIMIT:
+            return OrderType.LIMIT;
+        case RenExOrderType.MIDPOINT_IOC:
+            return OrderType.MIDPOINT_IOC;
+        case RenExOrderType.LIMIT_IOC:
+            return OrderType.LIMIT_IOC;
+    }
+}
 
 export enum OrderParity {
     BUY = 0,
     SELL = 1,
+}
+
+function orderParityMapper(orderSide: OrderSide) {
+    switch (orderSide) {
+        case OrderSide.BUY:
+            return OrderParity.BUY;
+        case OrderSide.SELL:
+            return OrderParity.SELL;
+    }
 }
 
 export class Tuple extends Record({
@@ -116,6 +163,35 @@ export async function checkAtomAuthorization(
             console.error(err);
             return false;
         });
+}
+
+export function createOrder(orderInputs: OrderInputsAll): Order {
+    const baseToken = orderInputs.baseToken;
+    const quoteToken = orderInputs.quoteToken;
+    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
+    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
+
+    const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
+    const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
+
+    const tokens = orderInputs.side === OrderSide.BUY ?
+        generateTokenPairing(tokenToID(spendToken), tokenToID(receiveToken)) :
+        generateTokenPairing(tokenToID(receiveToken), tokenToID(spendToken));
+
+    const ingressOrder = new Order({
+        type: orderTypeMapper(orderInputs.type),
+        orderSettlement: orderSettlementMapper(marketDetail.orderSettlement),
+        expiry: orderInputs.expiry,
+        nonce: orderInputs.nonce,
+
+        parity: orderParityMapper(orderInputs.side),
+        tokens,
+        price,
+        volume,
+        minimumVolume,
+    });
+    return ingressOrder;
 }
 
 export async function submitOrderFragments(
