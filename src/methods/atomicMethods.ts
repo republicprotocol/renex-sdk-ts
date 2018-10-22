@@ -100,7 +100,7 @@ export const atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => {
 };
 
 const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
-    return sdk.listTraderOrders().then(orders => {
+    return sdk.fetchTraderOrders().then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&

@@ -20,7 +20,7 @@ import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./metho
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, GetOrdersFilter, MatchDetails, NumberInput, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -60,13 +60,13 @@ class RenExSDK {
 
     // Atomic functions
     public atom = {
-        connected: (): boolean => atomConnected(this),
         status: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        isConnected: (): boolean => atomConnected(this),
         refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
         resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
         authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
-        balances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
-        addresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
+        fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
+        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
     };
 
     public utils = {
@@ -119,7 +119,7 @@ class RenExSDK {
     public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public fetchOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
+    public fetchOrderBook = (filter: OrderBookFilter): Promise<Order[]> => getOrders(this, filter);
     public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
     public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
@@ -137,18 +137,17 @@ class RenExSDK {
         Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
         cancelOrder(this, orderID)
 
-    public darknodeFees = (): Promise<BigNumber> => darknodeFees(this);
-    public minEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
-
-    public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);
+    public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
+    public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
+    public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Storage functions
-    public listTraderOrders = async (): Promise<TraderOrder[]> =>
+    public fetchTraderOrders = async (): Promise<TraderOrder[]> =>
         this._storage
             .getOrders()
             .then(orders => orders.sort((a, b) => a.computedOrderDetails.date < b.computedOrderDetails.date ? -1 : 1))
 
-    public listBalanceActions = (): Promise<BalanceAction[]> =>
+    public fetchBalanceActions = (): Promise<BalanceAction[]> =>
         this._storage
             .getBalanceActions()
             .then(actions => actions.sort((a, b) => a.time < b.time ? -1 : 1))

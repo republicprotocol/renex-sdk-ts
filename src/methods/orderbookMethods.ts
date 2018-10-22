@@ -13,10 +13,11 @@ import { normalizeVolume, normalizePrice } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { generateTokenPairing, tokenToID, toSmallestUnit } from "../lib/tokens";
-import { GetOrdersFilter, NullConsole, Order, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
+import { NullConsole, Order, OrderBookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances } from "./balancesMethods";
+import { getGasPrice } from "./generalMethods";
 import { darknodeFees } from "./settlementMethods";
 
 // TODO: Read these from the contract
@@ -214,7 +215,7 @@ export const openOrder = async (
 
     // Submit order and the signature to the orderbook
     simpleConsole.log("Waiting for transaction signature");
-    const gasPrice = await sdk.getGasPrice();
+    const gasPrice = await getGasPrice(sdk);
     let txHash: string;
     let promiEvent;
     try {
@@ -254,7 +255,7 @@ export const cancelOrder = async (
 ): Promise<{ promiEvent: PromiEvent<Transaction> | null }> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 
-    const gasPrice = await sdk.getGasPrice();
+    const gasPrice = await getGasPrice(sdk);
     return {
         promiEvent: sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address(), gasPrice })
     };
@@ -262,7 +263,7 @@ export const cancelOrder = async (
 
 export const getOrders = async (
     sdk: RenExSDK,
-    filter: GetOrdersFilter,
+    filter: OrderBookFilter,
 ): Promise<Order[]> => {
     const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
     if (filter.status && !filterableStatuses.includes(filter.status)) {

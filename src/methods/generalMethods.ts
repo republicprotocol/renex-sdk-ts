@@ -12,7 +12,7 @@ import { Token, TokenCode } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
 export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
-    const gasPrice = await sdk.getGasPrice();
+    const gasPrice = await getGasPrice(sdk);
     const tokenDetails = await getTokenDetails(sdk, token);
     const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
     if (token === Token.ETH) {

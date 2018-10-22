@@ -77,7 +77,7 @@ const totalBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]>
 const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
 
     // Add balances from orders that are open or not settled
-    const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
+    const usedOrderBalancesPromise = sdk.fetchTraderOrders().then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (order.status === OrderStatus.NOT_SUBMITTED ||
@@ -108,7 +108,7 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
     });
 
     // Add balances from pending withdrawals
-    const pendingBalancesPromise = sdk.listBalanceActions().then(balanceActions => {
+    const pendingBalancesPromise = sdk.fetchBalanceActions().then(balanceActions => {
         const pendingFunds = new Map<TokenCode, BigNumber>();
         balanceActions.forEach(action => {
             if (action.action === BalanceActionType.Withdraw && action.status === TransactionStatus.Pending) {

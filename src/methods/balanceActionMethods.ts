@@ -12,7 +12,7 @@ import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUni
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
 import { balances, getTokenDetails } from "./balancesMethods";
-import { getTransactionStatus } from "./generalMethods";
+import { getGasPrice, getTransactionStatus } from "./generalMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -58,7 +58,7 @@ export const deposit = async (
 
     const address = sdk.address();
     const tokenDetails = await getTokenDetails(sdk, token);
-    const gasPrice = await sdk.getGasPrice();
+    const gasPrice = await getGasPrice(sdk);
 
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
 
@@ -186,7 +186,7 @@ export const withdraw = async (
 
     const address = sdk.address();
     const tokenDetails = await getTokenDetails(sdk, token);
-    const gasPrice = await sdk.getGasPrice();
+    const gasPrice = await getGasPrice(sdk);
 
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
 

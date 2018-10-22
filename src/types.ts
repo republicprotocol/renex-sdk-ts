@@ -105,7 +105,7 @@ export interface TraderOrder extends Order {
     readonly transactionHash: string;
 }
 
-export interface GetOrdersFilter {
+export interface OrderBookFilter {
     address?: string;
     status?: OrderStatus;
     limit?: number;
