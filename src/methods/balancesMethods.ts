@@ -1,7 +1,5 @@
 import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
-
 import RenExSDK from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
@@ -38,7 +36,6 @@ const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<Big
             tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(details.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
-        const x = new BigNumber(new BN(5));
         balance = new BigNumber(await tokenContract.balanceOf(sdk.address()));
     }
     return fromSmallestUnit(balance, details);
@@ -58,7 +55,6 @@ const nondepositedBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
 
 const totalBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
     const details = await getTokenDetails(sdk, token);
-    const test = new BigNumber(new BN(10));
     const balance = new BigNumber(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
     return fromSmallestUnit(balance, details);
 };
