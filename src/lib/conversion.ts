@@ -13,8 +13,8 @@ export function priceToTuple(price: BigNumber, roundUp?: boolean): Tuple {
     const exponentOffset = 26;
     const step = 0.005;
     const tuple = floatToTuple(shift, exponentOffset, step, price, 1999, roundUp);
-    console.assert(0 <= tuple.c && tuple.c <= 1999, `Expected c (${tuple.c}) to be in [0,1999] in priceToTuple(${price})`);
-    console.assert(0 <= tuple.q && tuple.q <= 52, `Expected q (${tuple.q}) to be in [0,52] in priceToTuple(${price})`);
+    // console.assert(0 <= tuple.c && tuple.c <= 1999, `Expected c (${tuple.c}) to be in [0,1999] in priceToTuple(${price})`);
+    // console.assert(0 <= tuple.q && tuple.q <= 52, `Expected q (${tuple.q}) to be in [0,52] in priceToTuple(${price})`);
     return tuple;
 }
 
@@ -32,8 +32,8 @@ export function volumeToTuple(volume: BigNumber, roundUp?: boolean): Tuple {
     const exponentOffset = 0;
     const step = 0.2;
     const tuple = floatToTuple(shift, exponentOffset, step, volume, 49, roundUp);
-    console.assert(0 <= tuple.c && tuple.c <= 49, `Expected c (${tuple.c}) to be in [0,49] in volumeToTuple(${volume})`);
-    console.assert(0 <= tuple.q && tuple.q <= 52, `Expected q (${tuple.q}) to be in [0,52] in volumeToTuple(${volume})`);
+    // console.assert(0 <= tuple.c && tuple.c <= 49, `Expected c (${tuple.c}) to be in [0,49] in volumeToTuple(${volume})`);
+    // console.assert(0 <= tuple.q && tuple.q <= 52, `Expected q (${tuple.q}) to be in [0,52] in volumeToTuple(${volume})`);
     return tuple;
 }
 
