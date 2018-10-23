@@ -23,7 +23,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
     const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
 
     // If not atomic, return settled
-    if (!storedOrder || storedOrder.orderInputs.orderSettlement === OrderSettlement.RenEx) {
+    if (!storedOrder || storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
         return OrderStatus.SETTLED;
     }
 
@@ -141,7 +141,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
 
     // If the order is an Atomic Swap, add fees and volumes since fees are
     // separate
-    if (storedOrder && storedOrder.orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+    if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
         const [receivedVolume, spentVolume] = (details.orderIsBuy) ?
             [
                 new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),

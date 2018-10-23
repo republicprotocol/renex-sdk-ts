@@ -103,7 +103,7 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<B
     return sdk.fetchTraderOrders().then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
-            if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&
+            if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic &&
                 (order.status === OrderStatus.NOT_SUBMITTED ||
                     order.status === OrderStatus.OPEN ||
                     order.status === OrderStatus.CONFIRMED)

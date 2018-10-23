@@ -76,7 +76,6 @@ export interface OrderInputs {
     // Optional fields
     minVolume?: OrderInputsAll["minVolume"];  // In baseToken
     type?: OrderInputsAll["type"];
-    orderSettlement?: OrderInputsAll["orderSettlement"];
     nonce?: OrderInputsAll["nonce"];
     expiry?: OrderInputsAll["expiry"];
 }
@@ -90,7 +89,6 @@ export interface OrderInputsAll extends OrderInputs {
 
     // Change to non-optional
     type: OrderType;
-    orderSettlement: OrderSettlement;
     nonce: BN;
     expiry: number;
 }
@@ -103,6 +101,7 @@ export interface ComputedOrderDetails {
     date: number;
     feeAmount: BigNumber;
     feeToken: TokenCode;
+    orderSettlement: OrderSettlement;
 }
 
 export interface Order {

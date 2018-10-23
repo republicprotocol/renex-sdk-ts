@@ -37,7 +37,6 @@ const populateOrderDefaults = (
         volume: new BigNumber(orderInputs.volume),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : new BigNumber(0),
-        orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
@@ -84,6 +83,8 @@ export const openOrder = async (
     }
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
+    const orderSettlement = marketDetail.orderSettlement;
+
     const quoteVolume = orderInputs.volume.times(orderInputs.price);
 
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
@@ -94,7 +95,7 @@ export const openOrder = async (
     const feePercent = await darknodeFees(sdk);
     let feeToken = receiveToken;
     let feeAmount = quoteVolume.times(feePercent);
-    if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic && orderInputs.baseToken === Token.ETH) {
+    if (orderSettlement === OrderSettlement.RenExAtomic && baseToken === Token.ETH) {
         feeToken = Token.ETH;
         feeAmount = orderInputs.volume.times(feePercent);
     }
@@ -102,7 +103,7 @@ export const openOrder = async (
     const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
     let balance = new BigNumber(0);
     simpleConsole.log("Verifying trader balance");
-    if (orderInputs.orderSettlement === OrderSettlement.RenEx) {
+    if (orderSettlement === OrderSettlement.RenEx) {
         const spendTokenBalance = retrievedBalances.get(spendToken);
         if (spendTokenBalance) {
             balance = spendTokenBalance.free;
@@ -149,7 +150,7 @@ export const openOrder = async (
         throw new Error("Volume must be greater or equal to minimum volume");
     }
 
-    if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+    if (orderSettlement === OrderSettlement.RenExAtomic) {
         const usableFeeTokenBalance = retrievedBalances.get(feeToken);
         if (usableFeeTokenBalance && feeAmount.gt(usableFeeTokenBalance.free)) {
             simpleConsole.error("Insufficient balance for fees");
@@ -161,7 +162,7 @@ export const openOrder = async (
     const orderID = ingress.getOrderID(sdk.web3(), ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
-    if (orderInputs.orderSettlement === OrderSettlement.RenExAtomic) {
+    if (orderSettlement === OrderSettlement.RenExAtomic) {
         simpleConsole.log("Submitting order to Atomic Swapper");
         try {
             await submitOrderToAtom(orderID);
@@ -223,6 +224,7 @@ export const openOrder = async (
             date: unixSeconds,
             feeAmount,
             feeToken,
+            orderSettlement,
         },
     };
 
