@@ -28,6 +28,7 @@
         "strictPropertyInitialization": true
     },
     "include": [
+        "./test/**/*.spec.ts",
         "./src/**/*",
         "./src/global.d.ts",
         "node_modules/@types"
