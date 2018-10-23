@@ -1,7 +1,5 @@
 {
     "compilerOptions": {
-        "baseUrl": "src",
-        "rootDir": "src",
         "lib": [
             "es2015",
             "es2017"
@@ -9,16 +7,17 @@
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
-
         "target": "esnext",
         "module": "commonjs",
         "declaration": true,
         "declarationDir": "./lib/types",
         "sourceMap": true,
         "outDir": "./dist",
-        "rootDirs": ["./src", "./test"],
+        "rootDirs": [
+            "./src",
+            "./test"
+        ],
         "moduleResolution": "node",
-
         "forceConsistentCasingInFileNames": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
