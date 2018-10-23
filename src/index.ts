@@ -10,6 +10,7 @@ import LocalStorage from "./storage/localStorage";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { Config, generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume } from "./lib/conversion";
+import { fetchMarkets } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
@@ -20,7 +21,7 @@ import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./metho
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -120,6 +121,9 @@ class RenExSDK {
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public fetchOrderBook = (filter: OrderBookFilter): Promise<Order[]> => getOrders(this, filter);
+
+    // public fetchAtomicMarkets = ()
+    public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
     public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
     public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
