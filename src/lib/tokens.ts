@@ -13,7 +13,7 @@ export function fromSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails) 
 }
 
 export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
-    return Promise.resolve([Token.BTC, Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG]);
+    return Promise.resolve([Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG]);
 }
 
 export function tokenToID(token: TokenCode): number {
