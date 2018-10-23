@@ -16,6 +16,7 @@ import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
+import { MarketPairs } from "./market";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
@@ -166,8 +167,9 @@ export async function checkAtomAuthorization(
 }
 
 export function createOrder(orderInputs: OrderInputsAll): Order {
-    const baseToken = orderInputs.baseToken;
-    const quoteToken = orderInputs.quoteToken;
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    const baseToken = marketDetail.base;
+    const quoteToken = marketDetail.quote;
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
     const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
 

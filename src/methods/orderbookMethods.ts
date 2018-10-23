@@ -8,8 +8,10 @@ import * as ingress from "../lib/ingress";
 import RenExSDK from "../index";
 
 import { submitOrderToAtom } from "../lib/atomic";
+import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
+import { MarketPairs } from "../lib/market";
 import { NullConsole, Order, OrderBookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
@@ -29,8 +31,7 @@ const populateOrderDefaults = (
     unixSeconds: number,
 ): OrderInputsAll => {
     return {
-        baseToken: orderInputs.baseToken,
-        quoteToken: orderInputs.quoteToken,
+        symbol: orderInputs.symbol,
         side: orderInputs.side,
         price: new BigNumber(orderInputs.price),
         volume: new BigNumber(orderInputs.volume),
@@ -77,10 +78,16 @@ export const openOrder = async (
         }
     }
 
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!marketDetail) {
+        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
+    }
+    const baseToken = marketDetail.base;
+    const quoteToken = marketDetail.quote;
     const quoteVolume = orderInputs.volume.times(orderInputs.price);
 
-    const spendToken = orderInputs.side === OrderSide.BUY ? orderInputs.quoteToken : orderInputs.baseToken;
-    const receiveToken = orderInputs.side === OrderSide.BUY ? orderInputs.baseToken : orderInputs.quoteToken;
+    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
+    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
     const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
@@ -128,10 +135,10 @@ export const openOrder = async (
         throw new Error("Invalid minimum volume");
     }
     const minEthTradeVolume = await getMinEthTradeVolume(sdk);
-    const absoluteMinVolume = (orderInputs.baseToken === Token.ETH) ? minEthTradeVolume : normalizeVolume(minEthTradeVolume.dividedBy(orderInputs.price), true);
+    const absoluteMinVolume = (baseToken === Token.ETH) ? minEthTradeVolume : normalizeVolume(minEthTradeVolume.dividedBy(orderInputs.price), true);
     if (orderInputs.minVolume.lt(absoluteMinVolume)) {
-        let errMsg = `Minimum volume must be at least ${absoluteMinVolume} ${orderInputs.baseToken}`;
-        if (orderInputs.baseToken !== Token.ETH) {
+        let errMsg = `Minimum volume must be at least ${absoluteMinVolume} ${baseToken}`;
+        if (baseToken !== Token.ETH) {
             errMsg += ` or ${minEthTradeVolume} ${Token.ETH}`;
         }
         simpleConsole.error(errMsg);

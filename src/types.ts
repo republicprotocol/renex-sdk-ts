@@ -48,13 +48,28 @@ export enum Token {
     OMG = "OMG",
 }
 
+export enum MarketPair {
+    ETH_BTC = "ETH/BTC",
+    DGX_ETH = "DGX/ETH",
+    TUSD_ETH = "TUSD/ETH",
+    REN_ETH = "REN/ETH",
+    ZRX_ETH = "ZRX/ETH",
+    OMG_ETH = "OMG/ETH",
+}
+
+export interface MarketDetails {
+    symbol: MarketPair;
+    orderSettlement: OrderSettlement;
+    quote: TokenCode;
+    base: TokenCode;
+}
+
 export type TokenCode = string;
 
 export interface OrderInputs {
     // Required fields
-    baseToken: TokenCode;    // The non-priority token
-    quoteToken: TokenCode;   // The priority token
-    side: OrderSide;         // Buy receives baseToken, sell receives quoteToken
+    symbol: MarketPair;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+    side: OrderSide;         // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
 
