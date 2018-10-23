@@ -15,7 +15,7 @@ import { MarketPairs } from "../lib/market";
 import { NullConsole, Order, OrderBookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
-import { balances } from "./balancesMethods";
+import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
 import { darknodeFees } from "./settlementMethods";
 
@@ -62,6 +62,12 @@ const isNormalized = (order: OrderInputsAll): boolean => {
     return priceEq && volumeEq && minVolumeEq;
 };
 
+const isValidDecimals = (order: OrderInputsAll, decimals: number): boolean => {
+    const volumeEq = order.volume.eq(new BigNumber(order.volume.toFixed(decimals)));
+    const minVolumeEq = order.minVolume.eq(new BigNumber(order.minVolume.toFixed(decimals)));
+    return volumeEq && minVolumeEq;
+};
+
 export const openOrder = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
@@ -69,6 +75,19 @@ export const openOrder = async (
 ): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
     let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
+
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!marketDetail) {
+        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
+    }
+    const baseToken = marketDetail.base;
+    const quoteToken = marketDetail.quote;
+    const baseTokenDetails = await getTokenDetails(sdk, baseToken);
+
+    if (!isValidDecimals(orderInputs, baseTokenDetails.decimals)) {
+        throw new Error(`Order volumes are invalid. ${baseToken} is limited to ${baseTokenDetails.decimals} decimal places.`);
+    }
+
     if (!isNormalized(orderInputs)) {
         if (sdk.config().autoNormalizeOrders) {
             orderInputs = normalizeOrder(orderInputs);
@@ -77,12 +96,6 @@ export const openOrder = async (
         }
     }
 
-    const marketDetail = MarketPairs.get(orderInputs.symbol);
-    if (!marketDetail) {
-        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
-    }
-    const baseToken = marketDetail.base;
-    const quoteToken = marketDetail.quote;
     const orderSettlement = marketDetail.orderSettlement;
 
     const quoteVolume = orderInputs.volume.times(orderInputs.price);
