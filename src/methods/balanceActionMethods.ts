@@ -60,7 +60,7 @@ export const deposit = async (
     const tokenDetails = await getTokenDetails(sdk, token);
     const gasPrice = await getGasPrice(sdk);
 
-    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
+    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Deposit,
@@ -79,7 +79,7 @@ export const deposit = async (
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 valueBN,
-                { value: value.toString(), from: address, gasPrice },
+                { value: valueBN.toString(), from: address, gasPrice },
             ));
 
             // We set the nonce after the transaction is created. We don't set
@@ -188,7 +188,7 @@ export const withdraw = async (
     const tokenDetails = await getTokenDetails(sdk, token);
     const gasPrice = await getGasPrice(sdk);
 
-    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toString());
+    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Withdraw,
