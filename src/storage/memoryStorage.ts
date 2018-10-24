@@ -1,7 +1,7 @@
 import { BalanceAction, OrderID, TraderOrder } from "../types";
-import { Storage } from "./interface";
+import { StorageProvider } from "./interface";
 
-export class MemoryStorage implements Storage {
+export class MemoryStorage implements StorageProvider {
     private orders: Map<string, TraderOrder>;
     private balanceActions: Map<string, BalanceAction>;
 

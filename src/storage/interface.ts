@@ -1,6 +1,6 @@
 import { BalanceAction, TraderOrder } from "../types";
 
-export interface Storage {
+export interface StorageProvider {
     // Orders
     setOrder(order: TraderOrder): Promise<void>;
     getOrder(orderID: string): Promise<TraderOrder | undefined>;

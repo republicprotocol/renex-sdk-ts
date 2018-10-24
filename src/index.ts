@@ -19,7 +19,7 @@ import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
-import { Storage } from "./storage/interface";
+import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
 import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
@@ -46,7 +46,7 @@ class RenExSDK {
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
     public _atomConnectedAddress: string = "";
 
-    public _storage: Storage;
+    public _storage: StorageProvider;
     public _contracts: {
         renExSettlement: RenExSettlementContract,
         renExTokens: RenExTokensContract,

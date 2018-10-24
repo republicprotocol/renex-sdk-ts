@@ -1,11 +1,11 @@
 import localforage from "localforage";
 import { BalanceAction, OrderID, TraderOrder } from "../types";
-import { Storage } from "./interface";
+import { StorageProvider } from "./interface";
 import { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./serializers";
 
 const createKey = (name: string, address: string): string => `renex_sdk_${name}_${address.toLowerCase()}`;
 
-class LocalStorage implements Storage {
+class LocalStorage implements StorageProvider {
     private orders: LocalForage;
     private balanceActions: LocalForage;
 
