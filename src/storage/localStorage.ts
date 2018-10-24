@@ -9,11 +9,12 @@ class LocalStorage implements StorageProvider {
     private orders: LocalForage;
     private balanceActions: LocalForage;
 
-    constructor(address: string) {
+    constructor(address?: string) {
+        const storageKey = (address) ? address : "default";
 
         this.orders = localforage.createInstance({
             name: "orders",
-            storeName: createKey("orders", address),
+            storeName: createKey("orders", storageKey),
             driver: [
                 localforage.INDEXEDDB,
                 localforage.WEBSQL,
@@ -23,7 +24,7 @@ class LocalStorage implements StorageProvider {
 
         this.balanceActions = localforage.createInstance({
             name: "deposits",
-            storeName: createKey("deposits", address),
+            storeName: createKey("deposits", storageKey),
             driver: [
                 localforage.INDEXEDDB,
                 localforage.WEBSQL,
