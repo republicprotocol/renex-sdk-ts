@@ -8,7 +8,7 @@ import { PromiEvent, Provider } from "web3/types";
 import LocalStorage from "./storage/localStorage";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
-import { Config, generateConfig } from "./lib/config";
+import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume } from "./lib/conversion";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData } from "./lib/network";
@@ -21,7 +21,7 @@ import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./metho
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";

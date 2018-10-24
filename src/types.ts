@@ -180,7 +180,12 @@ export interface BalanceAction {
 }
 
 export interface Options {
-    autoNormalizeOrders?: boolean;
+    autoNormalizeOrders?: Config["autoNormalizeOrders"];
+}
+
+// Extends Options but makes the optional parameters concrete
+export interface Config extends Options {
+    autoNormalizeOrders: boolean;
 }
 
 export interface SimpleConsole {

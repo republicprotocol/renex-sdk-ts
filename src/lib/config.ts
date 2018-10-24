@@ -1,8 +1,4 @@
-import { Options } from "../types";
-
-export interface Config extends Options {
-    autoNormalizeOrders: boolean;
-}
+import { Config, Options } from "../types";
 
 export const defaultConfig: Config = {
     autoNormalizeOrders: false,
