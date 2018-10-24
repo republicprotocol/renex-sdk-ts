@@ -28,7 +28,7 @@
     "build:dev": "cross-env NODE_ENV=development webpack --mode development --display-error-details --progress --color",
     "build:prod": "cross-env NODE_ENV=production webpack --mode production --progress --color",
     "prepare": "# npm run lint && npm run build:dev",
-    "test": "./node_modules/ts-mocha/bin/ts-mocha --paths -p ./tsconfig.json ./test/**/*.spec.ts"
+    "test": "source .env; ./node_modules/ts-mocha/bin/ts-mocha --timeout 60000 --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts"
   },
   "devDependencies": {
     "@babel/core": "7.1.0",
@@ -45,8 +45,11 @@
     "babel-preset-env": "1.7.0",
     "babel-preset-stage-3": "6.24.1",
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "cross-env": "5.2.0",
+    "ethereumjs-wallet": "^0.6.2",
     "mocha": "^5.2.0",
+    "truffle-hdwallet-provider": "0.0.6",
     "ts-loader": "5.1.1",
     "ts-mocha": "^2.0.0",
     "ts-node": "^7.0.1",
@@ -58,6 +61,7 @@
     "typedoc": "0.12.0",
     "typedoc-webpack-plugin": "1.1.4",
     "typescript": "3.0.3",
+    "web3-provider-engine": "^14.1.0",
     "webpack": "4.19.1",
     "webpack-cli": "3.1.1",
     "webpack-node-externals": "1.7.2"
@@ -76,7 +80,6 @@
     "node-fetch": "2.2.0",
     "node-rsa": "1.0.1",
     "truffle-contract": "4.0.0-next.0",
-    "web3": "1.0.0-beta.35",
-    "web3-provider-engine": "^14.0.6"
+    "web3": "1.0.0-beta.35"
   }
 }
