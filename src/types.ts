@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
+import { StorageProvider } from "./storage/interface";
 
 export { NetworkData } from "./lib/network";
 
@@ -181,11 +182,13 @@ export interface BalanceAction {
 
 export interface Options {
     autoNormalizeOrders?: Config["autoNormalizeOrders"];
+    storageProvider?: Config["storageProvider"];
 }
 
 // Extends Options but makes the optional parameters concrete
 export interface Config extends Options {
     autoNormalizeOrders: boolean;
+    storageProvider: string | StorageProvider;
 }
 
 export interface SimpleConsole {

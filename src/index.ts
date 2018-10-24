@@ -34,6 +34,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 
 // Export all types
 export * from "./types";
+export { StorageProvider } from "./storage/interface";
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
@@ -99,10 +100,18 @@ class RenExSDK {
             .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
             .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
 
-        if (address) {
-            this._storage = new LocalStorage(address);
-        } else {
-            this._storage = new MemoryStorage();
+        switch (this.config().storageProvider) {
+            case "localStorage":
+                this._storage = new LocalStorage(this._address);
+                break;
+            case "memory":
+                this._storage = new MemoryStorage();
+                break;
+            default:
+                if (typeof this.config().storageProvider === "string") {
+                    throw new Error(`Unsupported storage option: ${this.config().storageProvider}.`);
+                }
+                this._storage = this.config().storageProvider as StorageProvider;
         }
 
         this._contracts = {
@@ -178,7 +187,9 @@ class RenExSDK {
 
     public updateAddress = (address: string): void => {
         this._address = address;
-        this._storage = new LocalStorage(address);
+        if (this.config().storageProvider === "localStorage") {
+            this._storage = new LocalStorage(address);
+        }
     }
 }
 
