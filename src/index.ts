@@ -14,10 +14,10 @@ import { fetchMarkets } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
-import { deposit, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
+import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
-import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./methods/orderbookMethods";
+import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
@@ -164,6 +164,8 @@ class RenExSDK {
         this._storage
             .getBalanceActions()
             .then(actions => actions.sort((a, b) => a.time < b.time ? -1 : 1))
+    public refreshBalanceActionStatuses = async (): Promise<Map<string, TransactionStatus>> => updateAllBalanceActionStatuses(this);
+    public refreshOrderStatuses = async (): Promise<Map<string, OrderStatus>> => updateAllOrderStatuses(this);
 
     // Provider / account functions
     public web3 = (): Web3 => this._web3;
