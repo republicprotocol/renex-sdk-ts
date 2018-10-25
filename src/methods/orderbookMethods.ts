@@ -37,7 +37,6 @@ const populateOrderDefaults = (
         volume: new BigNumber(orderInputs.volume),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : new BigNumber(0),
-        nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
@@ -171,7 +170,8 @@ export const openOrder = async (
         }
     }
 
-    let ingressOrder = ingress.createOrder(orderInputs);
+    const nonce = ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex"));
+    let ingressOrder = ingress.createOrder(orderInputs, nonce);
     const orderID = ingress.getOrderID(sdk.web3(), ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
@@ -238,6 +238,7 @@ export const openOrder = async (
             feeAmount,
             feeToken,
             orderSettlement,
+            nonce,
         },
     };
 

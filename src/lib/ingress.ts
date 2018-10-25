@@ -166,7 +166,7 @@ export async function checkAtomAuthorization(
         });
 }
 
-export function createOrder(orderInputs: OrderInputsAll): Order {
+export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const marketDetail = MarketPairs.get(orderInputs.symbol);
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
@@ -185,7 +185,7 @@ export function createOrder(orderInputs: OrderInputsAll): Order {
         type: orderTypeMapper(orderInputs.type),
         orderSettlement: orderSettlementMapper(marketDetail.orderSettlement),
         expiry: orderInputs.expiry,
-        nonce: orderInputs.nonce,
+        nonce: nonce ? nonce : new BN(0),
 
         parity: orderParityMapper(orderInputs.side),
         tokens,
