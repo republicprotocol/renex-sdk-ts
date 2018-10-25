@@ -6,6 +6,7 @@ import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomi
 import { fromSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
+import { fetchTraderOrders } from "./storageMethods";
 
 /* Atomic Connection */
 
@@ -100,7 +101,7 @@ export const atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => {
 };
 
 const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
-    return sdk.fetchTraderOrders().then(orders => {
+    return fetchTraderOrders(sdk).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic &&

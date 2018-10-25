@@ -13,6 +13,7 @@ import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice, getTransactionStatus } from "./generalMethods";
+import { fetchBalanceActions } from "./storageMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -31,6 +32,22 @@ export const updateBalanceActionStatus = async (sdk: RenExSDK, txHash: string): 
     }).catch(console.error);
 
     return balanceActionStatus;
+};
+
+export const updateAllBalanceActionStatuses = async (sdk: RenExSDK, balanceActions?: BalanceAction[]): Promise<Map<string, TransactionStatus>> => {
+    const newStatuses = new Map<string, TransactionStatus>();
+    if (!balanceActions) {
+        balanceActions = await fetchBalanceActions(sdk);
+    }
+    await Promise.all(balanceActions.map(async action => {
+        if (action.status === TransactionStatus.Pending) {
+            const newStatus = await updateBalanceActionStatus(sdk, action.txHash);
+            if (newStatus !== action.status) {
+                newStatuses.set(action.txHash, newStatus);
+            }
+        }
+    }));
+    return newStatuses;
 };
 
 // tslint:disable-next-line:no-any

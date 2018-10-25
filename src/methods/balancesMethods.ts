@@ -6,6 +6,7 @@ import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { fromSmallestUnit, tokenToID } from "../lib/tokens";
 import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
+import { fetchBalanceActions, fetchTraderOrders } from "./storageMethods";
 
 export const getTokenDetails = async (sdk: RenExSDK, token: TokenCode): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
@@ -73,7 +74,7 @@ const totalBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]>
 const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
 
     // Add balances from orders that are open or not settled
-    const usedOrderBalancesPromise = sdk.fetchTraderOrders().then(orders => {
+    const usedOrderBalancesPromise = fetchTraderOrders(sdk).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (order.status === OrderStatus.NOT_SUBMITTED ||
@@ -104,7 +105,7 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
     });
 
     // Add balances from pending withdrawals
-    const pendingBalancesPromise = sdk.fetchBalanceActions().then(balanceActions => {
+    const pendingBalancesPromise = fetchBalanceActions(sdk).then(balanceActions => {
         const pendingFunds = new Map<TokenCode, BigNumber>();
         balanceActions.forEach(action => {
             if (action.action === BalanceActionType.Withdraw && action.status === TransactionStatus.Pending) {

@@ -19,6 +19,7 @@ import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
+import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
 import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
@@ -155,15 +156,8 @@ class RenExSDK {
     public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Storage functions
-    public fetchTraderOrders = async (): Promise<TraderOrder[]> =>
-        this._storage
-            .getOrders()
-            .then(orders => orders.sort((a, b) => a.computedOrderDetails.date < b.computedOrderDetails.date ? -1 : 1))
-
-    public fetchBalanceActions = (): Promise<BalanceAction[]> =>
-        this._storage
-            .getBalanceActions()
-            .then(actions => actions.sort((a, b) => a.time < b.time ? -1 : 1))
+    public fetchTraderOrders = (options = { refresh: true }): Promise<TraderOrder[]> => fetchTraderOrders(this, options);
+    public fetchBalanceActions = (options = { refresh: true }): Promise<BalanceAction[]> => fetchBalanceActions(this, options);
     public refreshBalanceActionStatuses = async (): Promise<Map<string, TransactionStatus>> => updateAllBalanceActionStatuses(this);
     public refreshOrderStatuses = async (): Promise<Map<string, OrderStatus>> => updateAllOrderStatuses(this);
 

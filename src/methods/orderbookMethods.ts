@@ -17,7 +17,8 @@ import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
-import { darknodeFees } from "./settlementMethods";
+import { darknodeFees, status } from "./settlementMethods";
+import { fetchTraderOrders } from "./storageMethods";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
@@ -292,4 +293,21 @@ export const getOrders = async (
         status: order[1],
         trader: order[2],
     })).toArray();
+};
+
+export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder[]): Promise<Map<string, OrderStatus>> => {
+    const newStatuses = new Map<string, OrderStatus>();
+    if (!orders) {
+        orders = await fetchTraderOrders(sdk);
+    }
+    await Promise.all(orders.map(async order => {
+        if (order.status === OrderStatus.NOT_SUBMITTED ||
+            order.status === OrderStatus.OPEN) {
+            const newStatus = await status(sdk, order.id);
+            if (newStatus !== order.status) {
+                newStatuses.set(order.id, newStatus);
+            }
+        }
+    }));
+    return newStatuses;
 };
