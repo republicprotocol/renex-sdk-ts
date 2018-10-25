@@ -29,14 +29,18 @@ const populateOrderDefaults = (
     sdk: RenExSDK,
     orderInputs: OrderInputs,
     unixSeconds: number,
+    minEthTradeVolume: BigNumber,
 ): OrderInputsAll => {
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    const price = new BigNumber(orderInputs.price);
+    const minVolume = marketDetail.base === Token.ETH ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, price);
     return {
         symbol: orderInputs.symbol,
         side: orderInputs.side,
-        price: new BigNumber(orderInputs.price),
+        price,
         volume: new BigNumber(orderInputs.volume),
 
-        minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : new BigNumber(0),
+        minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : minVolume,
         expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
@@ -44,6 +48,10 @@ const populateOrderDefaults = (
 
 export const getMinEthTradeVolume = async (sdk: RenExSDK): Promise<BigNumber> => {
     return Promise.resolve(new BigNumber(MIN_ETH_TRADE_VOLUME));
+};
+
+const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, price: BigNumber) => {
+    return normalizeVolume(minEthTradeVolume.dividedBy(price), true);
 };
 
 const normalizeOrder = (order: OrderInputsAll): OrderInputsAll => {
@@ -72,8 +80,9 @@ export const openOrder = async (
     orderInputsIn: OrderInputs,
     simpleConsole = NullConsole,
 ): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
+    const minEthTradeVolume = await getMinEthTradeVolume(sdk);
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
-    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds);
+    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds, minEthTradeVolume);
 
     const marketDetail = MarketPairs.get(orderInputs.symbol);
     if (!marketDetail) {
@@ -147,8 +156,7 @@ export const openOrder = async (
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }
-    const minEthTradeVolume = await getMinEthTradeVolume(sdk);
-    const absoluteMinVolume = (baseToken === Token.ETH) ? minEthTradeVolume : normalizeVolume(minEthTradeVolume.dividedBy(orderInputs.price), true);
+    const absoluteMinVolume = (baseToken === Token.ETH) ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, orderInputs.price);
     if (orderInputs.minVolume.lt(absoluteMinVolume)) {
         let errMsg = `Minimum volume must be at least ${absoluteMinVolume} ${baseToken}`;
         if (baseToken !== Token.ETH) {
