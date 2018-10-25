@@ -19,8 +19,7 @@ const tokenIsEthereum = (token: TokenDetails) => {
     return token.address.toLowerCase() === ETH_ADDR.toLowerCase();
 };
 
-export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
-
+export const updateBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
     const balanceActionStatus: TransactionStatus = await getTransactionStatus(sdk, txHash);
 
     // Update local storage (without awaiting)

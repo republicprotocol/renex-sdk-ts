@@ -14,7 +14,7 @@ import { fetchMarkets } from "./lib/market";
 import { NetworkData } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
-import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
+import { deposit, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder } from "./methods/orderbookMethods";
@@ -126,7 +126,7 @@ class RenExSDK {
     }
 
     public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
-    public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
+    public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public fetchOrderBook = (filter: OrderBookFilter): Promise<Order[]> => getOrders(this, filter);
