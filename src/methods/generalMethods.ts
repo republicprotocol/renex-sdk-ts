@@ -42,11 +42,11 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
         }
         throw new Error("cannot retrieve gas price from ethgasstation");
     } catch (error) {
-        console.error(error);
+        // TODO: Add error logging
         try {
             return await sdk.web3().eth.getGasPrice() * 1.1;
         } catch (error) {
-            console.error(error);
+            // TODO: Add error logging
             return undefined;
         }
     }
