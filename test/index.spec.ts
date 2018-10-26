@@ -53,11 +53,14 @@ describe("SDK methods", () => {
         const balances = await sdk.fetchBalances(["ETH", "REN"]);
         const ethBalances = balances.get("ETH");
         expect(ethBalances).to.not.be.undefined;
-        if (ethBalances) {
-            ethBalances.free.gte(new BigNumber(0)).should.be.true;
-            ethBalances.used.gte(new BigNumber(0)).should.be.true;
-            ethBalances.nondeposited.gte(new BigNumber(0)).should.be.true;
+        if (!ethBalances) {
+            return;
         }
+        console.log(`${sdk.address()} ETH Balance: ${JSON.stringify(ethBalances)}`);
+        ethBalances.free.gte(new BigNumber(0)).should.be.true;
+        ethBalances.used.gte(new BigNumber(0)).should.be.true;
+        ethBalances.nondeposited.gte(new BigNumber(0)).should.be.true;
+
         const renBalances = balances.get("REN");
         expect(renBalances).to.not.be.undefined;
         if (!renBalances) {
