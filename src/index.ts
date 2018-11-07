@@ -138,12 +138,12 @@ class RenExSDK {
     public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
-    public deposit = (token: TokenCode, value: NumberInput):
+    public deposit = (value: NumberInput, token: TokenCode):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        deposit(this, token, value)
-    public withdraw = (token: TokenCode, value: NumberInput, withoutIngressSignature = false):
+        deposit(this, value, token)
+    public withdraw = (value: NumberInput, token: TokenCode, withoutIngressSignature = false):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        withdraw(this, token, value, withoutIngressSignature)
+        withdraw(this, value, token, withoutIngressSignature)
     public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole):
         Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> =>
         openOrder(this, order, simpleConsole)

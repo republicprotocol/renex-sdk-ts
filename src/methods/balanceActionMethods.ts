@@ -61,8 +61,8 @@ export const onTxHash = (tx: PromiEvent<Transaction>): Promise<{ txHash: string,
 
 export const deposit = async (
     sdk: RenExSDK,
-    token: TokenCode,
     value: NumberInput,
+    token: TokenCode,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BigNumber(value);
 
@@ -183,8 +183,8 @@ export const deposit = async (
 
 export const withdraw = async (
     sdk: RenExSDK,
-    token: TokenCode,
     value: NumberInput,
+    token: TokenCode,
     withoutIngressSignature: boolean,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BigNumber(value);
