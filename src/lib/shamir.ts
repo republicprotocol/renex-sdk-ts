@@ -81,8 +81,16 @@ export function join(shares: List<Share>): BN {
             if (i === j) {
                 continue;
             }
-            const start = new BN(shares.get(i).index);
-            const next = new BN(shares.get(j).index);
+            const startShare = shares.get(i);
+            if (startShare === undefined) {
+                throw new Error("accessing invalid share");
+            }
+            const start = new BN(startShare.index);
+            const nextShare = shares.get(j);
+            if (nextShare === undefined) {
+                throw new Error("accessing invalid share");
+            }
+            const next = new BN(nextShare.index);
 
             const nextGen = num.mul(next).mod(PRIME);
             num = PRIME.sub(nextGen);
@@ -92,7 +100,12 @@ export function join(shares: List<Share>): BN {
         }
 
         den = den.invm(PRIME);
-        let value = shares.get(i).value.mul(num).mod(PRIME);
+
+        const share = shares.get(i);
+        if (share === undefined) {
+            throw new Error("accessing invalid share");
+        }
+        let value = share.value.mul(num).mod(PRIME);
         value = value.mul(den).mod(PRIME);
         secret = secret.add(value).mod(PRIME);
     }
