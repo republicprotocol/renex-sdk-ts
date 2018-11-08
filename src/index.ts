@@ -22,7 +22,7 @@ import { darknodeFees, matchDetails, status } from "./methods/settlementMethods"
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderBookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -143,7 +143,7 @@ class RenExSDK {
     public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public fetchOrderBook = (filter: OrderBookFilter): Promise<Order[]> => getOrders(this, filter);
+    public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
 
     // public fetchAtomicMarkets = ()
     public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
