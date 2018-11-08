@@ -11,7 +11,7 @@ import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExToken
 import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume } from "./lib/conversion";
 import { fetchMarkets } from "./lib/market";
-import { NetworkData } from "./lib/network";
+import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
@@ -86,11 +86,24 @@ class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, networkData: NetworkData, address?: string, options?: Options) {
+    constructor(provider: Provider, network?: string, address?: string, options?: Options) {
         this._web3 = new Web3(provider);
-        this._networkData = networkData;
         this._address = address ? address : "";
         this._config = generateConfig(options);
+
+        let networkData: NetworkData;
+        network = network || "mainnet";
+        switch (network) {
+            case "mainnet":
+                networkData = networks.mainnet;
+                break;
+            case "testnet":
+                networkData = networks.testnet;
+                break;
+            default:
+                throw new Error(`Unsupported network field: ${network}`);
+        }
+        this._networkData = networkData;
 
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
