@@ -63,7 +63,7 @@ class RenExSDK {
 
     // Atomic functions
     public atom = {
-        status: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        getStatus: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
         isConnected: (): boolean => atomConnected(this),
         refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
         resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
@@ -91,7 +91,7 @@ class RenExSDK {
         this._address = address ? address : "";
         this._config = generateConfig(options);
 
-        switch (this.config().network) {
+        switch (this.getConfig().network) {
             case "mainnet":
                 this._networkData = networks.mainnet;
                 break;
@@ -99,7 +99,7 @@ class RenExSDK {
                 this._networkData = networks.testnet;
                 break;
             default:
-                throw new Error(`Unsupported network field: ${this.config().network}`);
+                throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
 
         this._cachedTokenDetails = this._cachedTokenDetails
@@ -111,7 +111,7 @@ class RenExSDK {
             .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
             .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
 
-        switch (this.config().storageProvider) {
+        switch (this.getConfig().storageProvider) {
             case "localStorage":
                 this._storage = new LocalStorage(this._address);
                 break;
@@ -119,20 +119,20 @@ class RenExSDK {
                 this._storage = new MemoryStorage();
                 break;
             default:
-                if (typeof this.config().storageProvider === "string") {
-                    throw new Error(`Unsupported storage option: ${this.config().storageProvider}.`);
+                if (typeof this.getConfig().storageProvider === "string") {
+                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}.`);
                 }
-                this._storage = this.config().storageProvider as StorageProvider;
+                this._storage = this.getConfig().storageProvider as StorageProvider;
         }
 
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
+            renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<TokenCode, ERC20Contract>(),
-            wyre: new (withProvider(this.web3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
+            wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 
@@ -172,28 +172,28 @@ class RenExSDK {
     public refreshOrderStatuses = async (): Promise<Map<string, OrderStatus>> => updateAllOrderStatuses(this);
 
     // Provider / account functions
-    public web3 = (): Web3 => this._web3;
-    public address = (): string => this._address;
-    public config = (): Config => this._config;
+    public getWeb3 = (): Web3 => this._web3;
+    public getAddress = (): string => this._address;
+    public getConfig = (): Config => this._config;
 
     public updateProvider = (provider: Provider): void => {
         this._web3 = new Web3(provider);
 
         // Update contract providers
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
+            renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<TokenCode, ERC20Contract>(),
-            wyre: new (withProvider(this.web3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
+            wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 
     public updateAddress = (address: string): void => {
         this._address = address;
-        if (this.config().storageProvider === "localStorage") {
+        if (this.getConfig().storageProvider === "localStorage") {
             this._storage = new LocalStorage(address);
         }
     }

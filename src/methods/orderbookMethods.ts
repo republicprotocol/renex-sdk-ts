@@ -98,7 +98,7 @@ export const openOrder = async (
     }
 
     if (!isNormalized(orderInputs)) {
-        if (sdk.config().autoNormalizeOrders) {
+        if (sdk.getConfig().autoNormalizeOrders) {
             orderInputs = normalizeOrder(orderInputs);
         } else {
             throw new Error("Order inputs have not been normalized.");
@@ -179,9 +179,9 @@ export const openOrder = async (
         }
     }
 
-    const nonce = ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex"));
+    const nonce = ingress.randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex"));
     let ingressOrder = ingress.createOrder(orderInputs, nonce);
-    const orderID = ingress.getOrderID(sdk.web3(), ingressOrder);
+    const orderID = ingress.getOrderID(sdk.getWeb3(), ingressOrder);
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
@@ -199,14 +199,14 @@ export const openOrder = async (
 
     let orderFragmentMappings;
     try {
-        orderFragmentMappings = await ingress.buildOrderMapping(sdk.web3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole);
+        orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole);
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
     }
 
     const request = new ingress.OpenOrderRequest({
-        address: sdk.address().slice(2),
+        address: sdk.getAddress().slice(2),
         orderFragmentMappings: [orderFragmentMappings]
     });
     simpleConsole.log("Sending order fragments");
@@ -224,7 +224,7 @@ export const openOrder = async (
     let txHash: string;
     let promiEvent;
     try {
-        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.address(), gasPrice })));
+        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
@@ -235,7 +235,7 @@ export const openOrder = async (
     const traderOrder = {
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
-        trader: sdk.address(),
+        trader: sdk.getAddress(),
         id: orderID.toBase64(),
         transactionHash: txHash,
         computedOrderDetails: {
@@ -264,7 +264,7 @@ export const cancelOrder = async (
 
     const gasPrice = await getGasPrice(sdk);
     return {
-        promiEvent: sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.address(), gasPrice })
+        promiEvent: sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.getAddress(), gasPrice })
     };
 };
 

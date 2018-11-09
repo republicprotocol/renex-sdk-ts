@@ -16,8 +16,8 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, va
     const tokenDetails = await getTokenDetails(sdk, token);
     const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
     if (token === Token.ETH) {
-        sdk.web3().eth.sendTransaction({
-            from: sdk.address(),
+        sdk.getWeb3().eth.sendTransaction({
+            from: sdk.getAddress(),
             to: addr,
             value,
             gasPrice
@@ -25,7 +25,7 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, va
     } else {
         let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
         if (!tokenContract) {
-            tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
+            tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(tokenDetails.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
         await tokenContract.transfer(addr, value);
@@ -44,7 +44,7 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
     } catch (error) {
         // TODO: Add error logging
         try {
-            return await sdk.web3().eth.getGasPrice() * 1.1;
+            return await sdk.getWeb3().eth.getGasPrice() * 1.1;
         } catch (error) {
             // TODO: Add error logging
             return undefined;
@@ -62,7 +62,7 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
  */
 export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
 
-    let receipt: TransactionReceipt | null = await sdk.web3().eth.getTransactionReceipt(txHash);
+    let receipt: TransactionReceipt | null = await sdk.getWeb3().eth.getTransactionReceipt(txHash);
 
     // If the transaction hasn't been confirmed yet, it will either have a null
     // receipt, or it will have an empty blockhash.
@@ -73,7 +73,7 @@ export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promi
         // has been overwritten.
 
         // Get the current trader's nonce
-        const traderNonce = await sdk.web3().eth.getTransactionCount(sdk.address());
+        const traderNonce = await sdk.getWeb3().eth.getTransactionCount(sdk.getAddress());
 
         // Get transaction's nonce
         let transaction;
@@ -96,7 +96,7 @@ export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promi
             // This isn't perfect since the requests may hit different nodes.
             // One solution is to call `getTransactionStatus` again after a
             // delay if it has returned "replaced", to confirm the result.
-            receipt = await sdk.web3().eth.getTransactionReceipt(txHash);
+            receipt = await sdk.getWeb3().eth.getTransactionReceipt(txHash);
 
             // Check that the transaction isn't confirmed
             if (!receipt) {

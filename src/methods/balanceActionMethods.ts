@@ -72,7 +72,7 @@ export const deposit = async (
         throw new Error(ErrInsufficientBalance);
     }
 
-    const address = sdk.address();
+    const address = sdk.getAddress();
     const tokenDetails = await getTokenDetails(sdk, token);
     const gasPrice = await getGasPrice(sdk);
 
@@ -103,7 +103,7 @@ export const deposit = async (
             // the wallet popup (or equivalent) is open. We rely on the wallet's
             // nonce tracking to return the correct nonce immediately.
             try {
-                balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+                balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
             } catch (err) {
                 // Log the error but leave the nonce as undefined
                 console.error(err);
@@ -118,7 +118,7 @@ export const deposit = async (
             // ERC20 token
             let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
             if (tokenContract === undefined) {
-                tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
+                tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(tokenDetails.address);
                 sdk._contracts.erc20.set(token, tokenContract);
             }
 
@@ -152,7 +152,7 @@ export const deposit = async (
             // the wallet popup (or equivalent) is open. We rely on the wallet's
             // nonce tracking to return the correct nonce immediately.
             try {
-                balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+                balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
             } catch (err) {
                 // Log the error but leave the nonce as undefined
                 console.error(err);
@@ -200,7 +200,7 @@ export const withdraw = async (
         throw new Error(ErrInsufficientBalance);
     }
 
-    const address = sdk.address();
+    const address = sdk.getAddress();
     const tokenDetails = await getTokenDetails(sdk, token);
     const gasPrice = await getGasPrice(sdk);
 
@@ -235,7 +235,7 @@ export const withdraw = async (
         // the wallet popup (or equivalent) is open. We rely on the wallet's
         // nonce tracking to return the correct nonce immediately.
         try {
-            balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+            balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
         } catch (err) {
             // Log the error but leave the nonce as undefined
             console.error(err);

@@ -36,7 +36,7 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     try {
         const response = await challengeSwapper();
-        const signerAddress = checkSigner(sdk.web3(), response);
+        const signerAddress = checkSigner(sdk.getWeb3(), response);
         if (sdk._atomConnectedAddress === "") {
             const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
             if (expectedEthAddress !== signerAddress) {
@@ -48,7 +48,7 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
             // A new address was used to sign swapper messages
             return AtomicConnectionStatus.ChangedSwapper;
         }
-        const x = _connectToAtom(response, sdk._networkData.ingress, sdk.address());
+        const x = _connectToAtom(response, sdk._networkData.ingress, sdk.getAddress());
         return x;
     } catch (err) {
         return AtomicConnectionStatus.NotConnected;
@@ -57,7 +57,7 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     const ethAtomAddress = await atomicAddresses([Token.ETH]).then(addrs => addrs[0]);
-    await _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address());
+    await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, ethAtomAddress, sdk.getAddress());
     return refreshAtomConnectionStatus(sdk);
 };
 

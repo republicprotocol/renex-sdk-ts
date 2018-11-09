@@ -30,14 +30,14 @@ const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<Big
     const details = await getTokenDetails(sdk, token);
     let balance = new BigNumber(0);
     if (token === Token.ETH) {
-        balance = new BigNumber(await sdk.web3().eth.getBalance(sdk.address()));
+        balance = new BigNumber(await sdk.getWeb3().eth.getBalance(sdk.getAddress()));
     } else {
         let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
         if (!tokenContract) {
-            tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(details.address);
+            tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(details.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
-        balance = new BigNumber(await tokenContract.balanceOf(sdk.address()));
+        balance = new BigNumber(await tokenContract.balanceOf(sdk.getAddress()));
     }
     return fromSmallestUnit(balance, details);
 };
@@ -56,7 +56,7 @@ const nondepositedBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
 
 const totalBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
     const details = await getTokenDetails(sdk, token);
-    const balance = new BigNumber(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
+    const balance = new BigNumber(await sdk._contracts.renExBalances.traderBalances(sdk.getAddress(), details.address));
     return fromSmallestUnit(balance, details);
 };
 

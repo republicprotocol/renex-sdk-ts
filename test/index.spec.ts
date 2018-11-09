@@ -46,7 +46,7 @@ describe("SDK methods", () => {
     });
 
     it("should return the correct SDK address", () => {
-        sdk.address().should.eq(mainAccount);
+        sdk.getAddress().should.eq(mainAccount);
     });
 
     it("should fetch balances", async () => {
@@ -56,7 +56,7 @@ describe("SDK methods", () => {
         if (!ethBalances) {
             return;
         }
-        console.log(`${sdk.address()} ETH Balance: ${JSON.stringify(ethBalances)}`);
+        console.log(`${sdk.getAddress()} ETH Balance: ${JSON.stringify(ethBalances)}`);
         ethBalances.free.gte(new BigNumber(0)).should.be.true;
         ethBalances.used.gte(new BigNumber(0)).should.be.true;
         ethBalances.nondeposited.gte(new BigNumber(0)).should.be.true;
