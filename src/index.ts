@@ -86,24 +86,21 @@ class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, network?: string, address?: string, options?: Options) {
+    constructor(provider: Provider, address?: string, options?: Options) {
         this._web3 = new Web3(provider);
         this._address = address ? address : "";
         this._config = generateConfig(options);
 
-        let networkData: NetworkData;
-        network = network || "mainnet";
-        switch (network) {
+        switch (this.config().network) {
             case "mainnet":
-                networkData = networks.mainnet;
+                this._networkData = networks.mainnet;
                 break;
             case "testnet":
-                networkData = networks.testnet;
+                this._networkData = networks.testnet;
                 break;
             default:
-                throw new Error(`Unsupported network field: ${network}`);
+                throw new Error(`Unsupported network field: ${this.config().network}`);
         }
-        this._networkData = networkData;
 
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
@@ -129,13 +126,13 @@ class RenExSDK {
         }
 
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(networkData.contracts[0].renExTokens),
+            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<TokenCode, ERC20Contract>(),
-            wyre: new (withProvider(this.web3().currentProvider, Wyre))(networkData.contracts[0].wyre),
+            wyre: new (withProvider(this.web3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 

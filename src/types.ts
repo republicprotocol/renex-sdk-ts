@@ -180,12 +180,14 @@ export interface BalanceAction {
 }
 
 export interface Options {
+    network?: Config["network"];
     autoNormalizeOrders?: Config["autoNormalizeOrders"];
     storageProvider?: Config["storageProvider"];
 }
 
 // Extends Options but makes the optional parameters concrete
 export interface Config extends Options {
+    network: string;
     autoNormalizeOrders: boolean;
     storageProvider: string | StorageProvider;
 }
