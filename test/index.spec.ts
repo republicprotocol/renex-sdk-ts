@@ -1,13 +1,14 @@
 import BigNumber from "bignumber.js";
-import HDWalletProvider from "truffle-hdwallet-provider";
-import RenExSDK, { BalanceDetails, NetworkData, NumberInput, TokenCode, TransactionStatus } from "../src/index";
-
 import chai, { expect } from "chai";
+import HDWalletProvider from "truffle-hdwallet-provider";
 import Web3 from "web3";
 import NonceSubprovider from "web3-provider-engine/subproviders/nonce-tracker";
 
+import RenExSDK, { BalanceDetails, NetworkData, NumberInput, TokenCode, TransactionStatus } from "../src/index";
+import { networks } from "./lib/network";
+
 const MNEMONIC = process.env.MNEMONIC;
-const NETWORK: NetworkData = JSON.parse(process.env.NETWORK as string);
+const NETWORK: NetworkData = networks.testnet;
 const INFURA_URL = `${NETWORK.infura}/${process.env.INFURA_KEY}`;
 
 chai.should();
@@ -30,7 +31,8 @@ describe("SDK methods", () => {
         nonceTracker.setEngine(provider.engine);
 
         // Initialize the SDK
-        sdk = new RenExSDK(provider, NETWORK, undefined, {
+        sdk = new RenExSDK(provider, undefined, {
+            network: "testnet",
             storageProvider: "memory",
         });
         web3 = new Web3(provider);
