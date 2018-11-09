@@ -78,7 +78,7 @@ class RenExSDK {
     };
 
     private _web3: Web3;
-    private _address: string;
+    private _address: string = "";
     private _config: Config;
 
     /**
@@ -86,9 +86,8 @@ class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, address?: string, options?: Options) {
+    constructor(provider: Provider, options?: Options) {
         this._web3 = new Web3(provider);
-        this._address = address ? address : "";
         this._config = generateConfig(options);
 
         switch (this.getConfig().network) {

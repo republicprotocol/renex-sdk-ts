@@ -31,7 +31,7 @@ describe("SDK methods", () => {
         nonceTracker.setEngine(provider.engine);
 
         // Initialize the SDK
-        sdk = new RenExSDK(provider, undefined, {
+        sdk = new RenExSDK(provider, {
             network: "testnet",
             storageProvider: "memory",
         });
