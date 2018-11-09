@@ -125,7 +125,7 @@ async function awaitPromiseResponse(prom: () => Promise<any>, expected: any): Pr
 
 async function expectTokenDeposit(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
     const initialBalance = await expectFetchTokenBalance(sdk, token);
-    const depositResponse = await sdk.deposit(token, amount);
+    const depositResponse = await sdk.deposit(amount, token);
     await awaitPromiseResponse(() => {
         return sdk.fetchBalanceActionStatus(depositResponse.balanceAction.txHash);
     }, TransactionStatus.Done);
@@ -135,7 +135,7 @@ async function expectTokenDeposit(sdk: RenExSDK, token: TokenCode, amount: Numbe
 
 async function expectTokenWithdraw(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
     const initialBalance = await expectFetchTokenBalance(sdk, token);
-    const withdrawResponse = await sdk.withdraw(token, amount);
+    const withdrawResponse = await sdk.withdraw(amount, token);
     await awaitPromiseResponse(() => {
         return sdk.fetchBalanceActionStatus(withdrawResponse.balanceAction.txHash);
     }, TransactionStatus.Done);
