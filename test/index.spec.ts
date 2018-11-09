@@ -40,7 +40,7 @@ describe("SDK methods", () => {
         // Set up the SDK to use the main account
         accounts = await web3.eth.getAccounts();
         mainAccount = accounts[0];
-        sdk.updateAddress(mainAccount);
+        sdk.setAddress(mainAccount);
     });
 
     after(() => {

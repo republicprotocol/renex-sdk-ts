@@ -176,6 +176,13 @@ class RenExSDK {
     public getAddress = (): string => this._address;
     public getConfig = (): Config => this._config;
 
+    public setAddress = (address: string): void => {
+        this._address = address;
+        if (this.getConfig().storageProvider === "localStorage") {
+            this._storage = new LocalStorage(address);
+        }
+    }
+
     public updateProvider = (provider: Provider): void => {
         this._web3 = new Web3(provider);
 
@@ -189,13 +196,6 @@ class RenExSDK {
             erc20: new Map<TokenCode, ERC20Contract>(),
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
-    }
-
-    public updateAddress = (address: string): void => {
-        this._address = address;
-        if (this.getConfig().storageProvider === "localStorage") {
-            this._storage = new LocalStorage(address);
-        }
     }
 }
 

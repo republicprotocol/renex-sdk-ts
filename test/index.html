@@ -3,7 +3,8 @@
 <body>
     <script src="./browser.js"></script>
     <script>
-        const sdk = new RenExSDK(window.web3.currentProvider, window.web3.eth.defaultAccount);
+        const sdk = new RenExSDK(window.web3.currentProvider, undefined, {network: "testnet"});
+        sdk.setAddress(window.web3.eth.defaultAccount);
         sdk.withdraw(1, 1);
     </script>
     <p>Open console</p>
