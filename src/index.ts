@@ -22,7 +22,7 @@ import { darknodeFees, matchDetails, status } from "./methods/settlementMethods"
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -78,6 +78,15 @@ class RenExSDK {
         },
         normalizeVolume: (volume: NumberInput, roundUp?: boolean): NumberInput => {
             return toOriginalType(normalizeVolume(new BigNumber(volume), roundUp), volume);
+        },
+        normalizeOrder: (order: OrderInputs): OrderInputs => {
+            const newOrder: OrderInputs = Object.assign(order, {});
+            newOrder.price = this.utils.normalizePrice(order.price, order.side === OrderSide.SELL);
+            newOrder.volume = this.utils.normalizeVolume(order.volume);
+            if (order.minVolume) {
+                newOrder.minVolume = this.utils.normalizeVolume(order.minVolume);
+            }
+            return newOrder;
         },
     };
 
