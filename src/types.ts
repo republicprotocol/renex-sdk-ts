@@ -75,7 +75,7 @@ export interface OrderInputs {
     volume: NumberInput;     // In baseToken
 
     // Optional fields
-    minVolume?: OrderInputsAll["minVolume"];  // In baseToken
+    minVolume?: NumberInput; // In baseToken
     type?: OrderInputsAll["type"];
     expiry?: OrderInputsAll["expiry"];
 }
