@@ -158,6 +158,14 @@ export const openOrder = async (
         throw new Error("Invalid minimum volume");
     }
     const absoluteMinVolume = (baseToken === Token.ETH) ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, orderInputs.price);
+    if (orderInputs.volume.lt(absoluteMinVolume)) {
+        let errMsg = `Volume must be at least ${absoluteMinVolume} ${baseToken}`;
+        if (baseToken !== Token.ETH) {
+            errMsg += ` or ${minEthTradeVolume} ${Token.ETH}`;
+        }
+        simpleConsole.error(errMsg);
+        throw new Error(errMsg);
+    }
     if (orderInputs.minVolume.lt(absoluteMinVolume)) {
         let errMsg = `Minimum volume must be at least ${absoluteMinVolume} ${baseToken}`;
         if (baseToken !== Token.ETH) {
