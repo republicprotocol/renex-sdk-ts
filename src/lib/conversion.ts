@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 
+import { NumberInput } from "../types";
 import { Tuple } from "./ingress";
 
 /**
@@ -97,4 +98,18 @@ function significantDigits(n: BigNumber, digits: number, simplify = false, round
         }
     }
     return [c, exp];
+}
+
+export function toOriginalType(converted: BigNumber, original: NumberInput): NumberInput {
+    if (BigNumber.isBigNumber(original)) {
+        return converted;
+    }
+    switch (typeof original) {
+        case "number":
+            return converted.toNumber();
+        case "string":
+            return converted.toFixed();
+        default:
+            throw new Error(`Could not convert ${typeof original} to original type`);
+    }
 }

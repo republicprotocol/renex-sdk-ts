@@ -9,7 +9,7 @@ import LocalStorage from "./storage/localStorage";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { generateConfig } from "./lib/config";
-import { normalizePrice, normalizeVolume } from "./lib/conversion";
+import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
@@ -73,8 +73,12 @@ class RenExSDK {
     };
 
     public utils = {
-        normalizePrice: (price: NumberInput, roundUp?: boolean): BigNumber => normalizePrice(new BigNumber(price), roundUp),
-        normalizeVolume: (volume: NumberInput, roundUp?: boolean): BigNumber => normalizeVolume(new BigNumber(volume), roundUp),
+        normalizePrice: (price: NumberInput, roundUp?: boolean): NumberInput => {
+            return toOriginalType(normalizePrice(new BigNumber(price), roundUp), price);
+        },
+        normalizeVolume: (volume: NumberInput, roundUp?: boolean): NumberInput => {
+            return toOriginalType(normalizeVolume(new BigNumber(volume), roundUp), volume);
+        },
     };
 
     private _web3: Web3;
