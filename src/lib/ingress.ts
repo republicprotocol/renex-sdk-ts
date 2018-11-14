@@ -158,7 +158,8 @@ export async function checkAtomAuthorization(
             if (resp.status !== 200) {
                 throw new Error("Unexpected status code: " + resp.status);
             }
-            return resp.data.atomAddress === expectedEthAddress;
+            const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
+            return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
         })
         .catch(err => {
             console.error(err);
