@@ -48,8 +48,10 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
             // A new address was used to sign swapper messages
             return AtomicConnectionStatus.ChangedSwapper;
         }
-        const x = _connectToAtom(response, sdk._networkData.ingress, sdk.getAddress());
-        return x;
+        if (sdk.getAddress()) {
+            return _connectToAtom(response, sdk._networkData.ingress, sdk.getAddress());
+        }
+        return AtomicConnectionStatus.NotConnected;
     } catch (err) {
         return AtomicConnectionStatus.NotConnected;
     }
