@@ -175,8 +175,9 @@ export const openOrder = async (
         throw new Error(errMsg);
     }
     if (orderInputs.volume.lt(orderInputs.minVolume)) {
-        simpleConsole.error("Volume must be greater or equal to minimum volume");
-        throw new Error("Volume must be greater or equal to minimum volume");
+        const errMsg = `Volume must be greater or equal to minimum volume: (${orderInputs.minVolume})`;
+        simpleConsole.error(errMsg);
+        throw new Error(errMsg);
     }
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
