@@ -77,8 +77,7 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
         const usedFunds = new Map<number, BN>();
         orders.forEach(order => {
             if (order.status === OrderStatus.NOT_SUBMITTED ||
-                order.status === OrderStatus.OPEN ||
-                order.status === OrderStatus.CONFIRMED
+                order.status === OrderStatus.OPEN
             ) {
                 if (order.orderInputs.orderSettlement === OrderSettlement.RenEx) {
                     const token = order.orderInputs.spendToken;
