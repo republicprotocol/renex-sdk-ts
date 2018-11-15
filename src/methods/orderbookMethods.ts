@@ -12,7 +12,7 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
-import { NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
+import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
@@ -31,8 +31,8 @@ const populateOrderDefaults = (
     orderInputs: OrderInputs,
     unixSeconds: number,
     minEthTradeVolume: BigNumber,
+    marketDetail: MarketDetails,
 ): OrderInputsAll => {
-    const marketDetail = MarketPairs.get(orderInputs.symbol);
     const price = new BigNumber(orderInputs.price);
     const minVolume = marketDetail.base === Token.ETH ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, price);
     return {
@@ -81,14 +81,15 @@ export const openOrder = async (
     orderInputsIn: OrderInputs,
     simpleConsole = NullConsole,
 ): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
+    const marketDetail = MarketPairs.get(orderInputsIn.symbol);
+    if (!marketDetail) {
+        throw new Error(`Unsupported market pair: ${orderInputsIn.symbol}`);
+    }
+
     const minEthTradeVolume = await getMinEthTradeVolume(sdk);
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
-    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds, minEthTradeVolume);
+    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds, minEthTradeVolume, marketDetail);
 
-    const marketDetail = MarketPairs.get(orderInputs.symbol);
-    if (!marketDetail) {
-        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
-    }
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
     const baseTokenDetails = await getTokenDetails(sdk, baseToken);
