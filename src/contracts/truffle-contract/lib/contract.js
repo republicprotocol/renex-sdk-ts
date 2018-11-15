@@ -222,11 +222,14 @@ var contract = (function(module) {
       return new Promise(function(accept, reject) {
         // Try to get the current blockLimit
         constructor.web3.eth.getBlock('latest').then(function(block){
+          // Fallback to 7 million gas
+          const blockLimit = block && block.gasLimit ? block.gasLimit : 7000000;
+
           // Try to detect the network we have artifacts for.
           if (constructor.network_id) {
             // We have a network id and a configuration, let's go with it.
             if (constructor.networks[constructor.network_id] != null) {
-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
+              return accept({id: constructor.network_id, blockLimit});
             }
           }
 
@@ -235,7 +238,7 @@ var contract = (function(module) {
             if (constructor.hasNetwork(network_id)) {
 
               constructor.setNetwork(network_id);
-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
+              return accept({id: constructor.network_id, blockLimit});
             }
 
             // Otherwise, go through all the networks that are listed as
@@ -254,13 +257,13 @@ var contract = (function(module) {
               for (var i = 0; i < results.length; i++) {
                 if (results[i]) {
                   constructor.setNetwork(uris[i]);
-                  return accept({id: constructor.network_id, blockLimit: block.gasLimit});
+                  return accept({id: constructor.network_id, blockLimit});
                 }
               }
 
               // We found nothing. Set the network id to whatever the provider states.
               constructor.setNetwork(network_id);
-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
+              return accept({id: constructor.network_id, blockLimit});
             });
 
           }).catch(reject);
