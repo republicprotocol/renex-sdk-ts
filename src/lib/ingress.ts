@@ -264,7 +264,10 @@ export async function buildOrderMapping(
 
             // Loop through each darknode in the pod
             for (let i = 0; i < n; i++) {
-                const darknode = pod.darknodes.get(i);
+                const darknode = pod.darknodes.get(i, undefined);
+                if (darknode === undefined) {
+                    throw new Error("invalid darknode access");
+                }
                 simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
 
                 // Retrieve darknode RSA public key from Darknode contract
@@ -275,26 +278,59 @@ export async function buildOrderMapping(
                     Promise.reject(error);
                 }
 
+                const [
+                    tokenShare,
+                    priceCoShare,
+                    priceExpShare,
+                    volumeCoShare,
+                    volumeExpShare,
+                    minimumVolumeCoShare,
+                    minimumVolumeExpShare,
+                    nonceShare
+                ] = [
+                        tokenShares.get(i),
+                        priceCoShares.get(i),
+                        priceExpShares.get(i),
+                        volumeCoShares.get(i),
+                        volumeExpShares.get(i),
+                        minimumVolumeCoShares.get(i),
+                        minimumVolumeExpShares.get(i),
+                        nonceShares.get(i),
+                    ];
+
+                if (
+                    tokenShare === undefined ||
+                    priceCoShare === undefined ||
+                    priceExpShare === undefined ||
+                    volumeCoShare === undefined ||
+                    volumeExpShare === undefined ||
+                    minimumVolumeCoShare === undefined ||
+                    minimumVolumeExpShare === undefined ||
+                    nonceShare === undefined
+                ) {
+                    throw new Error("invalid share access");
+                }
+
                 let orderFragment = new OrderFragment({
                     orderId: order.id,
                     orderType: order.type,
                     orderParity: order.parity,
                     orderSettlement: order.orderSettlement,
                     orderExpiry: order.expiry,
-                    tokens: encryptForDarknode(darknodeKey, tokenShares.get(i), 8).toBase64(),
+                    tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
                     price: [
-                        encryptForDarknode(darknodeKey, priceCoShares.get(i), 8).toBase64(),
-                        encryptForDarknode(darknodeKey, priceExpShares.get(i), 8).toBase64()
+                        encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
+                        encryptForDarknode(darknodeKey, priceExpShare, 8).toBase64()
                     ],
                     volume: [
-                        encryptForDarknode(darknodeKey, volumeCoShares.get(i), 8).toBase64(),
-                        encryptForDarknode(darknodeKey, volumeExpShares.get(i), 8).toBase64()
+                        encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
+                        encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
                     ],
                     minimumVolume: [
-                        encryptForDarknode(darknodeKey, minimumVolumeCoShares.get(i), 8).toBase64(),
-                        encryptForDarknode(darknodeKey, minimumVolumeExpShares.get(i), 8).toBase64()
+                        encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
+                        encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
                     ],
-                    nonce: encryptForDarknode(darknodeKey, nonceShares.get(i), 8).toBase64(),
+                    nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
                     index: i + 1,
                 });
                 orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
@@ -433,7 +469,7 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
         const podIndex = i % numberOfPods;
 
         const pod = new Pod({
-            darknodes: pods.get(podIndex).darknodes.push(darknodes[x.toNumber()])
+            darknodes: pods.get(podIndex, new Pod()).darknodes.push(darknodes[x.toNumber()])
         });
         pods = pods.set(podIndex, pod);
 
@@ -443,14 +479,14 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
 
     for (let i = 0; i < pods.size; i++) {
         let hashData = List<Buffer>();
-        for (const darknode of pods.get(i).darknodes.toArray()) {
+        for (const darknode of pods.get(i, new Pod()).darknodes.toArray()) {
             hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
         }
 
         const id = new EncodedData(web3.utils.keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
         const pod = new Pod({
             id: id.toBase64(),
-            darknodes: pods.get(i).darknodes
+            darknodes: pods.get(i, new Pod()).darknodes
         });
 
         // console.log(pod.id, JSON.stringify(pod.darknodes.map((node: string) =>
