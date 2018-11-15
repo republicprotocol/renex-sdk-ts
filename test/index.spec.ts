@@ -5,7 +5,7 @@ import Web3 from "web3";
 import NonceSubprovider from "web3-provider-engine/subproviders/nonce-tracker";
 
 import RenExSDK, { BalanceDetails, NetworkData, NumberInput, TokenCode, TransactionStatus } from "../src/index";
-import { networks } from "./lib/network";
+import { networks } from "../src/lib/network";
 
 const MNEMONIC = process.env.MNEMONIC;
 const NETWORK: NetworkData = networks.testnet;
