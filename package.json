@@ -1,5 +1,5 @@
 {
-  "name": "renex-sdk-ts",
+  "name": "@renex/renex",
   "version": "0.0.0",
   "description": "The official RenEx Software Development Kit in typescript.",
   "repository": {
