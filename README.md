@@ -21,10 +21,7 @@ You'll need to create a `.env` file which contains the following exported variab
 ```bash
 export MNEMONIC="some mnemonic here"
 export INFURA_KEY="your infura api key"
-export NETWORK="stringified NetworkData json object"
 ```
-
-Please see `src/lib/network.ts` for the structure of the `NetworkData` JSON object.
 
 Then just run the following command to execute the tests.
 
