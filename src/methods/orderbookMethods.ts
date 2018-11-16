@@ -262,3 +262,11 @@ export const getOrders = async (
         trader: order[2],
     })).toArray();
 };
+
+export const getOrderBlockNumber = async (
+    sdk: RenExSDK,
+    orderID: string,
+): Promise<number> => {
+    const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
+    return new BN(await sdk._contracts.orderbook.orderBlockNumber(orderIDHex)).toNumber();
+};

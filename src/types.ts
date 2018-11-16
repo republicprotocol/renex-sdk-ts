@@ -15,7 +15,7 @@ export interface Transaction { receipt: any; tx: string; logs: any[]; }
 export type OrderID = string;
 export enum OrderStatus {
     NOT_SUBMITTED = "NOT_SUBMITTED",
-    FAILED_TO_OPEN = "FAILED_TO_OPEN",
+    FAILED_TO_SETTLE = "FAILED_TO_SETTLE",
     OPEN = "OPEN",
     CONFIRMED = "CONFIRMED",
     CANCELED = "CANCELED",

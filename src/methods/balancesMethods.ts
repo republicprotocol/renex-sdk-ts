@@ -71,13 +71,13 @@ export const lockedBalance = async (sdk: RenExSDK, token: number): Promise<BN> =
 };
 
 export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-
     // Add balances from orders that are open or not settled
     const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
         const usedFunds = new Map<number, BN>();
         orders.forEach(order => {
             if (order.status === OrderStatus.NOT_SUBMITTED ||
-                order.status === OrderStatus.OPEN
+                order.status === OrderStatus.OPEN ||
+                order.status === OrderStatus.CONFIRMED
             ) {
                 if (order.orderInputs.orderSettlement === OrderSettlement.RenEx) {
                     const token = order.orderInputs.spendToken;

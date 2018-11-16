@@ -12,7 +12,7 @@ import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBal
 import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balance, balances, lockedBalance, lockedBalances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance } from "./methods/balancesMethods";
 import { getGasPrice, transfer } from "./methods/generalMethods";
-import { cancelOrder, getOrders, openOrder, orderFeeDenominator, orderFeeNumerator } from "./methods/orderbookMethods";
+import { cancelOrder, getOrderBlockNumber, getOrders, openOrder, orderFeeDenominator, orderFeeNumerator } from "./methods/orderbookMethods";
 import { matchDetails, status } from "./methods/settlementMethods";
 import { Storage } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
@@ -108,6 +108,7 @@ class RenExSDK {
     public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
+    public getOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 
     // Transaction Methods
     public deposit = (token: number, value: IntInput):
