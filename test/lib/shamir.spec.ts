@@ -60,7 +60,7 @@ describe("Shamir's Secret Sharing", () => {
             // Use i shares to reconstruct the secret.
             let kShares = List<shamir.Share>();
             for (let j = 0; j < indices.size; j++) {
-                kShares = kShares.set(j, shares.get(j));
+                kShares = kShares.set(j, shares.get(j) as shamir.Share);
             }
             const decodedSecret = shamir.join(kShares);
             expect(decodedSecret.cmp(secret)).equals(0);
@@ -93,7 +93,7 @@ describe("Shamir's Secret Sharing", () => {
             // Use i shares to reconstruct the secret.
             let kShares = List<shamir.Share>();
             for (let j = 0; j < indices.size; j++) {
-                kShares = kShares.set(j, shares.get(j));
+                kShares = kShares.set(j, shares.get(j) as shamir.Share);
             }
             const decodedSecret = shamir.join(kShares);
             expect(decodedSecret.cmp(secret)).not.equal(0);

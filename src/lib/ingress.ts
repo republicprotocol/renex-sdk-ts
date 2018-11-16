@@ -169,6 +169,9 @@ export async function checkAtomAuthorization(
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!marketDetail) {
+        throw new Error(`Couldn't find market information for market: ${orderInputs.symbol}`);
+    }
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;

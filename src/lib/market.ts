@@ -14,5 +14,5 @@ export const MarketPairs: OrderedMap<MarketPair, MarketDetails> = OrderedMap<Mar
     .set(MarketPair.OMG_ETH, { symbol: MarketPair.OMG_ETH, orderSettlement: OrderSettlement.RenEx, quote: Token.ETH, base: Token.OMG });
 
 export async function fetchMarkets(sdk: RenExSDK): Promise<MarketDetails[]> {
-    return Promise.resolve(MarketPairs.toArray());
+    return Promise.resolve(MarketPairs.valueSeq().toArray());
 }
