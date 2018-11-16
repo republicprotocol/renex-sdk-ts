@@ -1,4 +1,60 @@
+import RenExSDK from "../index";
+
+import { BigNumber } from "bignumber.js";
 import { BN } from "bn.js";
+import { Token, TokenCode, TokenDetails } from "../types";
+
+export function toSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
+    return amount.times(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+}
+
+export function fromSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
+    return amount.div(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+}
+
+export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
+    return Promise.resolve([Token.ETH, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG]);
+}
+
+export function tokenToID(token: TokenCode): number {
+    switch (token) {
+        case Token.BTC:
+            return 0;
+        case Token.ETH:
+            return 1;
+        case Token.DGX:
+            return 256;
+        case Token.TUSD:
+            return 257;
+        case Token.REN:
+            return 65536;
+        case Token.ZRX:
+            return 65537;
+        case Token.OMG:
+            return 65538;
+    }
+    throw new Error(`Invalid token: ${token}`);
+}
+
+export function idToToken(token: number): TokenCode {
+    switch (token) {
+        case 0:
+            return Token.BTC;
+        case 1:
+            return Token.ETH;
+        case 256:
+            return Token.DGX;
+        case 257:
+            return Token.TUSD;
+        case 65536:
+            return Token.REN;
+        case 65537:
+            return Token.ZRX;
+        case 65538:
+            return Token.OMG;
+    }
+    throw new Error(`Invalid token ID: ${token}`);
+}
 
 /**
  * Combine two 32-bit token identifiers into a single 64-bit number.

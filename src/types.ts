@@ -1,13 +1,11 @@
 import BigNumber from "bignumber.js";
 
 import { BN } from "bn.js";
+import { StorageProvider } from "./storage/interface";
 
 export { NetworkData } from "./lib/network";
 
-// These are temporary types to ensure that all user inputs are converted
-// correctly.
-export type IntInput = number | string | BN;
-export type FloatInput = number | string | BigNumber;
+export type NumberInput = number | string | BigNumber;
 
 // tslint:disable-next-line:no-any
 export interface Transaction { receipt: any; tx: string; logs: any[]; }
@@ -25,36 +23,60 @@ export enum OrderStatus {
 }
 
 export enum OrderSettlement {
-    RenEx = 1,
-    RenExAtomic = 2,
+    RenEx = "renex",
+    RenExAtomic = "atomic",
 }
 
 export enum OrderType {
-    MIDPOINT = 0, // FIXME: Unsupported
-    LIMIT = 1,
-    MIDPOINT_IOC = 2, // FIXME: Unsupported
-    LIMIT_IOC = 3,
+    MIDPOINT = "midpoint", // FIXME: Unsupported
+    LIMIT = "limit",
+    MIDPOINT_IOC = "midpoint_ioc", // FIXME: Unsupported
+    LIMIT_IOC = "limit_ioc",
 }
 
-export enum OrderParity {
-    BUY = 0,
-    SELL = 1,
+export enum OrderSide {
+    BUY = "buy",
+    SELL = "sell",
 }
 
-export type TokenCode = number;
+export enum Token {
+    BTC = "BTC",
+    ETH = "ETH",
+    DGX = "DGX",
+    TUSD = "TUSD",
+    REN = "REN",
+    ZRX = "ZRX",
+    OMG = "OMG",
+}
+
+export enum MarketPair {
+    ETH_BTC = "ETH/BTC",
+    DGX_ETH = "DGX/ETH",
+    TUSD_ETH = "TUSD/ETH",
+    REN_ETH = "REN/ETH",
+    ZRX_ETH = "ZRX/ETH",
+    OMG_ETH = "OMG/ETH",
+}
+
+export interface MarketDetails {
+    symbol: MarketPair;
+    orderSettlement: OrderSettlement;
+    quote: TokenCode;
+    base: TokenCode;
+}
+
+export type TokenCode = string;
 
 export interface OrderInputs {
     // Required fields
-    spendToken: TokenCode;
-    receiveToken: TokenCode;
-    price: FloatInput;
-    volume: IntInput;
-    minimumVolume: IntInput;
+    symbol: MarketPair;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+    side: OrderSide;         // Buy receives base token, sell receives quote token
+    price: NumberInput;      // In quoteToken for 1 unit of baseToken
+    volume: NumberInput;     // In baseToken
 
     // Optional fields
+    minVolume?: NumberInput; // In baseToken
     type?: OrderInputsAll["type"];
-    orderSettlement?: OrderInputsAll["orderSettlement"];
-    nonce?: OrderInputsAll["nonce"];
     expiry?: OrderInputsAll["expiry"];
 }
 
@@ -62,23 +84,24 @@ export interface OrderInputs {
 export interface OrderInputsAll extends OrderInputs {
     // Restrict type
     price: BigNumber;
-    volume: BN;
-    minimumVolume: BN;
+    volume: BigNumber;
 
     // Change to non-optional
+    minVolume: BigNumber;
     type: OrderType;
-    orderSettlement: OrderSettlement;
-    nonce: BN;
     expiry: number;
 }
 
 export interface ComputedOrderDetails {
-    receiveVolume: BN;
-    spendVolume: BN;
+    receiveToken: TokenCode;
+    spendToken: TokenCode;
+    receiveVolume: BigNumber;
+    spendVolume: BigNumber;
     date: number;
-    parity: OrderParity;
-    feeAmount: BN;
+    feeAmount: BigNumber;
     feeToken: TokenCode;
+    orderSettlement: OrderSettlement;
+    nonce: BN;
 }
 
 export interface Order {
@@ -96,7 +119,7 @@ export interface TraderOrder extends Order {
     readonly transactionHash: string;
 }
 
-export interface GetOrdersFilter {
+export interface OrderbookFilter {
     address?: string;
     status?: OrderStatus;
     limit?: number;
@@ -107,9 +130,9 @@ export interface MatchDetails {
     orderID: string;
     matchedID: string;
 
-    receivedVolume: BN;
-    spentVolume: BN;
-    fee: BN;
+    receivedVolume: BigNumber;
+    spentVolume: BigNumber;
+    fee: BigNumber;
     receivedToken: TokenCode;
     spentToken: TokenCode;
 }
@@ -118,6 +141,17 @@ export interface TokenDetails {
     address: string;
     decimals: number;
     registered: boolean;
+}
+
+export interface BalanceDetails {
+    free: BigNumber;
+    used: BigNumber;
+    nondeposited: BigNumber;
+}
+
+export interface AtomicBalanceDetails {
+    free: BigNumber;
+    used: BigNumber;
 }
 
 export enum BalanceActionType {
@@ -136,7 +170,7 @@ export enum TransactionStatus {
 // should be updated as well.
 export interface BalanceAction {
     action: BalanceActionType;
-    amount: BN;
+    amount: BigNumber;
     time: number;
     status: TransactionStatus;
     token: TokenCode;
@@ -146,7 +180,16 @@ export interface BalanceAction {
 }
 
 export interface Options {
-    minimumTradeVolume?: IntInput;
+    network?: Config["network"];
+    autoNormalizeOrders?: Config["autoNormalizeOrders"];
+    storageProvider?: Config["storageProvider"];
+}
+
+// Extends Options but makes the optional parameters concrete
+export interface Config extends Options {
+    network: string;
+    autoNormalizeOrders: boolean;
+    storageProvider: string | StorageProvider;
 }
 
 export interface SimpleConsole {

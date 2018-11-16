@@ -1,22 +1,28 @@
+import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
 import { BN } from "bn.js";
+
 import { PromiEvent, Provider } from "web3/types";
 
 import LocalStorage from "./storage/localStorage";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
-import { Config, generateConfig } from "./lib/config";
-import { NetworkData } from "./lib/network";
-import { atomConnected, atomicAddress, atomicAddresses, atomicBalance, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedTokens, usableAtomicBalance, usableAtomicBalances } from "./methods/atomicMethods";
-import { deposit, getBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
-import { balance, balances, lockedBalance, lockedBalances, nondepositedBalance, nondepositedBalances, tokenDetails, usableBalance } from "./methods/balancesMethods";
-import { getGasPrice, transfer } from "./methods/generalMethods";
-import { cancelOrder, getOrderBlockNumber, getOrders, openOrder, orderFeeDenominator, orderFeeNumerator } from "./methods/orderbookMethods";
-import { matchDetails, status } from "./methods/settlementMethods";
-import { Storage } from "./storage/interface";
+import { generateConfig } from "./lib/config";
+import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
+import { fetchMarkets } from "./lib/market";
+import { NetworkData, networks } from "./lib/network";
+import { supportedTokens } from "./lib/tokens";
+import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
+import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
+import { balances } from "./methods/balancesMethods";
+import { getGasPrice } from "./methods/generalMethods";
+import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
+import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
+import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicConnectionStatus, BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderID, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -29,6 +35,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 
 // Export all types
 export * from "./types";
+export { StorageProvider } from "./storage/interface";
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
@@ -41,21 +48,50 @@ class RenExSDK {
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
     public _atomConnectedAddress: string = "";
 
-    public _storage: Storage;
+    public _storage: StorageProvider;
     public _contracts: {
         renExSettlement: RenExSettlementContract,
         renExTokens: RenExTokensContract,
         renExBalances: RenExBalancesContract,
         orderbook: OrderbookContract,
         darknodeRegistry: DarknodeRegistryContract,
-        erc20: Map<number, ERC20Contract>,
+        erc20: Map<TokenCode, ERC20Contract>,
         wyre: WyreContract,
     };
 
-    public _cachedTokenDetails: Map<number, Promise<{ addr: string, decimals: IntInput, registered: boolean }>> = new Map();
+    public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
+
+    // Atomic functions
+    public atom = {
+        getStatus: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        isConnected: (): boolean => atomConnected(this),
+        refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
+        resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
+        authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
+        fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
+        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
+    };
+
+    public utils = {
+        normalizePrice: (price: NumberInput, roundUp?: boolean): NumberInput => {
+            return toOriginalType(normalizePrice(new BigNumber(price), roundUp), price);
+        },
+        normalizeVolume: (volume: NumberInput, roundUp?: boolean): NumberInput => {
+            return toOriginalType(normalizeVolume(new BigNumber(volume), roundUp), volume);
+        },
+        normalizeOrder: (order: OrderInputs): OrderInputs => {
+            const newOrder: OrderInputs = Object.assign(order, {});
+            newOrder.price = this.utils.normalizePrice(order.price, order.side === OrderSide.SELL);
+            newOrder.volume = this.utils.normalizeVolume(order.volume);
+            if (order.minVolume) {
+                newOrder.minVolume = this.utils.normalizeVolume(order.minVolume);
+            }
+            return newOrder;
+        },
+    };
 
     private _web3: Web3;
-    private _address: string;
+    private _address: string = "";
     private _config: Config;
 
     /**
@@ -63,60 +99,74 @@ class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, networkData: NetworkData, address: string, options?: Options) {
+    constructor(provider: Provider, options?: Options) {
         this._web3 = new Web3(provider);
-        this._networkData = networkData;
-        this._address = address;
         this._config = generateConfig(options);
 
-        this._cachedTokenDetails = this._cachedTokenDetails
-            .set(0, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
-            .set(1, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
-            .set(256, Promise.resolve({ addr: this._networkData.tokens.DGX, decimals: new BN(9), registered: true }))
-            .set(257, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
-            .set(65536, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
-            .set(65537, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
-            .set(65538, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
+        switch (this.getConfig().network) {
+            case "mainnet":
+                this._networkData = networks.mainnet;
+                break;
+            case "testnet":
+                this._networkData = networks.testnet;
+                break;
+            default:
+                throw new Error(`Unsupported network field: ${this.getConfig().network}`);
+        }
 
-        if (address) {
-            this._storage = new LocalStorage(address);
-        } else {
-            this._storage = new MemoryStorage();
+        this._cachedTokenDetails = this._cachedTokenDetails
+            .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
+            .set(Token.ETH, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
+            .set(Token.DGX, Promise.resolve({ addr: this._networkData.tokens.DGX, decimals: new BN(9), registered: true }))
+            .set(Token.TUSD, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
+            .set(Token.REN, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
+            .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
+            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
+
+        switch (this.getConfig().storageProvider) {
+            case "localStorage":
+                this._storage = new LocalStorage(this._address);
+                break;
+            case "memory":
+                this._storage = new MemoryStorage();
+                break;
+            default:
+                if (typeof this.getConfig().storageProvider === "string") {
+                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}.`);
+                }
+                this._storage = this.getConfig().storageProvider as StorageProvider;
         }
 
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(networkData.contracts[0].renExTokens),
-            erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withProvider(this.web3().currentProvider, Wyre))(networkData.contracts[0].wyre),
+            renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
+            erc20: new Map<TokenCode, ERC20Contract>(),
+            wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 
-    public tokenDetails = (token: number): Promise<TokenDetails> => tokenDetails(this, token);
-    public transfer = (addr: string, token: number, value: IntInput): Promise<void> => transfer(this, addr, token, value);
-    public nondepositedBalance = (token: number): Promise<BN> => nondepositedBalance(this, token);
-    public nondepositedBalances = (tokens: number[]): Promise<BN[]> => nondepositedBalances(this, tokens);
-    public balance = (token: number): Promise<BN> => balance(this, token);
-    public balances = (tokens: number[]): Promise<BN[]> => balances(this, tokens);
-    public lockedBalance = (token: number): Promise<BN> => lockedBalance(this, token);
-    public lockedBalances = (tokens: number[]): Promise<BN[]> => lockedBalances(this, tokens);
-    public usableBalance = (token: number): Promise<BN> => usableBalance(this, token);
-    public getBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => getBalanceActionStatus(this, txHash);
-    public status = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
-    public matchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
-    public getOrders = (filter: GetOrdersFilter): Promise<Order[]> => getOrders(this, filter);
-    public getOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
+    public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
+    public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
+    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
+    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
+    public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
+    public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
+
+    // public fetchAtomicMarkets = ()
+    public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
+    public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
+    public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
-    public deposit = (token: number, value: IntInput):
+    public deposit = (value: NumberInput, token: TokenCode):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        deposit(this, token, value)
-    public withdraw = (token: number, value: IntInput, withoutIngressSignature = false):
+        deposit(this, value, token)
+    public withdraw = (value: NumberInput, token: TokenCode, withoutIngressSignature = false):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        withdraw(this, token, value, withoutIngressSignature)
+        withdraw(this, value, token, withoutIngressSignature)
     public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole):
         Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> =>
         openOrder(this, order, simpleConsole)
@@ -124,60 +174,41 @@ class RenExSDK {
         Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
         cancelOrder(this, orderID)
 
-    public orderFeeDenominator = (): Promise<BN> => orderFeeDenominator(this);
-    public orderFeeNumerator = (): Promise<BN> => orderFeeNumerator(this);
-
-    public getGasPrice = (): Promise<number | undefined> => getGasPrice(this);
-
-    // Atomic functions
-    public atomConnected = (): boolean => atomConnected(this);
-    public currentAtomConnectionStatus = (): AtomicConnectionStatus => currentAtomConnectionStatus(this);
-    public refreshAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this);
-    public resetAtomConnectionStatus = (): Promise<AtomicConnectionStatus> => resetAtomConnection(this);
-    public authorizeAtom = (): Promise<AtomicConnectionStatus> => authorizeAtom(this);
-    public atomicBalance = (token: number): Promise<BN> => atomicBalance(this, token);
-    public atomicBalances = (tokens: number[]): Promise<BN[]> => atomicBalances(this, tokens);
-    public usableAtomicBalance = (token: number): Promise<BN> => usableAtomicBalance(this, token);
-    public usableAtomicBalances = (tokens: number[]): Promise<BN[]> => usableAtomicBalances(this, tokens);
-    public atomicAddress = (token: number): Promise<string> => atomicAddress(this, token);
-    public atomicAddresses = (tokens: number[]): Promise<string[]> => atomicAddresses(this, tokens);
-    public supportedAtomicTokens = (): Promise<TokenCode[]> => supportedTokens(this);
+    public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
+    public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
+    public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Storage functions
-    public listTraderOrders = async (): Promise<TraderOrder[]> =>
-        this._storage
-            .getOrders()
-            .then(orders => orders.sort((a, b) => a.computedOrderDetails.date < b.computedOrderDetails.date ? -1 : 1))
-
-    public listBalanceActions = (): Promise<BalanceAction[]> =>
-        this._storage
-            .getBalanceActions()
-            .then(actions => actions.sort((a, b) => a.time < b.time ? -1 : 1))
+    public fetchTraderOrders = (options = { refresh: true }): Promise<TraderOrder[]> => fetchTraderOrders(this, options);
+    public fetchBalanceActions = (options = { refresh: true }): Promise<BalanceAction[]> => fetchBalanceActions(this, options);
+    public refreshBalanceActionStatuses = async (): Promise<Map<string, TransactionStatus>> => updateAllBalanceActionStatuses(this);
+    public refreshOrderStatuses = async (): Promise<Map<string, OrderStatus>> => updateAllOrderStatuses(this);
 
     // Provider / account functions
-    public web3 = (): Web3 => this._web3;
-    public address = (): string => this._address;
-    public config = (): Config => this._config;
+    public getWeb3 = (): Web3 => this._web3;
+    public getAddress = (): string => this._address;
+    public getConfig = (): Config => this._config;
+
+    public setAddress = (address: string): void => {
+        this._address = address;
+        if (this.getConfig().storageProvider === "localStorage") {
+            this._storage = new LocalStorage(address);
+        }
+    }
 
     public updateProvider = (provider: Provider): void => {
         this._web3 = new Web3(provider);
 
         // Update contract providers
         this._contracts = {
-            renExSettlement: new (withProvider(this.web3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.web3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.web3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.web3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.web3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
-            erc20: new Map<number, ERC20Contract>(),
-            wyre: new (withProvider(this.web3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
+            renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
+            renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
+            orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
+            darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
+            erc20: new Map<TokenCode, ERC20Contract>(),
+            wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
-    }
-
-    public updateAddress = (address: string): void => {
-        this._address = address;
-
-        this._storage = new LocalStorage(address);
     }
 }
 

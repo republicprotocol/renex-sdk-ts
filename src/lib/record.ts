@@ -40,7 +40,7 @@ export function Record<T>(data: Pick<T, keyof T>) {
          * @return A new instance that has all of the property values of the
          *         original instance, except for the property value that was set.
          */
-        public set<K extends string & keyof T, V extends T[K]>(key: K, value: V): this {
+        public set<K extends (string & keyof T) & never /* FIXME */, V extends T[K]>(key: K, value: V): this {
             return super.set(key, value) as this;
         }
         /**

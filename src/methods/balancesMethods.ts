@@ -1,89 +1,91 @@
-import { BN } from "bn.js";
+import BigNumber from "bignumber.js";
 
 import RenExSDK from "../index";
 
-import { ERC20Contract } from "contracts/bindings/erc20";
+import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { BalanceActionType, OrderSettlement, OrderStatus, TokenDetails, TransactionStatus } from "../types";
+import { fromSmallestUnit, tokenToID } from "../lib/tokens";
+import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
+import { fetchBalanceActions, fetchTraderOrders } from "./storageMethods";
 
-export const tokenDetails = async (sdk: RenExSDK, token: number): Promise<TokenDetails> => {
+export const getTokenDetails = async (sdk: RenExSDK, token: TokenCode): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
 
     if (!detailsFromContract) {
-        const detailsPromise = sdk._contracts.renExTokens.tokens(token);
+        const detailsPromise = sdk._contracts.renExTokens.tokens(tokenToID(token));
         sdk._cachedTokenDetails.set(token, detailsPromise);
         detailsFromContract = await detailsPromise;
     }
 
     const details: TokenDetails = {
         address: detailsFromContract.addr,
-        decimals: new BN(detailsFromContract.decimals).toNumber(),
+        decimals: new BigNumber(detailsFromContract.decimals).toNumber(),
         registered: detailsFromContract.registered,
     };
 
     return details;
 };
 
-export const nondepositedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    if (token === 1) {
-        return new BN(await sdk.web3().eth.getBalance(sdk.address()));
+const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
+    const details = await getTokenDetails(sdk, token);
+    let balance = new BigNumber(0);
+    if (token === Token.ETH) {
+        balance = new BigNumber(await sdk.getWeb3().eth.getBalance(sdk.getAddress()));
     } else {
-        const details = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
         if (!tokenContract) {
-            tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(details.address);
+            tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(details.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
-        return new BN(await tokenContract.balanceOf(sdk.address()));
+        balance = new BigNumber(await tokenContract.balanceOf(sdk.getAddress()));
     }
+    return fromSmallestUnit(balance, details);
 };
 
-export const nondepositedBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const nondepositedBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     // Loop through all tokens, returning 0 for any that throw an error
-    return Promise.all(tokens.map(async (token: number) => {
+    return Promise.all(tokens.map(async (token: TokenCode) => {
         try {
             return await nondepositedBalance(sdk, token);
         } catch (err) {
-            console.error(`Unable to retrieve non-deposited balance for token #${token}`);
-            return new BN(0);
+            console.error(`Unable to retrieve non-deposited balance for token #${token}. ${err}`);
+            return new BigNumber(0);
         }
     }));
 };
 
-export const balance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    const details = await sdk.tokenDetails(token);
-    return new BN(await sdk._contracts.renExBalances.traderBalances(sdk.address(), details.address));
+const totalBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
+    const details = await getTokenDetails(sdk, token);
+    const balance = new BigNumber(await sdk._contracts.renExBalances.traderBalances(sdk.getAddress(), details.address));
+    return fromSmallestUnit(balance, details);
 };
 
-export const balances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const totalBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     // Loop through all tokens, returning 0 for any that throw an error
     return Promise.all(tokens.map((async (token) => {
         try {
-            return sdk.balance(token);
+            return totalBalance(sdk, token);
         } catch (err) {
-            return new BN(0);
+            return new BigNumber(0);
         }
     })));
 };
 
-export const lockedBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return sdk.lockedBalances([token]).then(b => b[0]);
-};
+const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
 
-export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
     // Add balances from orders that are open or not settled
-    const usedOrderBalancesPromise = sdk.listTraderOrders().then(orders => {
-        const usedFunds = new Map<number, BN>();
+    const usedOrderBalancesPromise = fetchTraderOrders(sdk).then(orders => {
+        const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (order.status === OrderStatus.NOT_SUBMITTED ||
                 order.status === OrderStatus.OPEN ||
                 order.status === OrderStatus.CONFIRMED
             ) {
-                if (order.orderInputs.orderSettlement === OrderSettlement.RenEx) {
-                    const token = order.orderInputs.spendToken;
+                if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
+                    const token = order.computedOrderDetails.spendToken;
                     const usedTokenBalance = usedFunds.get(token);
                     if (usedTokenBalance) {
-                        usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                        usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
                     } else {
                         usedFunds.set(token, order.computedOrderDetails.spendVolume);
                     }
@@ -92,7 +94,7 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
                     const token = order.computedOrderDetails.feeToken;
                     const feeTokenBalance = usedFunds.get(token);
                     if (feeTokenBalance) {
-                        usedFunds.set(token, feeTokenBalance.add(order.computedOrderDetails.feeAmount));
+                        usedFunds.set(token, feeTokenBalance.plus(order.computedOrderDetails.feeAmount));
                     } else {
                         usedFunds.set(token, order.computedOrderDetails.feeAmount);
                     }
@@ -103,13 +105,13 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
     });
 
     // Add balances from pending withdrawals
-    const pendingBalancesPromise = sdk.listBalanceActions().then(balanceActions => {
-        const pendingFunds = new Map<number, BN>();
+    const pendingBalancesPromise = fetchBalanceActions(sdk).then(balanceActions => {
+        const pendingFunds = new Map<TokenCode, BigNumber>();
         balanceActions.forEach(action => {
             if (action.action === BalanceActionType.Withdraw && action.status === TransactionStatus.Pending) {
                 const pendingTokenFunds = pendingFunds.get(action.token);
                 if (pendingTokenFunds) {
-                    pendingFunds.set(action.token, pendingTokenFunds.add(action.amount));
+                    pendingFunds.set(action.token, pendingTokenFunds.plus(action.amount));
                 } else {
                     pendingFunds.set(action.token, action.amount);
                 }
@@ -121,21 +123,33 @@ export const lockedBalances = async (sdk: RenExSDK, tokens: number[]): Promise<B
     const [usedOrderBalances, pendingBalances] = await Promise.all([usedOrderBalancesPromise, pendingBalancesPromise]);
 
     return tokens.map(token => {
-        const usedOrderBalance = usedOrderBalances.get(token) || new BN(0);
-        const pendingBalance = pendingBalances.get(token) || new BN(0);
-        return usedOrderBalance.add(pendingBalance);
+        const usedOrderBalance = usedOrderBalances.get(token) || new BigNumber(0);
+        const pendingBalance = pendingBalances.get(token) || new BigNumber(0);
+        return usedOrderBalance.plus(pendingBalance);
     });
 };
 
-export const usableBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    const locked = await sdk.lockedBalances([token]).then(b => b[0]);
-    const tokenBalance = await sdk.balance(token);
-    let usable = tokenBalance.sub(locked);
-
-    // If usable balance is less than zero, set to 0
-    if (usable.lt(new BN(0))) {
-        usable = new BN(0);
-    }
-
-    return tokenBalance.sub(locked);
+export const balances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => {
+    return Promise.all([
+        totalBalances(sdk, tokens),
+        lockedBalances(sdk, tokens),
+        nondepositedBalances(sdk, tokens)
+    ]).then(([total, locked, nondeposited]) => {
+        const balanceDetails = new Map<TokenCode, BalanceDetails>();
+        tokens.forEach((token, index) => {
+            const tokenBalance = total[index];
+            const tokenLocked = locked[index];
+            let usable = tokenBalance.minus(tokenLocked);
+            // If usable balance is less than zero, set to 0
+            if (usable.lt(new BigNumber(0))) {
+                usable = new BigNumber(0);
+            }
+            balanceDetails.set(token, {
+                free: usable,
+                used: tokenLocked,
+                nondeposited: nondeposited[index],
+            });
+        });
+        return balanceDetails;
+    });
 };

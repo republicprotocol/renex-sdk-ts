@@ -13,13 +13,66 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
-import { OrderID, OrderParity, OrderSettlement, OrderStatus, OrderType, SimpleConsole } from "../types";
+import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
+import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
+import { MarketPairs } from "./market";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
-import { generateTokenPairing, splitTokenPairing } from "./tokens";
+import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
 
+// TODO: Read these from the contract
+const PRICE_OFFSET = 12;
+const VOLUME_OFFSET = 12;
 const NULL = "0x0000000000000000000000000000000000000000";
+
+export enum OrderSettlement {
+    RenEx = 1,
+    RenExAtomic = 2,
+}
+
+function orderSettlementMapper(settlement: RenExOrderSettlement) {
+    switch (settlement) {
+        case RenExOrderSettlement.RenEx:
+            return OrderSettlement.RenEx;
+        case RenExOrderSettlement.RenExAtomic:
+            return OrderSettlement.RenExAtomic;
+    }
+}
+
+export enum OrderType {
+    MIDPOINT = 0, // FIXME: Unsupported
+    LIMIT = 1,
+    MIDPOINT_IOC = 2, // FIXME: Unsupported
+    LIMIT_IOC = 3,
+}
+
+function orderTypeMapper(orderType: RenExOrderType) {
+    switch (orderType) {
+        case RenExOrderType.MIDPOINT:
+            return OrderType.MIDPOINT;
+        case RenExOrderType.LIMIT:
+            return OrderType.LIMIT;
+        case RenExOrderType.MIDPOINT_IOC:
+            return OrderType.MIDPOINT_IOC;
+        case RenExOrderType.LIMIT_IOC:
+            return OrderType.LIMIT_IOC;
+    }
+}
+
+export enum OrderParity {
+    BUY = 0,
+    SELL = 1,
+}
+
+function orderParityMapper(orderSide: OrderSide) {
+    switch (orderSide) {
+        case OrderSide.BUY:
+            return OrderParity.BUY;
+        case OrderSide.SELL:
+            return OrderParity.SELL;
+    }
+}
 
 export class Tuple extends Record({
     c: 0,
@@ -105,12 +158,46 @@ export async function checkAtomAuthorization(
             if (resp.status !== 200) {
                 throw new Error("Unexpected status code: " + resp.status);
             }
-            return resp.data.atomAddress === expectedEthAddress;
+            const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
+            return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
         })
         .catch(err => {
             console.error(err);
             return false;
         });
+}
+
+export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!marketDetail) {
+        throw new Error(`Couldn't find market information for market: ${orderInputs.symbol}`);
+    }
+    const baseToken = marketDetail.base;
+    const quoteToken = marketDetail.quote;
+    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
+    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
+
+    const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
+    const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
+
+    const tokens = orderInputs.side === OrderSide.BUY ?
+        generateTokenPairing(tokenToID(spendToken), tokenToID(receiveToken)) :
+        generateTokenPairing(tokenToID(receiveToken), tokenToID(spendToken));
+
+    const ingressOrder = new Order({
+        type: orderTypeMapper(orderInputs.type),
+        orderSettlement: orderSettlementMapper(marketDetail.orderSettlement),
+        expiry: orderInputs.expiry,
+        nonce: nonce ? nonce : new BN(0),
+
+        parity: orderParityMapper(orderInputs.side),
+        tokens,
+        price,
+        volume,
+        minimumVolume,
+    });
+    return ingressOrder;
 }
 
 export async function submitOrderFragments(
@@ -136,10 +223,10 @@ export async function submitOrderFragments(
     }
 }
 
-export async function requestWithdrawalSignature(ingressURL: string, address: string, tokenID: number): Promise<EncodedData> {
+export async function requestWithdrawalSignature(ingressURL: string, address: string, token: TokenCode): Promise<EncodedData> {
     const request = new WithdrawRequest({
         address: address.slice(2),
-        tokenID,
+        tokenID: tokenToID(token),
     });
 
     const resp = await axios.post(`${ingressURL}/withdrawals`, request.toJS());
@@ -264,7 +351,10 @@ export async function buildOrderMapping(
 
             // Loop through each darknode in the pod
             for (let i = 0; i < n; i++) {
-                const darknode = pod.darknodes.get(i);
+                const darknode = pod.darknodes.get(i, undefined);
+                if (darknode === undefined) {
+                    throw new Error("invalid darknode access");
+                }
                 simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
 
                 // Retrieve darknode RSA public key from Darknode contract
@@ -275,26 +365,59 @@ export async function buildOrderMapping(
                     Promise.reject(error);
                 }
 
+                const [
+                    tokenShare,
+                    priceCoShare,
+                    priceExpShare,
+                    volumeCoShare,
+                    volumeExpShare,
+                    minimumVolumeCoShare,
+                    minimumVolumeExpShare,
+                    nonceShare
+                ] = [
+                        tokenShares.get(i),
+                        priceCoShares.get(i),
+                        priceExpShares.get(i),
+                        volumeCoShares.get(i),
+                        volumeExpShares.get(i),
+                        minimumVolumeCoShares.get(i),
+                        minimumVolumeExpShares.get(i),
+                        nonceShares.get(i),
+                    ];
+
+                if (
+                    tokenShare === undefined ||
+                    priceCoShare === undefined ||
+                    priceExpShare === undefined ||
+                    volumeCoShare === undefined ||
+                    volumeExpShare === undefined ||
+                    minimumVolumeCoShare === undefined ||
+                    minimumVolumeExpShare === undefined ||
+                    nonceShare === undefined
+                ) {
+                    throw new Error("invalid share access");
+                }
+
                 let orderFragment = new OrderFragment({
                     orderId: order.id,
                     orderType: order.type,
                     orderParity: order.parity,
                     orderSettlement: order.orderSettlement,
                     orderExpiry: order.expiry,
-                    tokens: encryptForDarknode(darknodeKey, tokenShares.get(i), 8).toBase64(),
+                    tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
                     price: [
-                        encryptForDarknode(darknodeKey, priceCoShares.get(i), 8).toBase64(),
-                        encryptForDarknode(darknodeKey, priceExpShares.get(i), 8).toBase64()
+                        encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
+                        encryptForDarknode(darknodeKey, priceExpShare, 8).toBase64()
                     ],
                     volume: [
-                        encryptForDarknode(darknodeKey, volumeCoShares.get(i), 8).toBase64(),
-                        encryptForDarknode(darknodeKey, volumeExpShares.get(i), 8).toBase64()
+                        encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
+                        encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
                     ],
                     minimumVolume: [
-                        encryptForDarknode(darknodeKey, minimumVolumeCoShares.get(i), 8).toBase64(),
-                        encryptForDarknode(darknodeKey, minimumVolumeExpShares.get(i), 8).toBase64()
+                        encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
+                        encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
                     ],
-                    nonce: encryptForDarknode(darknodeKey, nonceShares.get(i), 8).toBase64(),
+                    nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
                     index: i + 1,
                 });
                 orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
@@ -433,7 +556,7 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
         const podIndex = i % numberOfPods;
 
         const pod = new Pod({
-            darknodes: pods.get(podIndex).darknodes.push(darknodes[x.toNumber()])
+            darknodes: pods.get(podIndex, new Pod()).darknodes.push(darknodes[x.toNumber()])
         });
         pods = pods.set(podIndex, pod);
 
@@ -443,14 +566,14 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
 
     for (let i = 0; i < pods.size; i++) {
         let hashData = List<Buffer>();
-        for (const darknode of pods.get(i).darknodes.toArray()) {
+        for (const darknode of pods.get(i, new Pod()).darknodes.toArray()) {
             hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
         }
 
         const id = new EncodedData(web3.utils.keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
         const pod = new Pod({
             id: id.toBase64(),
-            darknodes: pods.get(i).darknodes
+            darknodes: pods.get(i, new Pod()).darknodes
         });
 
         // console.log(pod.id, JSON.stringify(pod.darknodes.map((node: string) =>

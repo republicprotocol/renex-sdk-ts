@@ -1,3 +1,6 @@
+import * as mainnet from "./networks/mainnet.json";
+import * as testnet from "./networks/testnet.json";
+
 export interface NetworkData {
     network: string;
     ingress: string;
@@ -24,3 +27,8 @@ export interface NetworkData {
         ZRX: string;
     };
 }
+
+export const networks = {
+    mainnet: mainnet as NetworkData,
+    testnet: testnet as NetworkData,
+};

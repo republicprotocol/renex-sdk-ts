@@ -1,23 +1,26 @@
+import BigNumber from "bignumber.js";
+
 import { BN } from "bn.js";
 import { PromiEvent } from "web3/types";
 
 import RenExSDK from "../index";
-import { BalanceAction, BalanceActionType, IntInput, TokenDetails, Transaction, TransactionStatus } from "../types";
+import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
-import { nondepositedBalance, usableBalance } from "./balancesMethods";
-import { getTransactionStatus } from "./generalMethods";
+import { toSmallestUnit } from "../lib/tokens";
+import { balances, getTokenDetails } from "./balancesMethods";
+import { getGasPrice, getTransactionStatus } from "./generalMethods";
+import { fetchBalanceActions } from "./storageMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
     const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
     return token.address.toLowerCase() === ETH_ADDR.toLowerCase();
 };
 
-export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
-
+export const updateBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
     const balanceActionStatus: TransactionStatus = await getTransactionStatus(sdk, txHash);
 
     // Update local storage (without awaiting)
@@ -31,6 +34,22 @@ export const getBalanceActionStatus = async (sdk: RenExSDK, txHash: string): Pro
     return balanceActionStatus;
 };
 
+export const updateAllBalanceActionStatuses = async (sdk: RenExSDK, balanceActions?: BalanceAction[]): Promise<Map<string, TransactionStatus>> => {
+    const newStatuses = new Map<string, TransactionStatus>();
+    if (!balanceActions) {
+        balanceActions = await fetchBalanceActions(sdk);
+    }
+    await Promise.all(balanceActions.map(async action => {
+        if (action.status === TransactionStatus.Pending) {
+            const newStatus = await updateBalanceActionStatus(sdk, action.txHash);
+            if (newStatus !== action.status) {
+                newStatuses.set(action.txHash, newStatus);
+            }
+        }
+    }));
+    return newStatuses;
+};
+
 // tslint:disable-next-line:no-any
 export const onTxHash = (tx: PromiEvent<Transaction>): Promise<{ txHash: string, promiEvent: PromiEvent<Transaction> }> => {
     return new Promise((resolve, reject) => {
@@ -42,20 +61,22 @@ export const onTxHash = (tx: PromiEvent<Transaction>): Promise<{ txHash: string,
 
 export const deposit = async (
     sdk: RenExSDK,
-    token: number,
-    value: IntInput,
+    value: NumberInput,
+    token: TokenCode,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
-    value = new BN(value);
+    value = new BigNumber(value);
 
     // Check that we can deposit that amount
-    const balance = await nondepositedBalance(sdk, token);
-    if (value.gt(balance)) {
+    const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
+    if (tokenBalance && value.gt(tokenBalance.nondeposited)) {
         throw new Error(ErrInsufficientBalance);
     }
 
-    const address = sdk.address();
-    const tokenDetails = await sdk.tokenDetails(token);
-    const gasPrice = await sdk.getGasPrice();
+    const address = sdk.getAddress();
+    const tokenDetails = await getTokenDetails(sdk, token);
+    const gasPrice = await getGasPrice(sdk);
+
+    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Deposit,
@@ -73,8 +94,8 @@ export const deposit = async (
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                value,
-                { value: value.toString(), from: address, gasPrice },
+                valueBN,
+                { value: valueBN.toString(), from: address, gasPrice },
             ));
 
             // We set the nonce after the transaction is created. We don't set
@@ -82,7 +103,7 @@ export const deposit = async (
             // the wallet popup (or equivalent) is open. We rely on the wallet's
             // nonce tracking to return the correct nonce immediately.
             try {
-                balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+                balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
             } catch (err) {
                 // Log the error but leave the nonce as undefined
                 console.error(err);
@@ -97,7 +118,7 @@ export const deposit = async (
             // ERC20 token
             let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
             if (tokenContract === undefined) {
-                tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
+                tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(tokenDetails.address);
                 sdk._contracts.erc20.set(token, tokenContract);
             }
 
@@ -107,17 +128,17 @@ export const deposit = async (
             // There's no way to check pending state - alternative is to see
             // if there are any pending deposits for the same token
             const allowance = new BN(await tokenContract.allowance(address, sdk._contracts.renExBalances.address, { from: address, gasPrice }));
-            if (allowance.lt(value)) {
-                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, value, { from: address, gasPrice }));
+            if (allowance.lt(valueBN)) {
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, valueBN, { from: address, gasPrice }));
             }
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                value,
+                valueBN,
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
-                    gas: token === 256 ? 500000 : 150000,
+                    gas: token === Token.DGX ? 500000 : 150000,
                     gasPrice,
                     from: address,
                     // nonce: balanceAction.nonce,
@@ -131,7 +152,7 @@ export const deposit = async (
             // the wallet popup (or equivalent) is open. We rely on the wallet's
             // nonce tracking to return the correct nonce immediately.
             try {
-                balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+                balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
             } catch (err) {
                 // Log the error but leave the nonce as undefined
                 console.error(err);
@@ -162,11 +183,11 @@ export const deposit = async (
 
 export const withdraw = async (
     sdk: RenExSDK,
-    token: number,
-    value: IntInput,
+    value: NumberInput,
+    token: TokenCode,
     withoutIngressSignature: boolean,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
-    value = new BN(value);
+    value = new BigNumber(value);
 
     // Trustless withdrawals are not implemented yet
     if (withoutIngressSignature === true) {
@@ -174,14 +195,16 @@ export const withdraw = async (
     }
 
     // Check the balance before withdrawal attempt
-    const balance = await usableBalance(sdk, token);
-    if (value.gt(balance)) {
+    const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
+    if (tokenBalance && value.gt(tokenBalance.free)) {
         throw new Error(ErrInsufficientBalance);
     }
 
-    const address = sdk.address();
-    const tokenDetails = await sdk.tokenDetails(token);
-    const gasPrice = await sdk.getGasPrice();
+    const address = sdk.getAddress();
+    const tokenDetails = await getTokenDetails(sdk, token);
+    const gasPrice = await getGasPrice(sdk);
+
+    const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
         action: BalanceActionType.Withdraw,
@@ -199,7 +222,7 @@ export const withdraw = async (
 
         const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
-            value,
+            valueBN,
             signature.toHex(),
             { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
         ));
@@ -212,7 +235,7 @@ export const withdraw = async (
         // the wallet popup (or equivalent) is open. We rely on the wallet's
         // nonce tracking to return the correct nonce immediately.
         try {
-            balanceAction.nonce = (await sdk.web3().eth.getTransactionCount(address, "pending")) - 1;
+            balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
         } catch (err) {
             // Log the error but leave the nonce as undefined
             console.error(err);

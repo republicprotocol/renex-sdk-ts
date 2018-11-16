@@ -1,10 +1,12 @@
-import { BN } from "bn.js";
+import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
 import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
-import { Token } from "../lib/market";
-import { AtomicConnectionStatus, OrderSettlement, OrderStatus } from "../types";
+import { fromSmallestUnit } from "../lib/tokens";
+import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
+import { getTokenDetails } from "./balancesMethods";
+import { fetchTraderOrders } from "./storageMethods";
 
 /* Atomic Connection */
 
@@ -13,7 +15,7 @@ export const currentAtomConnectionStatus = (sdk: RenExSDK): AtomicConnectionStat
 };
 
 export const atomConnected = (sdk: RenExSDK): boolean => {
-    const status = sdk.currentAtomConnectionStatus();
+    const status = currentAtomConnectionStatus(sdk);
     return (
         status === AtomicConnectionStatus.ConnectedLocked ||
         status === AtomicConnectionStatus.ConnectedUnlocked
@@ -34,7 +36,7 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
     try {
         const response = await challengeSwapper();
-        const signerAddress = checkSigner(sdk.web3(), response);
+        const signerAddress = checkSigner(sdk.getWeb3(), response);
         if (sdk._atomConnectedAddress === "") {
             const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
             if (expectedEthAddress !== signerAddress) {
@@ -46,42 +48,47 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
             // A new address was used to sign swapper messages
             return AtomicConnectionStatus.ChangedSwapper;
         }
-        const x = _connectToAtom(response, sdk._networkData.ingress, sdk.address());
-        return x;
+        if (sdk.getAddress()) {
+            return _connectToAtom(response, sdk._networkData.ingress, sdk.getAddress());
+        }
+        return AtomicConnectionStatus.NotConnected;
     } catch (err) {
         return AtomicConnectionStatus.NotConnected;
     }
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const ethAtomAddress = await sdk.atomicAddress(Token.ETH);
-    await _authorizeAtom(sdk.web3(), sdk._networkData.ingress, ethAtomAddress, sdk.address());
+    const ethAtomAddress = await atomicAddresses([Token.ETH]).then(addrs => addrs[0]);
+    await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, ethAtomAddress, sdk.getAddress());
     return refreshAtomConnectionStatus(sdk);
 };
 
 /* Atomic balances */
 
-export const supportedTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
+export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
-export const atomicBalances = (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
+const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return getAtomicBalances().then(balances => {
-        return tokens.map(token => {
+        return Promise.all(tokens.map(async token => {
+            const tokenDetails = await getTokenDetails(sdk, token);
+            let balance;
             switch (token) {
                 case Token.ETH:
-                    return new BN(balances.ethereum.amount);
+                    balance = new BigNumber(balances.ethereum.amount);
+                    break;
                 case Token.BTC:
-                    return new BN(balances.bitcoin.amount);
+                    balance = new BigNumber(balances.bitcoin.amount);
+                    break;
             }
-            return new BN(0);
-        });
+            if (balance) {
+                return fromSmallestUnit(balance, tokenDetails);
+            }
+            return new BigNumber(0);
+        }));
     });
 };
 
-export const atomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return atomicBalances(sdk, [token]).then(balances => balances[0]);
-};
-
-export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string[]> => {
+export const atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => {
     return getAtomicBalances().then(balances => {
         return tokens.map(token => {
             switch (token) {
@@ -95,44 +102,40 @@ export const atomicAddresses = (sdk: RenExSDK, tokens: number[]): Promise<string
     });
 };
 
-export const atomicAddress = async (sdk: RenExSDK, token: number): Promise<string> => {
-    return atomicAddresses(sdk, [token]).then(addresses => addresses[0]);
-};
-
-export const usableAtomicBalances = async (sdk: RenExSDK, tokens: number[]): Promise<BN[]> => {
-    const usedOrderBalances = sdk.listTraderOrders().then(orders => {
-        const usedFunds = new Map<number, BN>();
+const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
+    return fetchTraderOrders(sdk).then(orders => {
+        const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
-            if (order.orderInputs.orderSettlement === OrderSettlement.RenExAtomic &&
+            if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic &&
                 (order.status === OrderStatus.NOT_SUBMITTED ||
                     order.status === OrderStatus.OPEN ||
                     order.status === OrderStatus.CONFIRMED)
             ) {
-                const token = order.orderInputs.spendToken;
+                const token = order.computedOrderDetails.spendToken;
                 const usedTokenBalance = usedFunds.get(token);
                 if (usedTokenBalance) {
-                    usedFunds.set(token, usedTokenBalance.add(order.computedOrderDetails.spendVolume));
+                    usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
                 } else {
                     usedFunds.set(token, order.computedOrderDetails.spendVolume);
                 }
             }
         });
-        return usedFunds;
-    });
-
-    return Promise.all([atomicBalances(sdk, tokens), usedOrderBalances]).then(([
-        startingBalance,
-        orderBalance,
-    ]) => {
-        tokens.forEach((token, index) => {
-            const ob = orderBalance.get(token) || new BN(0);
-            // Don't let this balance value be negative.
-            startingBalance[index] = BN.max(new BN(0), startingBalance[index].sub(ob));
-        });
-        return startingBalance;
+        return tokens.map(token => usedFunds.get(token) || new BigNumber(0));
     });
 };
 
-export const usableAtomicBalance = async (sdk: RenExSDK, token: number): Promise<BN> => {
-    return usableAtomicBalances(sdk, [token]).then(balances => balances[0]);
+export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => {
+    return Promise.all([retrieveAtomicBalances(sdk, tokens), usedAtomicBalances(sdk, tokens)]).then(([
+        startingBalance,
+        usedBalance,
+    ]) => {
+        let atomicBalance = new Map<TokenCode, AtomicBalanceDetails>();
+        tokens.forEach((token, index) => {
+            atomicBalance = atomicBalance.set(token, {
+                used: usedBalance[index],
+                free: BigNumber.max(new BigNumber(0), startingBalance[index].minus(usedBalance[index])),
+            });
+        });
+        return atomicBalance;
+    });
 };

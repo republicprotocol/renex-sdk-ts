@@ -1,24 +1,23 @@
-import { BN } from "bn.js";
-
-import { Options } from "../types";
-
-export interface Config extends Options {
-    minimumTradeVolume: BN;
-}
+import { Config, Options } from "../types";
 
 export const defaultConfig: Config = {
-    minimumTradeVolume: new BN(0),
+    network: "mainnet",
+    autoNormalizeOrders: false,
+    storageProvider: "localStorage",
 };
 
 export function generateConfig(options?: Options): Config {
     options = options || {};
 
     const conf = defaultConfig;
-    if (options.minimumTradeVolume) {
-        const volume = new BN(options.minimumTradeVolume);
-        if (volume.gte(new BN(0))) {
-            conf.minimumTradeVolume = volume;
-        }
+    if (options.network !== undefined) {
+        conf.network = options.network;
+    }
+    if (options.autoNormalizeOrders !== undefined) {
+        conf.autoNormalizeOrders = options.autoNormalizeOrders;
+    }
+    if (options.storageProvider !== undefined) {
+        conf.storageProvider = options.storageProvider;
     }
     return conf;
 }

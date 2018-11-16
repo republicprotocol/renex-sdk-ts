@@ -1,31 +1,34 @@
 import axios from "axios";
+import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
-import { Transaction, TransactionReceipt } from "web3/types";
+import { TransactionReceipt } from "web3/types";
 
-import RenExSDK, { IntInput, TransactionStatus } from "../index";
+import RenExSDK, { NumberInput, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
-import { ERC20, ETH_CODE, withProvider } from "../contracts/contracts";
+import { ERC20, withProvider } from "../contracts/contracts";
+import { toSmallestUnit } from "../lib/tokens";
+import { Token, TokenCode } from "../types";
+import { getTokenDetails } from "./balancesMethods";
 
-export const transfer = async (sdk: RenExSDK, addr: string, token: number, valueBig: IntInput): Promise<void> => {
-    const gasPrice = await sdk.getGasPrice();
-    if (token === ETH_CODE) {
-        sdk.web3().eth.sendTransaction({
-            from: sdk.address(),
+export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
+    const gasPrice = await getGasPrice(sdk);
+    const tokenDetails = await getTokenDetails(sdk, token);
+    const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
+    if (token === Token.ETH) {
+        sdk.getWeb3().eth.sendTransaction({
+            from: sdk.getAddress(),
             to: addr,
-            value: new BN(valueBig).mul(new BN(10).pow(new BN(18))).toNumber(),
+            value,
             gasPrice
         });
     } else {
-        const tokenDetails = await sdk.tokenDetails(token);
         let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
         if (!tokenContract) {
-            tokenContract = new (withProvider(sdk.web3().currentProvider, ERC20))(tokenDetails.address);
+            tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(tokenDetails.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
-        const val = new BN(valueBig).mul(new BN(10).pow(new BN(tokenDetails.decimals)));
-        await tokenContract.transfer(addr, val);
+        await tokenContract.transfer(addr, value);
     }
 };
 
@@ -39,11 +42,11 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
         }
         throw new Error("cannot retrieve gas price from ethgasstation");
     } catch (error) {
-        console.error(error);
+        // TODO: Add error logging
         try {
-            return await sdk.web3().eth.getGasPrice() * 1.1;
+            return await sdk.getWeb3().eth.getGasPrice() * 1.1;
         } catch (error) {
-            console.error(error);
+            // TODO: Add error logging
             return undefined;
         }
     }
@@ -59,7 +62,7 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
  */
 export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promise<TransactionStatus> => {
 
-    let receipt: TransactionReceipt | null = await sdk.web3().eth.getTransactionReceipt(txHash);
+    let receipt: TransactionReceipt | null = await sdk.getWeb3().eth.getTransactionReceipt(txHash);
 
     // If the transaction hasn't been confirmed yet, it will either have a null
     // receipt, or it will have an empty blockhash.
@@ -70,7 +73,7 @@ export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promi
         // has been overwritten.
 
         // Get the current trader's nonce
-        const traderNonce = await sdk.web3().eth.getTransactionCount(sdk.address());
+        const traderNonce = await sdk.getWeb3().eth.getTransactionCount(sdk.getAddress());
 
         // Get transaction's nonce
         let transaction;
@@ -93,7 +96,7 @@ export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promi
             // This isn't perfect since the requests may hit different nodes.
             // One solution is to call `getTransactionStatus` again after a
             // delay if it has returned "replaced", to confirm the result.
-            receipt = await sdk.web3().eth.getTransactionReceipt(txHash);
+            receipt = await sdk.getWeb3().eth.getTransactionReceipt(txHash);
 
             // Check that the transaction isn't confirmed
             if (!receipt) {
