@@ -9,6 +9,7 @@ import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../l
 import { idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 import { atomConnected } from "./atomicMethods";
+import { getOrderBlockNumber } from "./orderbookMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
@@ -65,6 +66,31 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
     }
     if (orderbookStatus === OrderStatus.CONFIRMED) {
         orderStatus = await settlementStatus(sdk, orderID);
+
+        // If the order is still settling, check how much time has passed. We
+        // do this since we do not want the user's funds to be locked up
+        // forever if a trader attempts to settle an order without funds they
+        // actually possess.
+        const storedOrder = await sdk._storage.getOrder(orderID64);
+        if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx && orderStatus === OrderStatus.CONFIRMED) {
+            let currentBlockNumber = 0;
+            try {
+                currentBlockNumber = await sdk.getWeb3().eth.getBlockNumber();
+            } catch (error) {
+                console.error(error);
+            }
+            if (currentBlockNumber > 0) {
+                let blockNumber = 0;
+                try {
+                    blockNumber = await getOrderBlockNumber(sdk, orderID64);
+                } catch (error) {
+                    console.error(error);
+                }
+                if (blockNumber > 0 && currentBlockNumber - blockNumber > 300) {
+                    orderStatus = OrderStatus.FAILED_TO_SETTLE;
+                }
+            }
+        }
     } else if (orderbookStatus === OrderStatus.OPEN) {
         // Check if order is expired
         const storedOrder = await sdk._storage.getOrder(orderID64);

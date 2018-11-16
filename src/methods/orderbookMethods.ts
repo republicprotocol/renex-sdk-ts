@@ -321,3 +321,8 @@ export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder
     }));
     return newStatuses;
 };
+
+export const getOrderBlockNumber = async (sdk: RenExSDK, orderID: string): Promise<number> => {
+    const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
+    return new BN(await sdk._contracts.orderbook.orderBlockNumber(orderIDHex)).toNumber();
+};

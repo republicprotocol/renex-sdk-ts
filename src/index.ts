@@ -17,7 +17,7 @@ import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentA
 import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
-import { cancelOrder, getMinEthTradeVolume, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
+import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
 import { StorageProvider } from "./storage/interface";
@@ -153,6 +153,7 @@ class RenExSDK {
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
     public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
     public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
+    public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 
     // public fetchAtomicMarkets = ()
     public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
