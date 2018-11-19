@@ -1,6 +1,6 @@
 {
   "name": "@renex/renex",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The official RenEx Software Development Kit in typescript.",
   "repository": {
     "type": "git",
@@ -41,6 +41,7 @@
     "@types/node": "10.10.3",
     "awesome-typescript-loader": "5.2.1",
     "babel-loader": "8.0.2",
+    "babel-plugin-transform-es2015-modules-simple-commonjs": "^0.3.0",
     "babel-polyfill": "6.26.0",
     "babel-preset-stage-3": "6.24.1",
     "chai": "^4.2.0",

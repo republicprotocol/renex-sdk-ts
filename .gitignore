@@ -2,8 +2,6 @@ node_modules
 /.project
 /.settings/
 
-/lib
-
 # Logs
 *.log
 
@@ -21,3 +19,5 @@ typedoc/
 /types
 
 .env
+
+*.map
