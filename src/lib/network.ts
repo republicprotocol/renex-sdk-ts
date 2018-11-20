@@ -1,5 +1,5 @@
-import * as mainnet from "./networks/mainnet.json";
-import * as testnet from "./networks/testnet.json";
+import mainnet from "./networks/mainnet.json";
+import testnet from "./networks/testnet.json";
 
 export interface NetworkData {
     network: string;
