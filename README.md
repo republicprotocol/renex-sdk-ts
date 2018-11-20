@@ -15,7 +15,7 @@ npm install --save @renex/renex
 ## Usage
 
 ```javascript
-var RenExSDK = require("@renex/renex");
+var { RenExSDK } = require("@renex/renex");
 
 var provider = window.web3.currentProvider;
 var sdk = new RenExSDK(provider);
