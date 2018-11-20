@@ -21,3 +21,4 @@ typedoc/
 .env
 
 *.map
+dist
