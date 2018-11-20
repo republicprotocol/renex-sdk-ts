@@ -1,1 +1,1 @@
-../lib/browser.js
+../dist/browser.js
