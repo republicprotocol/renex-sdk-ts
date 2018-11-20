@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        "baseUrl": "src",
         "lib": [
             "es2015",
             "es2017"
@@ -11,13 +10,9 @@
         "target": "esnext",
         "module": "commonjs",
         "declaration": true,
-        "declarationDir": "./lib/types",
+        "declarationDir": "./dist",
         "sourceMap": true,
-        "outDir": "./dist",
-        "rootDirs": [
-            "./src",
-            "./test"
-        ],
+        "outDir": "dist",
         "moduleResolution": "node",
         "forceConsistentCasingInFileNames": true,
         "noImplicitReturns": true,
@@ -28,9 +23,8 @@
         "strictPropertyInitialization": true
     },
     "include": [
-        "./test/**/*.spec.ts",
-        "./src/**/*",
-        "./src/global.d.ts",
+        "src/**/*.ts",
+        "src/global.d.ts",
         "node_modules/@types"
     ],
     "exclude": []

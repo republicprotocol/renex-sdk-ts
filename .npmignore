@@ -4,4 +4,4 @@ ts*.json
 typedoc.js
 webpack.config.js
 test/
-lib/browser*
+dist/browser*

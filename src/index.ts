@@ -42,7 +42,7 @@ export { StorageProvider } from "./storage/interface";
  *
  * @class RenExSDK
  */
-class RenExSDK {
+export class RenExSDK {
 
     public _networkData: NetworkData;
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;

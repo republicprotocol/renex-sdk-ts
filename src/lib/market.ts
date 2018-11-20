@@ -1,9 +1,9 @@
 import RenExSDK from "../index";
 
 import { OrderedMap } from "immutable";
-import { MarketDetails, MarketPair, OrderSettlement, Token } from "../types";
+import { MarketCode, MarketDetails, MarketPair, OrderSettlement, Token } from "../types";
 
-export const MarketPairs: OrderedMap<MarketPair, MarketDetails> = OrderedMap<MarketPair, MarketDetails>()
+export const MarketPairs: OrderedMap<MarketCode, MarketDetails> = OrderedMap<MarketCode, MarketDetails>()
     // RenExAtomic:
     .set(MarketPair.ETH_BTC, { symbol: MarketPair.ETH_BTC, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.BTC, base: Token.ETH })
     // RenEx:
