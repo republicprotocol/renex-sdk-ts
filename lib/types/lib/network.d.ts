@@ -22,3 +22,7 @@ export interface NetworkData {
         ZRX: string;
     };
 }
+export declare const networks: {
+    mainnet: NetworkData;
+    testnet: NetworkData;
+};

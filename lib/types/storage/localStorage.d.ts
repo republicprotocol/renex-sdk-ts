@@ -1,9 +1,9 @@
 import { BalanceAction, OrderID, TraderOrder } from "../types";
-import { Storage } from "./interface";
-declare class LocalStorage implements Storage {
+import { StorageProvider } from "./interface";
+declare class LocalStorage implements StorageProvider {
     private orders;
     private balanceActions;
-    constructor(address: string);
+    constructor(address?: string);
     setOrder(order: TraderOrder): Promise<void>;
     getOrder(orderID: OrderID): Promise<TraderOrder | undefined>;
     getOrders(): Promise<TraderOrder[]>;

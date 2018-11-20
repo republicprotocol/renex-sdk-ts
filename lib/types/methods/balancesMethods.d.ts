@@ -1,11 +1,4 @@
-import { BN } from "bn.js";
 import RenExSDK from "../index";
-import { TokenDetails } from "../types";
-export declare const tokenDetails: (sdk: RenExSDK, token: number) => Promise<TokenDetails>;
-export declare const nondepositedBalance: (sdk: RenExSDK, token: number) => Promise<BN>;
-export declare const nondepositedBalances: (sdk: RenExSDK, tokens: number[]) => Promise<BN[]>;
-export declare const balance: (sdk: RenExSDK, token: number) => Promise<BN>;
-export declare const balances: (sdk: RenExSDK, tokens: number[]) => Promise<BN[]>;
-export declare const lockedBalance: (sdk: RenExSDK, token: number) => Promise<BN>;
-export declare const lockedBalances: (sdk: RenExSDK, tokens: number[]) => Promise<BN[]>;
-export declare const usableBalance: (sdk: RenExSDK, token: number) => Promise<BN>;
+import { BalanceDetails, TokenDetails } from "../types";
+export declare const getTokenDetails: (sdk: RenExSDK, token: string) => Promise<TokenDetails>;
+export declare const balances: (sdk: RenExSDK, tokens: string[]) => Promise<Map<string, BalanceDetails>>;

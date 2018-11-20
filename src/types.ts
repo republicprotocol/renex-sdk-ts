@@ -59,17 +59,18 @@ export enum MarketPair {
 }
 
 export interface MarketDetails {
-    symbol: MarketPair;
+    symbol: MarketCode;
     orderSettlement: OrderSettlement;
     quote: TokenCode;
     base: TokenCode;
 }
 
 export type TokenCode = string;
+export type MarketCode = string;
 
 export interface OrderInputs {
     // Required fields
-    symbol: MarketPair;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+    symbol: MarketCode;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
     side: OrderSide;         // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken

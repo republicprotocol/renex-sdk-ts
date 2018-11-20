@@ -1,10 +1,10 @@
+import BigNumber from "bignumber.js";
 import Web3 from "web3";
 import { BN } from "bn.js";
 import { PromiEvent, Provider } from "web3/types";
-import { Config } from "./lib/config";
 import { NetworkData } from "./lib/network";
-import { Storage } from "./storage/interface";
-import { AtomicConnectionStatus, BalanceAction, GetOrdersFilter, IntInput, MatchDetails, Options, Order, OrderInputs, OrderStatus, SimpleConsole, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { StorageProvider } from "./storage/interface";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderInputs, OrderStatus, SimpleConsole, TokenCode, TraderOrder, Transaction, TransactionStatus } from "./types";
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
 import { ERC20Contract } from "./contracts/bindings/erc20";
 import { OrderbookContract } from "./contracts/bindings/orderbook";
@@ -13,6 +13,7 @@ import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement"
 import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
 import { WyreContract } from "./contracts/bindings/wyre";
 export * from "./types";
+export { StorageProvider } from "./storage/interface";
 /**
  * This is the concrete class that implements the IRenExSDK interface.
  *
@@ -22,21 +23,35 @@ declare class RenExSDK {
     _networkData: NetworkData;
     _atomConnectionStatus: AtomicConnectionStatus;
     _atomConnectedAddress: string;
-    _storage: Storage;
+    _storage: StorageProvider;
     _contracts: {
         renExSettlement: RenExSettlementContract;
         renExTokens: RenExTokensContract;
         renExBalances: RenExBalancesContract;
         orderbook: OrderbookContract;
         darknodeRegistry: DarknodeRegistryContract;
-        erc20: Map<number, ERC20Contract>;
+        erc20: Map<TokenCode, ERC20Contract>;
         wyre: WyreContract;
     };
-    _cachedTokenDetails: Map<number, Promise<{
+    _cachedTokenDetails: Map<TokenCode, Promise<{
         addr: string;
-        decimals: IntInput;
+        decimals: string | number | BN;
         registered: boolean;
     }>>;
+    atom: {
+        getStatus: () => AtomicConnectionStatus;
+        isConnected: () => boolean;
+        refreshStatus: () => Promise<AtomicConnectionStatus>;
+        resetStatus: () => Promise<AtomicConnectionStatus>;
+        authorize: () => Promise<AtomicConnectionStatus>;
+        fetchBalances: (tokens: string[]) => Promise<Map<string, AtomicBalanceDetails>>;
+        fetchAddresses: (tokens: string[]) => Promise<string[]>;
+    };
+    utils: {
+        normalizePrice: (price: NumberInput, roundUp?: boolean | undefined) => NumberInput;
+        normalizeVolume: (volume: NumberInput, roundUp?: boolean | undefined) => NumberInput;
+        normalizeOrder: (order: OrderInputs) => OrderInputs;
+    };
     private _web3;
     private _address;
     private _config;
@@ -45,26 +60,21 @@ declare class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, networkData: NetworkData, address: string, options?: Options);
-    tokenDetails: (token: number) => Promise<TokenDetails>;
-    transfer: (addr: string, token: number, value: IntInput) => Promise<void>;
-    nondepositedBalance: (token: number) => Promise<BN>;
-    nondepositedBalances: (tokens: number[]) => Promise<BN[]>;
-    balance: (token: number) => Promise<BN>;
-    balances: (tokens: number[]) => Promise<BN[]>;
-    lockedBalance: (token: number) => Promise<BN>;
-    lockedBalances: (tokens: number[]) => Promise<BN[]>;
-    usableBalance: (token: number) => Promise<BN>;
-    getBalanceActionStatus: (txHash: string) => Promise<TransactionStatus>;
-    status: (orderID: string) => Promise<OrderStatus>;
-    matchDetails: (orderID: string) => Promise<MatchDetails>;
-    getOrders: (filter: GetOrdersFilter) => Promise<Order[]>;
-    getOrderBlockNumber: (orderID: string) => Promise<number>;
-    deposit: (token: number, value: IntInput) => Promise<{
+    constructor(provider: Provider, options?: Options);
+    fetchBalances: (tokens: string[]) => Promise<Map<string, BalanceDetails>>;
+    fetchBalanceActionStatus: (txHash: string) => Promise<TransactionStatus>;
+    fetchOrderStatus: (orderID: string) => Promise<OrderStatus>;
+    fetchMatchDetails: (orderID: string) => Promise<MatchDetails>;
+    fetchOrderbook: (filter: OrderbookFilter) => Promise<Order[]>;
+    fetchOrderBlockNumber: (orderID: string) => Promise<number>;
+    fetchMarkets: () => Promise<MarketDetails[]>;
+    fetchSupportedTokens: () => Promise<string[]>;
+    fetchSupportedAtomicTokens: () => Promise<string[]>;
+    deposit: (value: NumberInput, token: string) => Promise<{
         balanceAction: BalanceAction;
         promiEvent: PromiEvent<Transaction> | null;
     }>;
-    withdraw: (token: number, value: IntInput, withoutIngressSignature?: boolean) => Promise<{
+    withdraw: (value: NumberInput, token: string, withoutIngressSignature?: boolean) => Promise<{
         balanceAction: BalanceAction;
         promiEvent: PromiEvent<Transaction> | null;
     }>;
@@ -75,27 +85,21 @@ declare class RenExSDK {
     cancelOrder: (orderID: string) => Promise<{
         promiEvent: PromiEvent<Transaction> | null;
     }>;
-    orderFeeDenominator: () => Promise<BN>;
-    orderFeeNumerator: () => Promise<BN>;
-    getGasPrice: () => Promise<number | undefined>;
-    atomConnected: () => boolean;
-    currentAtomConnectionStatus: () => AtomicConnectionStatus;
-    refreshAtomConnectionStatus: () => Promise<AtomicConnectionStatus>;
-    resetAtomConnectionStatus: () => Promise<AtomicConnectionStatus>;
-    authorizeAtom: () => Promise<AtomicConnectionStatus>;
-    atomicBalance: (token: number) => Promise<BN>;
-    atomicBalances: (tokens: number[]) => Promise<BN[]>;
-    usableAtomicBalance: (token: number) => Promise<BN>;
-    usableAtomicBalances: (tokens: number[]) => Promise<BN[]>;
-    atomicAddress: (token: number) => Promise<string>;
-    atomicAddresses: (tokens: number[]) => Promise<string[]>;
-    supportedAtomicTokens: () => Promise<number[]>;
-    listTraderOrders: () => Promise<TraderOrder[]>;
-    listBalanceActions: () => Promise<BalanceAction[]>;
-    web3: () => Web3;
-    address: () => string;
-    config: () => Config;
+    fetchDarknodeFeePercent: () => Promise<BigNumber>;
+    fetchMinEthTradeVolume: () => Promise<BigNumber>;
+    fetchGasPrice: () => Promise<number | undefined>;
+    fetchTraderOrders: (options?: {
+        refresh: boolean;
+    }) => Promise<TraderOrder[]>;
+    fetchBalanceActions: (options?: {
+        refresh: boolean;
+    }) => Promise<BalanceAction[]>;
+    refreshBalanceActionStatuses: () => Promise<Map<string, TransactionStatus>>;
+    refreshOrderStatuses: () => Promise<Map<string, OrderStatus>>;
+    getWeb3: () => Web3;
+    getAddress: () => string;
+    getConfig: () => Config;
+    setAddress: (address: string) => void;
     updateProvider: (provider: Provider) => void;
-    updateAddress: (address: string) => void;
 }
 export default RenExSDK;

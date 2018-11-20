@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js";
+import { NumberInput } from "../types";
 import { Tuple } from "./ingress";
 /**
  * Calculate price tuple from a decimal string
@@ -12,3 +13,4 @@ export declare const normalizePrice: (p: BigNumber, roundUp?: boolean | undefine
 export declare function volumeToTuple(volume: BigNumber, roundUp?: boolean): Tuple;
 export declare const tupleToVolume: (t: Tuple) => BigNumber;
 export declare const normalizeVolume: (v: BigNumber, roundUp?: boolean | undefined) => BigNumber;
+export declare function toOriginalType(converted: BigNumber, original: NumberInput): NumberInput;

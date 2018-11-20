@@ -1,6 +1,6 @@
 import { BalanceAction, OrderID, TraderOrder } from "../types";
-import { Storage } from "./interface";
-export declare class MemoryStorage implements Storage {
+import { StorageProvider } from "./interface";
+export declare class MemoryStorage implements StorageProvider {
     private orders;
     private balanceActions;
     constructor();

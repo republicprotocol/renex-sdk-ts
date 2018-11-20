@@ -1,5 +1,5 @@
-import RenExSDK, { IntInput, TransactionStatus } from "../index";
-export declare const transfer: (sdk: RenExSDK, addr: string, token: number, valueBig: IntInput) => Promise<void>;
+import RenExSDK, { NumberInput, TransactionStatus } from "../index";
+export declare const transfer: (sdk: RenExSDK, addr: string, token: string, valueBig: NumberInput) => Promise<void>;
 export declare const getGasPrice: (sdk: RenExSDK) => Promise<number | undefined>;
 /**
  * Returns the status of a transaction from its transaction hash.

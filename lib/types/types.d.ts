@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
+import { StorageProvider } from "./storage/interface";
 export { NetworkData } from "./lib/network";
-export declare type IntInput = number | string | BN;
-export declare type FloatInput = number | string | BigNumber;
+export declare type NumberInput = number | string | BigNumber;
 export interface Transaction {
     receipt: any;
     tx: string;
@@ -20,47 +20,70 @@ export declare enum OrderStatus {
     EXPIRED = "EXPIRED"
 }
 export declare enum OrderSettlement {
-    RenEx = 1,
-    RenExAtomic = 2
+    RenEx = "renex",
+    RenExAtomic = "atomic"
 }
 export declare enum OrderType {
-    MIDPOINT = 0,
-    LIMIT = 1,
-    MIDPOINT_IOC = 2,
-    LIMIT_IOC = 3
+    MIDPOINT = "midpoint",
+    LIMIT = "limit",
+    MIDPOINT_IOC = "midpoint_ioc",
+    LIMIT_IOC = "limit_ioc"
 }
-export declare enum OrderParity {
-    BUY = 0,
-    SELL = 1
+export declare enum OrderSide {
+    BUY = "buy",
+    SELL = "sell"
 }
-export declare type TokenCode = number;
+export declare enum Token {
+    BTC = "BTC",
+    ETH = "ETH",
+    DGX = "DGX",
+    TUSD = "TUSD",
+    REN = "REN",
+    ZRX = "ZRX",
+    OMG = "OMG"
+}
+export declare enum MarketPair {
+    ETH_BTC = "ETH/BTC",
+    DGX_ETH = "DGX/ETH",
+    TUSD_ETH = "TUSD/ETH",
+    REN_ETH = "REN/ETH",
+    ZRX_ETH = "ZRX/ETH",
+    OMG_ETH = "OMG/ETH"
+}
+export interface MarketDetails {
+    symbol: MarketCode;
+    orderSettlement: OrderSettlement;
+    quote: TokenCode;
+    base: TokenCode;
+}
+export declare type TokenCode = string;
+export declare type MarketCode = string;
 export interface OrderInputs {
-    spendToken: TokenCode;
-    receiveToken: TokenCode;
-    price: FloatInput;
-    volume: IntInput;
-    minimumVolume: IntInput;
+    symbol: MarketCode;
+    side: OrderSide;
+    price: NumberInput;
+    volume: NumberInput;
+    minVolume?: NumberInput;
     type?: OrderInputsAll["type"];
-    orderSettlement?: OrderInputsAll["orderSettlement"];
-    nonce?: OrderInputsAll["nonce"];
     expiry?: OrderInputsAll["expiry"];
 }
 export interface OrderInputsAll extends OrderInputs {
     price: BigNumber;
-    volume: BN;
-    minimumVolume: BN;
+    volume: BigNumber;
+    minVolume: BigNumber;
     type: OrderType;
-    orderSettlement: OrderSettlement;
-    nonce: BN;
     expiry: number;
 }
 export interface ComputedOrderDetails {
-    receiveVolume: BN;
-    spendVolume: BN;
+    receiveToken: TokenCode;
+    spendToken: TokenCode;
+    receiveVolume: BigNumber;
+    spendVolume: BigNumber;
     date: number;
-    parity: OrderParity;
-    feeAmount: BN;
+    feeAmount: BigNumber;
     feeToken: TokenCode;
+    orderSettlement: OrderSettlement;
+    nonce: BN;
 }
 export interface Order {
     readonly id: OrderID;
@@ -73,7 +96,7 @@ export interface TraderOrder extends Order {
     readonly orderInputs: OrderInputsAll;
     readonly transactionHash: string;
 }
-export interface GetOrdersFilter {
+export interface OrderbookFilter {
     address?: string;
     status?: OrderStatus;
     limit?: number;
@@ -82,9 +105,9 @@ export interface GetOrdersFilter {
 export interface MatchDetails {
     orderID: string;
     matchedID: string;
-    receivedVolume: BN;
-    spentVolume: BN;
-    fee: BN;
+    receivedVolume: BigNumber;
+    spentVolume: BigNumber;
+    fee: BigNumber;
     receivedToken: TokenCode;
     spentToken: TokenCode;
 }
@@ -92,6 +115,15 @@ export interface TokenDetails {
     address: string;
     decimals: number;
     registered: boolean;
+}
+export interface BalanceDetails {
+    free: BigNumber;
+    used: BigNumber;
+    nondeposited: BigNumber;
+}
+export interface AtomicBalanceDetails {
+    free: BigNumber;
+    used: BigNumber;
 }
 export declare enum BalanceActionType {
     Withdraw = "withdraw",
@@ -105,7 +137,7 @@ export declare enum TransactionStatus {
 }
 export interface BalanceAction {
     action: BalanceActionType;
-    amount: BN;
+    amount: BigNumber;
     time: number;
     status: TransactionStatus;
     token: TokenCode;
@@ -114,7 +146,14 @@ export interface BalanceAction {
     nonce: number | undefined;
 }
 export interface Options {
-    minimumTradeVolume?: IntInput;
+    network?: Config["network"];
+    autoNormalizeOrders?: Config["autoNormalizeOrders"];
+    storageProvider?: Config["storageProvider"];
+}
+export interface Config extends Options {
+    network: string;
+    autoNormalizeOrders: boolean;
+    storageProvider: string | StorageProvider;
 }
 export interface SimpleConsole {
     error(message?: string): void;

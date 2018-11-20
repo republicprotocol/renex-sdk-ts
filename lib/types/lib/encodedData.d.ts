@@ -22,7 +22,7 @@ declare const DefaultEncodedData: {
     value: string | Buffer;
     encoding: Encodings;
 };
-declare const EncodedData_base: import("lib/record").RecordInterface<{
+declare const EncodedData_base: import("./record").RecordInterface<{
     value: string | Buffer;
     encoding: Encodings;
 }>;

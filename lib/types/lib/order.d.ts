@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 import { OrderStatus } from "../index";
-declare const CoExp_base: import("lib/record").RecordInterface<{
+declare const CoExp_base: import("./record").RecordInterface<{
     co: number;
     exp: number;
 }>;

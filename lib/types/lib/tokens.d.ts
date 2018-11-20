@@ -1,4 +1,12 @@
+import RenExSDK from "../index";
+import { BigNumber } from "bignumber.js";
 import { BN } from "bn.js";
+import { TokenCode, TokenDetails } from "../types";
+export declare function toSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber;
+export declare function fromSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber;
+export declare function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]>;
+export declare function tokenToID(token: TokenCode): number;
+export declare function idToToken(token: number): TokenCode;
 /**
  * Combine two 32-bit token identifiers into a single 64-bit number.
  *
