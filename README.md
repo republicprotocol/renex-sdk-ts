@@ -8,18 +8,42 @@ The official Javascript SDK for interacting with [RenEx](https://ren.exchange) -
 
 ## Installation
 
+Add the RenExSDK using NPM
+
 ```bash
 npm install --save @renex/renex
 ```
 
-## Usage
+Add the RenExSDK using Yarn
+
+```bash
+yarn add @renex/renex
+```
+
+## Importing the SDK
+
+Importing using the require syntax
 
 ```javascript
 var { RenExSDK } = require("@renex/renex");
+```
 
+Importing using the ES6 syntax
+
+```javascript
+import { RenExSDK } from "@renex/renex";
+```
+
+## Usage
+
+Pass in a provider object to instantiate the SDK.
+
+```javascript
 var provider = window.web3.currentProvider;
 var sdk = new RenExSDK(provider);
 ```
+
+For information on SDK usage, check out the [official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs).
 
 ## For Developers
 
