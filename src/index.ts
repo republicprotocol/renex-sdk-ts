@@ -191,7 +191,7 @@ export class RenExSDK {
     public getConfig = (): Config => this._config;
 
     public setAddress = (addr: string): void => {
-        const address = new EncodedData(addr, Encodings.HEX).toHex();
+        const address = addr === "" ? "" : new EncodedData(addr, Encodings.HEX).toHex();
         this._address = address;
         if (this.getConfig().storageProvider === "localStorage") {
             this._storage = new LocalStorage(address);
