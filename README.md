@@ -42,7 +42,12 @@ Pass in a provider object to instantiate the SDK and set the address.
 ```javascript
 var provider = window.web3.currentProvider;
 var sdk = new RenExSDK(provider);
-sdk.setAddress(window.web3.eth.defaultAccount);
+```
+
+Before you can use account specific functions such as fetching account balances or opening orders, you must tell the SDK which Ethereum account to use. This address must be the same one that has been KYC'd via Kyber or Wyre. You can check if your account has been verified by visiting [RenEx Beta](https://ren.exchange).
+
+```javascript
+sdk.setAddress("0xece04c40dc55b1c6e3882966ed41e7982f3d26a6");
 ```
 
 For information on SDK usage, check out the [official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs) or clone the [examples repository](https://github.com/republicprotocol/renex-sdk-examples-js).
