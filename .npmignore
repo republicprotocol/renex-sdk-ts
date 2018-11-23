@@ -5,3 +5,4 @@ typedoc.js
 webpack.config.js
 test/
 dist/browser*
+dist/*.map

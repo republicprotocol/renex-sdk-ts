@@ -1,5 +1,7 @@
 {
     "compilerOptions": {
+        "baseUrl": "src",
+        "rootDir": "src",
         "lib": [
             "es2015",
             "es2017"
@@ -23,7 +25,7 @@
         "strictPropertyInitialization": true
     },
     "include": [
-        "src/**/*.ts",
+        "src/**/*",
         "src/global.d.ts",
         "node_modules/@types"
     ],
