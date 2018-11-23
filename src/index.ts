@@ -10,6 +10,7 @@ import LocalStorage from "./storage/localStorage";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
+import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
@@ -189,7 +190,8 @@ export class RenExSDK {
     public getAddress = (): string => this._address;
     public getConfig = (): Config => this._config;
 
-    public setAddress = (address: string): void => {
+    public setAddress = (addr: string): void => {
+        const address = new EncodedData(addr, Encodings.HEX).toHex();
         this._address = address;
         if (this.getConfig().storageProvider === "localStorage") {
             this._storage = new LocalStorage(address);
