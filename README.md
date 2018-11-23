@@ -5,6 +5,7 @@ The official Javascript SDK for interacting with [RenEx](https://ren.exchange) -
 ## Links
 
 * [Official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs)
+* [Cloneable Examples](https://github.com/republicprotocol/renex-sdk-examples-js)
 
 ## Installation
 
@@ -36,14 +37,15 @@ import { RenExSDK } from "@renex/renex";
 
 ## Usage
 
-Pass in a provider object to instantiate the SDK.
+Pass in a provider object to instantiate the SDK and set the address.
 
 ```javascript
 var provider = window.web3.currentProvider;
 var sdk = new RenExSDK(provider);
+sdk.setAddress(window.web3.eth.defaultAccount);
 ```
 
-For information on SDK usage, check out the [official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs).
+For information on SDK usage, check out the [official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs) or clone the [examples repository](https://github.com/republicprotocol/renex-sdk-examples-js).
 
 ## For Developers
 
