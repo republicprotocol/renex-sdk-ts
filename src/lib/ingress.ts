@@ -85,7 +85,7 @@ export class Order extends Record({
     type: OrderType.LIMIT,
     parity: OrderParity.BUY,
     orderSettlement: OrderSettlement.RenEx,
-    expiry: Math.round((new Date()).getTime() / 1000),
+    expiry: 0,
     tokens: new BN(0),
     price: new BN(0),
     volume: new BN(0),
@@ -114,7 +114,7 @@ export class OrderFragment extends Record({
     orderType: OrderType.LIMIT,
     orderParity: OrderParity.BUY,
     orderSettlement: OrderSettlement.RenEx,
-    orderExpiry: Math.round((new Date()).getTime() / 1000),
+    orderExpiry: 0,
     tokens: "",
     price: ["", ""],
     volume: ["", ""],
@@ -188,7 +188,6 @@ export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const ingressOrder = new Order({
         type: orderTypeMapper(orderInputs.type),
         orderSettlement: orderSettlementMapper(marketDetail.orderSettlement),
-        expiry: orderInputs.expiry,
         nonce: nonce ? nonce : new BN(0),
 
         parity: orderParityMapper(orderInputs.side),
@@ -403,7 +402,6 @@ export async function buildOrderMapping(
                     orderType: order.type,
                     orderParity: order.parity,
                     orderSettlement: order.orderSettlement,
-                    orderExpiry: order.expiry,
                     tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
                     price: [
                         encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),

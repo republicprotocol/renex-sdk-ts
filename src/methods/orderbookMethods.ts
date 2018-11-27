@@ -23,9 +23,6 @@ import { fetchTraderOrders } from "./storageMethods";
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
 
-// Default time an order is open for (24 hours)
-const DEFAULT_EXPIRY_OFFSET = 60 * 60 * 24;
-
 const populateOrderDefaults = (
     sdk: RenExSDK,
     orderInputs: OrderInputs,
@@ -42,7 +39,6 @@ const populateOrderDefaults = (
         volume: new BigNumber(orderInputs.volume),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : minVolume,
-        expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };

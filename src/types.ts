@@ -19,7 +19,6 @@ export enum OrderStatus {
     CANCELED = "CANCELED",
     SETTLED = "SETTLED",
     SLASHED = "SLASHED",
-    EXPIRED = "EXPIRED",
 }
 
 export enum OrderSettlement {
@@ -78,7 +77,6 @@ export interface OrderInputs {
     // Optional fields
     minVolume?: NumberInput; // In baseToken
     type?: OrderInputsAll["type"];
-    expiry?: OrderInputsAll["expiry"];
 }
 
 // OrderInputsAll extends OrderInputs and sets optional fields to be required.
@@ -90,7 +88,6 @@ export interface OrderInputsAll extends OrderInputs {
     // Change to non-optional
     minVolume: BigNumber;
     type: OrderType;
-    expiry: number;
 }
 
 export interface ComputedOrderDetails {
