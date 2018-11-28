@@ -8,6 +8,8 @@ import { fromSmallestUnit, tokenToID } from "../lib/tokens";
 import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
 import { fetchBalanceActions, fetchTraderOrders } from "./storageMethods";
 
+type MaybeBigNumber = BigNumber | null;
+
 export const getTokenDetails = async (sdk: RenExSDK, token: TokenCode): Promise<TokenDetails> => {
     let detailsFromContract = await sdk._cachedTokenDetails.get(token);
 
@@ -42,16 +44,12 @@ const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<Big
     return fromSmallestUnit(balance, details);
 };
 
-const nondepositedBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
-    // Loop through all tokens, returning 0 for any that throw an error
-    return Promise.all(tokens.map(async (token: TokenCode) => {
-        try {
-            return await nondepositedBalance(sdk, token);
-        } catch (err) {
-            console.error(`Unable to retrieve non-deposited balance for token #${token}. ${err}`);
-            return new BigNumber(0);
-        }
-    }));
+const nondepositedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
+    // Loop through all tokens, returning null for any that throw an error
+    return Promise.all(tokens.map((token: TokenCode) => nondepositedBalance(sdk, token).catch((error) => {
+        console.error(`Failed to get non deposited balance for ${token}: ${error}`);
+        return null;
+    })));
 };
 
 const totalBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber> => {
@@ -60,15 +58,12 @@ const totalBalance = async (sdk: RenExSDK, token: TokenCode): Promise<BigNumber>
     return fromSmallestUnit(balance, details);
 };
 
-const totalBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
-    // Loop through all tokens, returning 0 for any that throw an error
-    return Promise.all(tokens.map((async (token) => {
-        try {
-            return totalBalance(sdk, token);
-        } catch (err) {
-            return new BigNumber(0);
-        }
-    })));
+const totalBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
+    // Loop through all tokens, returning null for any that throw an error
+    return Promise.all(tokens.map((async (token) => totalBalance(sdk, token).catch((err) => {
+        console.error(`Failed to get balance for ${token}: ${err}`);
+        return null;
+    }))));
 };
 
 const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
@@ -130,26 +125,29 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
 };
 
 export const balances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => {
-    return Promise.all([
-        totalBalances(sdk, tokens),
-        lockedBalances(sdk, tokens),
-        nondepositedBalances(sdk, tokens)
-    ]).then(([total, locked, nondeposited]) => {
-        const balanceDetails = new Map<TokenCode, BalanceDetails>();
-        tokens.forEach((token, index) => {
-            const tokenBalance = total[index];
-            const tokenLocked = locked[index];
-            let usable = tokenBalance.minus(tokenLocked);
-            // If usable balance is less than zero, set to 0
-            if (usable.lt(new BigNumber(0))) {
-                usable = new BigNumber(0);
-            }
-            balanceDetails.set(token, {
-                free: usable,
-                used: tokenLocked,
-                nondeposited: nondeposited[index],
+    const balanceDetails = new Map<TokenCode, BalanceDetails>();
+    try {
+        await Promise.all([
+            totalBalances(sdk, tokens),
+            lockedBalances(sdk, tokens),
+            nondepositedBalances(sdk, tokens)
+        ]).then(([total, locked, nondeposited]) => {
+            tokens.forEach((token, index) => {
+                const tokenBalance = total[index];
+                const tokenLocked = locked[index];
+                let usable: MaybeBigNumber = null;
+                if (tokenBalance !== null) {
+                    usable = BigNumber.max(tokenBalance.minus(tokenLocked), 0);
+                }
+                balanceDetails.set(token, {
+                    free: usable,
+                    used: tokenLocked,
+                    nondeposited: nondeposited[index],
+                });
             });
         });
-        return balanceDetails;
-    });
+    } catch (error) {
+        console.error(error);
+    }
+    return balanceDetails;
 };

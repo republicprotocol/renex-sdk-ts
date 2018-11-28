@@ -142,9 +142,9 @@ export interface TokenDetails {
 }
 
 export interface BalanceDetails {
-    free: BigNumber;
-    used: BigNumber;
-    nondeposited: BigNumber;
+    free: BigNumber | null;
+    used: BigNumber | null;
+    nondeposited: BigNumber | null;
 }
 
 export interface AtomicBalanceDetails {

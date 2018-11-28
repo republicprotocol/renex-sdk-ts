@@ -8,7 +8,7 @@ import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenD
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
+import { ErrCanceledByUser, ErrFailedBalanceCheck, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
 import { balances, getTokenDetails } from "./balancesMethods";
@@ -68,7 +68,9 @@ export const deposit = async (
 
     // Check that we can deposit that amount
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
-    if (tokenBalance && value.gt(tokenBalance.nondeposited)) {
+    if (tokenBalance && tokenBalance.nondeposited === null) {
+        throw new Error(ErrFailedBalanceCheck);
+    } else if (tokenBalance && tokenBalance.nondeposited !== null && value.gt(tokenBalance.nondeposited)) {
         throw new Error(ErrInsufficientBalance);
     }
 
@@ -196,7 +198,9 @@ export const withdraw = async (
 
     // Check the balance before withdrawal attempt
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
-    if (tokenBalance && value.gt(tokenBalance.free)) {
+    if (tokenBalance && tokenBalance.free === null) {
+        throw new Error(ErrFailedBalanceCheck);
+    } else if (tokenBalance && tokenBalance.free !== null && value.gt(tokenBalance.free)) {
         throw new Error(ErrInsufficientBalance);
     }
 

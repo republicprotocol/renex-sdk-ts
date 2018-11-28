@@ -10,7 +10,7 @@ import RenExSDK from "../index";
 import { submitOrderToAtom } from "../lib/atomic";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
+import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
 import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
@@ -123,6 +123,10 @@ export const openOrder = async (
     if (orderSettlement === OrderSettlement.RenEx) {
         const spendTokenBalance = retrievedBalances.get(spendToken);
         if (spendTokenBalance) {
+            if (spendTokenBalance.free === null) {
+                simpleConsole.error(ErrFailedBalanceCheck);
+                throw new Error(ErrFailedBalanceCheck);
+            }
             balance = spendTokenBalance.free;
         }
     } else {
@@ -177,9 +181,12 @@ export const openOrder = async (
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
         const usableFeeTokenBalance = retrievedBalances.get(feeToken);
-        if (usableFeeTokenBalance && feeAmount.gt(usableFeeTokenBalance.free)) {
+        if (usableFeeTokenBalance && usableFeeTokenBalance.free !== null && feeAmount.gt(usableFeeTokenBalance.free)) {
             simpleConsole.error("Insufficient balance for fees");
             throw new Error("Insufficient balance for fees");
+        } else if (usableFeeTokenBalance && usableFeeTokenBalance.free === null) {
+            simpleConsole.error(ErrFailedBalanceCheck);
+            throw new Error(ErrFailedBalanceCheck);
         }
     }
 

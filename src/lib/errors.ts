@@ -5,6 +5,7 @@ export const ErrUnsignedTransaction = "Unable to sign transaction";
 export const ErrInvalidOrderDetails = "Something went wrong while encoding order";
 export const ErrNumericalPrecision = "Unsupported precision numbers";
 export const ErrFailedDeposit = "Unable to deposit funds";
+export const ErrFailedBalanceCheck = "Failed to get the current user balanace";
 export const ErrInsufficientBalance = "Insufficient balance";
 export const ErrInsufficientFunds = "Insufficient funds - please ensure you have enough ETH for the transaction fees";
 export const ErrUnsupportedFilterStatus = "Unable to filter by specified status";
