@@ -138,6 +138,11 @@ export class RenExSDK {
                 this._storage = this.getConfig().storageProvider as StorageProvider;
         }
 
+        // Hack to suppress web3 MaxListenersExceededWarning
+        // This should be removed when issue is resolved upstream:
+        // https://github.com/ethereum/web3.js/issues/1648
+        process.listeners("warning").forEach(listener => process.removeListener("warning", listener));
+
         this._contracts = {
             renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
             renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
