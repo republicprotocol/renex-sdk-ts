@@ -128,7 +128,7 @@ export class RenExSDK {
             case "localStorage":
                 this._storage = new LocalStorage(this._address);
                 break;
-            case "memory":
+            case "none":
                 this._storage = new MemoryStorage();
                 break;
             default:
