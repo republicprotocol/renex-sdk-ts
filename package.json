@@ -63,6 +63,7 @@
   "dependencies": {
     "@types/bs58": "3.0.30",
     "@types/node-fetch": "2.1.2",
+    "@types/node-persist": "0.0.33",
     "@types/node-rsa": "0.4.3",
     "@types/underscore": "^1.8.9",
     "axios": "0.18.0",
@@ -72,6 +73,7 @@
     "immutable": "^4.0.0-rc.12",
     "localforage": "1.7.2",
     "node-fetch": "^2.2.1",
+    "node-persist": "^3.0.1",
     "node-rsa": "1.0.1",
     "truffle-contract": "4.0.0-next.0",
     "web3": "1.0.0-beta.35",
