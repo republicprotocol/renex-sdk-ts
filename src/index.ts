@@ -21,6 +21,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+import { FilesystemStorage } from "./storage/filesystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
 import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
@@ -125,17 +126,24 @@ export class RenExSDK {
             .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
 
         switch (this.getConfig().storageProvider) {
-            case "localStorage":
-                this._storage = new LocalStorage(this._address);
-                break;
             case "none":
                 this._storage = new MemoryStorage();
                 break;
+            case "localStorage":
+                this._storage = new LocalStorage(this._address);
+                break;
             default:
-                if (typeof this.getConfig().storageProvider === "string") {
-                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}.`);
+                try {
+                    if (typeof this.getConfig().storageProvider === "string") {
+                        // Use storageProvider as a path to FilesystemStorage
+                        this._storage = new FilesystemStorage(this.getConfig().storageProvider as string, this._address);
+                    } else {
+                        // storageProvider is an object so use it as is
+                        this._storage = this.getConfig().storageProvider as StorageProvider;
+                    }
+                } catch (error) {
+                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}. ${error}`);
                 }
-                this._storage = this.getConfig().storageProvider as StorageProvider;
         }
 
         // Hack to suppress web3 MaxListenersExceededWarning
