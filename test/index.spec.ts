@@ -53,24 +53,8 @@ describe("SDK methods", () => {
 
     it("should fetch balances", async () => {
         const balances = await sdk.fetchBalances(["ETH", "REN"]);
-        const ethBalances = balances.get("ETH");
-        expect(ethBalances).to.not.be.undefined;
-        if (!ethBalances) {
-            return;
-        }
-        console.log(`${sdk.getAddress()} ETH Balance: ${JSON.stringify(ethBalances)}`);
-        ethBalances.free.gte(new BigNumber(0)).should.be.true;
-        ethBalances.used.gte(new BigNumber(0)).should.be.true;
-        ethBalances.nondeposited.gte(new BigNumber(0)).should.be.true;
-
-        const renBalances = balances.get("REN");
-        expect(renBalances).to.not.be.undefined;
-        if (!renBalances) {
-            return;
-        }
-        renBalances.free.gte(new BigNumber(0)).should.be.true;
-        renBalances.used.gte(new BigNumber(0)).should.be.true;
-        renBalances.nondeposited.gte(new BigNumber(0)).should.be.true;
+        expectPositiveBalance(balances, "ETH");
+        expectPositiveBalance(balances, "REN");
     });
 
     it("should fetch supported tokens", async () => {
@@ -151,4 +135,18 @@ async function expectFetchTokenBalance(sdk: RenExSDK, token: TokenCode): Promise
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function expectPositiveBalance(balances: Map<TokenCode, BalanceDetails>, token: TokenCode): Promise<void> {
+    const bal = balances.get(token);
+    expect(bal).to.not.be.undefined;
+    if (!bal) {
+        return;
+    }
+    expect(bal.free).to.not.be.null;
+    bal.free.gte(new BigNumber(0)).should.be.true;
+    expect(bal.used).to.not.be.null;
+    bal.used.gte(new BigNumber(0)).should.be.true;
+    expect(bal.nondeposited).to.not.be.null;
+    bal.nondeposited.gte(new BigNumber(0)).should.be.true;
 }
