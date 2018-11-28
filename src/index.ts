@@ -128,7 +128,7 @@ export class RenExSDK {
             case "localStorage":
                 this._storage = new LocalStorage(this._address);
                 break;
-            case "memory":
+            case "none":
                 this._storage = new MemoryStorage();
                 break;
             default:
@@ -137,6 +137,11 @@ export class RenExSDK {
                 }
                 this._storage = this.getConfig().storageProvider as StorageProvider;
         }
+
+        // Hack to suppress web3 MaxListenersExceededWarning
+        // This should be removed when issue is resolved upstream:
+        // https://github.com/ethereum/web3.js/issues/1648
+        process.listeners("warning").forEach(listener => process.removeListener("warning", listener));
 
         this._contracts = {
             renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),

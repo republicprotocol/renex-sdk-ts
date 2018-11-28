@@ -3,7 +3,7 @@ import { Config, Options } from "../types";
 export const defaultConfig: Config = {
     network: "mainnet",
     autoNormalizeOrders: false,
-    storageProvider: "localStorage",
+    storageProvider: "none",
 };
 
 export function generateConfig(options?: Options): Config {
