@@ -14,7 +14,7 @@ interface BalanceActionMap {
 
 const createKey = (name: string, address: string): string => `renex_sdk_${name}_${address.toLowerCase()}`;
 
-export class PersistentStorage implements StorageProvider {
+export class FilesystemStorage implements StorageProvider {
     private initialized: boolean;
     private path: string;
     private ordersKey: string;
