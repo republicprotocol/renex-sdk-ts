@@ -24,9 +24,7 @@ import { fetchTraderOrders } from "./storageMethods";
 const MIN_ETH_TRADE_VOLUME = 1;
 
 const populateOrderDefaults = (
-    sdk: RenExSDK,
     orderInputs: OrderInputs,
-    unixSeconds: number,
     minEthTradeVolume: BigNumber,
     marketDetail: MarketDetails,
 ): OrderInputsAll => {
@@ -84,7 +82,7 @@ export const openOrder = async (
 
     const minEthTradeVolume = await getMinEthTradeVolume(sdk);
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
-    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds, minEthTradeVolume, marketDetail);
+    let orderInputs = populateOrderDefaults(orderInputsIn, minEthTradeVolume, marketDetail);
 
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
