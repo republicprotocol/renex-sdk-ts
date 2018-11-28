@@ -14,7 +14,7 @@ interface BalanceActionMap {
 
 const createKey = (name: string, address: string): string => `renex_sdk_${name}_${address.toLowerCase()}`;
 
-class PersistentStorage implements StorageProvider {
+export class PersistentStorage implements StorageProvider {
     private path: string;
     private ordersKey: string;
     private balanceActionsKey: string;
@@ -97,6 +97,5 @@ class PersistentStorage implements StorageProvider {
             }
         }
     }
-}
 
-export default PersistentStorage;
+}
