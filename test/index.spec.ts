@@ -33,7 +33,7 @@ describe("SDK methods", () => {
         // Initialize the SDK
         sdk = new RenExSDK(provider, {
             network: "testnet",
-            storageProvider: "memory",
+            storageProvider: "none",
         });
         web3 = new Web3(provider);
 
