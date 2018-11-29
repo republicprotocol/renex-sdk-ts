@@ -1,6 +1,5 @@
 // tslint:disable
 
-import BN from "bn.js";
 import { Tx } from "web3/eth/types";
 import { Provider } from "web3/providers";
 import PromiEvent from "web3/promiEvent";
