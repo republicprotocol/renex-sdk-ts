@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@types/bs58": "3.0.30",
+    "@types/detect-node": "^2.0.0",
     "@types/node-fetch": "2.1.2",
     "@types/node-persist": "0.0.33",
     "@types/node-rsa": "0.4.3",
@@ -70,6 +71,7 @@
     "bignumber.js": "^8.0.1",
     "bn.js": "4.11.8",
     "bs58": "4.0.1",
+    "detect-node": "^2.0.4",
     "immutable": "^4.0.0-rc.12",
     "localforage": "1.7.2",
     "node-fetch": "^2.2.1",
