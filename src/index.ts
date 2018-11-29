@@ -21,7 +21,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
-import { FilesystemStorage } from "./storage/filesystemStorage";
+import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
 import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
@@ -214,8 +214,8 @@ export class RenExSDK {
             default:
                 try {
                     if (typeof this.getConfig().storageProvider === "string") {
-                        // Use storageProvider as a path to FilesystemStorage
-                        return new FilesystemStorage(this.getConfig().storageProvider as string, this._address);
+                        // Use storageProvider as a path to FileSystemStorage
+                        return new FileSystemStorage(this.getConfig().storageProvider as string, this._address);
                     } else {
                         // storageProvider is an object so use it as is
                         return this.getConfig().storageProvider as StorageProvider;
