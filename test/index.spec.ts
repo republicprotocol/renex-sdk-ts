@@ -54,8 +54,9 @@ describe("SDK methods", () => {
 
     it("should fetch balances", async () => {
         const balances = await sdk.fetchBalances(["ETH", "REN"]);
-        expectPositiveBalance(balances, "ETH");
-        expectPositiveBalance(balances, "REN");
+        const ethBalances = await expectPositiveBalance(balances, "ETH");
+        console.log(`${sdk.getAddress()} ETH Balance: ${JSON.stringify(ethBalances)}`);
+        await expectPositiveBalance(balances, "REN");
     });
 
     it("should fetch supported tokens", async () => {
@@ -176,7 +177,7 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function expectPositiveBalance(balances: Map<TokenCode, BalanceDetails>, token: TokenCode): Promise<void> {
+async function expectPositiveBalance(balances: Map<TokenCode, BalanceDetails>, token: TokenCode): Promise<BalanceDetails | void> {
     const bal = balances.get(token);
     expect(bal).to.not.be.undefined;
     if (!bal) {
@@ -188,4 +189,5 @@ async function expectPositiveBalance(balances: Map<TokenCode, BalanceDetails>, t
     bal.used.gte(new BigNumber(0)).should.be.true;
     expect(bal.nondeposited).to.not.be.null;
     bal.nondeposited.gte(new BigNumber(0)).should.be.true;
+    return bal;
 }
