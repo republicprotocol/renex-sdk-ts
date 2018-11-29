@@ -70,7 +70,7 @@ export type MarketCode = string;
 export interface OrderInputs {
     // Required fields
     symbol: MarketCode;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-    side: OrderSide;         // Buy receives base token, sell receives quote token
+    side: string;            // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
 
@@ -84,6 +84,7 @@ export interface OrderInputsAll extends OrderInputs {
     // Restrict type
     price: BigNumber;
     volume: BigNumber;
+    side: OrderSide;
 
     // Change to non-optional
     minVolume: BigNumber;
