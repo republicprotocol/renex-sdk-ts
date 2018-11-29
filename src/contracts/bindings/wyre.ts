@@ -1,11 +1,13 @@
 // tslint:disable
 
-import { BN } from "bn.js";
-import { Log, PromiEvent, TransactionReceipt, Tx, Provider } from "web3/types";
+import { Tx } from "web3/eth/types";
+import { Provider } from "web3/providers";
+import PromiEvent from "web3/promiEvent";
+import { TransactionReceipt, EventLog } from "web3/types";
 
-export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }
+interface Transaction { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
 
-type BigNumber = string | number | BN;
+type BigNumber = string;
 
 export interface WyreContract {
     approve(_to: string, _tokenId: BigNumber, options?: Tx): PromiEvent<Transaction>;

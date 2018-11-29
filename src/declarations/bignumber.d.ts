@@ -1,5 +1,5 @@
 import * as BigNumberLib from "bignumber.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 
 /**
  * The existing typings does not let you convert BN into BigNumber.

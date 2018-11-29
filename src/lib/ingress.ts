@@ -6,7 +6,7 @@ const NodeRSA = require("node-rsa") as { new(): NodeRSAType };
 
 import Web3 from "web3";
 
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { List, Map } from "immutable";
 
 import * as shamir from "./shamir";
@@ -85,7 +85,7 @@ export class Order extends Record({
     type: OrderType.LIMIT,
     parity: OrderParity.BUY,
     orderSettlement: OrderSettlement.RenEx,
-    expiry: Math.round((new Date()).getTime() / 1000),
+    expiry: 0,
     tokens: new BN(0),
     price: new BN(0),
     volume: new BN(0),
@@ -114,7 +114,7 @@ export class OrderFragment extends Record({
     orderType: OrderType.LIMIT,
     orderParity: OrderParity.BUY,
     orderSettlement: OrderSettlement.RenEx,
-    orderExpiry: Math.round((new Date()).getTime() / 1000),
+    orderExpiry: 0,
     tokens: "",
     price: ["", ""],
     volume: ["", ""],
@@ -188,7 +188,6 @@ export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const ingressOrder = new Order({
         type: orderTypeMapper(orderInputs.type),
         orderSettlement: orderSettlementMapper(marketDetail.orderSettlement),
-        expiry: orderInputs.expiry,
         nonce: nonce ? nonce : new BN(0),
 
         parity: orderParityMapper(orderInputs.side),
@@ -237,10 +236,10 @@ export async function requestWithdrawalSignature(ingressURL: string, address: st
     return new EncodedData(resp.data.signature, Encodings.BASE64);
 }
 
-async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
+async function ordersBatch(web3: Web3, orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
     let orders;
     try {
-        orders = await orderbook.getOrders(offset, limit);
+        orders = await orderbook.getOrders(web3.utils.toHex(offset), web3.utils.toHex(limit));
     } catch (error) {
         console.error(`Failed to get call getOrders in ordersBatch`);
         throw error;
@@ -257,7 +256,7 @@ async function ordersBatch(orderbook: OrderbookContract, offset: number, limit: 
     return ordersList;
 }
 
-export async function getOrders(orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
+export async function getOrders(web3: Web3, orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
     let orderCount;
     try {
         orderCount = new BN(await orderbook.ordersCount()).toNumber();
@@ -289,7 +288,7 @@ export async function getOrders(orderbook: OrderbookContract, startIn?: number, 
         batchLimit = Math.min(batchLimit, stop - start);
 
         // Retrieve batch of orders and increment start
-        const batch = await ordersBatch(orderbook, start, batchLimit);
+        const batch = await ordersBatch(web3, orderbook, start, batchLimit);
         ordersList = ordersList.concat(batch).toList();
         start += batchLimit;
     }
@@ -403,7 +402,6 @@ export async function buildOrderMapping(
                     orderType: order.type,
                     orderParity: order.parity,
                     orderSettlement: order.orderSettlement,
-                    orderExpiry: order.expiry,
                     tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
                     price: [
                         encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
@@ -498,8 +496,8 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
  * When the {start} value is not the NULL address, it is always returned as the
  * first entry so it should not be re-added to the list of all darknodes.
  */
-async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContract): Promise<string[]> {
-    const batchSize = 10;
+async function getAllDarknodes(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<string[]> {
+    const batchSize = web3.utils.toHex(10);
 
     const allDarknodes = [];
     let lastDarknode = NULL;
@@ -516,7 +514,7 @@ async function getAllDarknodes(darknodeRegistryContract: DarknodeRegistryContrac
  * Calculate pod arrangement based on current epoch
  */
 async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
-    const darknodes = await getAllDarknodes(darknodeRegistryContract);
+    const darknodes = await getAllDarknodes(web3, darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
     simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
     const epoch = await darknodeRegistryContract.currentEpoch();

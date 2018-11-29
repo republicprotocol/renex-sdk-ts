@@ -1,9 +1,10 @@
 import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
-import { BN } from "bn.js";
+import BN from "bn.js";
+import PromiEvent from "web3/promiEvent";
 
-import { PromiEvent, Provider } from "web3/types";
+import { Provider } from "web3/providers";
 
 import LocalStorage from "./storage/localStorage";
 
@@ -21,6 +22,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
 import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
@@ -124,19 +126,12 @@ export class RenExSDK {
             .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
             .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
 
-        switch (this.getConfig().storageProvider) {
-            case "localStorage":
-                this._storage = new LocalStorage(this._address);
-                break;
-            case "memory":
-                this._storage = new MemoryStorage();
-                break;
-            default:
-                if (typeof this.getConfig().storageProvider === "string") {
-                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}.`);
-                }
-                this._storage = this.getConfig().storageProvider as StorageProvider;
-        }
+        this._storage = this.setupStorageProvider();
+
+        // Hack to suppress web3 MaxListenersExceededWarning
+        // This should be removed when issue is resolved upstream:
+        // https://github.com/ethereum/web3.js/issues/1648
+        process.listeners("warning").forEach(listener => process.removeListener("warning", listener));
 
         this._contracts = {
             renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
@@ -193,9 +188,7 @@ export class RenExSDK {
     public setAddress = (addr: string): void => {
         const address = addr === "" ? "" : new EncodedData(addr, Encodings.HEX).toHex();
         this._address = address;
-        if (this.getConfig().storageProvider === "localStorage") {
-            this._storage = new LocalStorage(address);
-        }
+        this._storage = this.setupStorageProvider();
     }
 
     public updateProvider = (provider: Provider): void => {
@@ -212,6 +205,28 @@ export class RenExSDK {
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
+
+    private setupStorageProvider = (): StorageProvider => {
+        switch (this.getConfig().storageProvider) {
+            case "none":
+                return new MemoryStorage();
+            case "localStorage":
+                return new LocalStorage(this._address);
+            default:
+                try {
+                    if (typeof this.getConfig().storageProvider === "string") {
+                        // Use storageProvider as a path to FileSystemStorage
+                        return new FileSystemStorage(this.getConfig().storageProvider as string, this._address);
+                    } else {
+                        // storageProvider is an object so use it as is
+                        return this.getConfig().storageProvider as StorageProvider;
+                    }
+                } catch (error) {
+                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}. ${error}`);
+                }
+        }
+    }
+
 }
 
 export default RenExSDK;

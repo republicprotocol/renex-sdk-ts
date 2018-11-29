@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 
-import { BN } from "bn.js";
-import { PromiEvent } from "web3/types";
+import BN from "bn.js";
+import PromiEvent from "web3/promiEvent";
 
 import * as ingress from "../lib/ingress";
 
@@ -10,7 +10,7 @@ import RenExSDK from "../index";
 import { submitOrderToAtom } from "../lib/atomic";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
+import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
 import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
 import { atomicBalances } from "./atomicMethods";
@@ -23,13 +23,8 @@ import { fetchTraderOrders } from "./storageMethods";
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
 
-// Default time an order is open for (24 hours)
-const DEFAULT_EXPIRY_OFFSET = 60 * 60 * 24;
-
 const populateOrderDefaults = (
-    sdk: RenExSDK,
     orderInputs: OrderInputs,
-    unixSeconds: number,
     minEthTradeVolume: BigNumber,
     marketDetail: MarketDetails,
 ): OrderInputsAll => {
@@ -37,12 +32,11 @@ const populateOrderDefaults = (
     const minVolume = marketDetail.base === Token.ETH ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, price);
     return {
         symbol: orderInputs.symbol,
-        side: orderInputs.side,
+        side: orderInputs.side.toLowerCase() as OrderSide,
         price,
         volume: new BigNumber(orderInputs.volume),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : minVolume,
-        expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };
@@ -88,7 +82,7 @@ export const openOrder = async (
 
     const minEthTradeVolume = await getMinEthTradeVolume(sdk);
     const unixSeconds = Math.floor(new Date().getTime() / 1000);
-    let orderInputs = populateOrderDefaults(sdk, orderInputsIn, unixSeconds, minEthTradeVolume, marketDetail);
+    let orderInputs = populateOrderDefaults(orderInputsIn, minEthTradeVolume, marketDetail);
 
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
@@ -129,6 +123,10 @@ export const openOrder = async (
     if (orderSettlement === OrderSettlement.RenEx) {
         const spendTokenBalance = retrievedBalances.get(spendToken);
         if (spendTokenBalance) {
+            if (spendTokenBalance.free === null) {
+                simpleConsole.error(ErrFailedBalanceCheck);
+                throw new Error(ErrFailedBalanceCheck);
+            }
             balance = spendTokenBalance.free;
         }
     } else {
@@ -183,9 +181,12 @@ export const openOrder = async (
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
         const usableFeeTokenBalance = retrievedBalances.get(feeToken);
-        if (usableFeeTokenBalance && feeAmount.gt(usableFeeTokenBalance.free)) {
+        if (usableFeeTokenBalance && usableFeeTokenBalance.free !== null && feeAmount.gt(usableFeeTokenBalance.free)) {
             simpleConsole.error("Insufficient balance for fees");
             throw new Error("Insufficient balance for fees");
+        } else if (usableFeeTokenBalance && usableFeeTokenBalance.free === null) {
+            simpleConsole.error(ErrFailedBalanceCheck);
+            throw new Error(ErrFailedBalanceCheck);
         }
     }
 
@@ -234,7 +235,7 @@ export const openOrder = async (
     let txHash: string;
     let promiEvent;
     try {
-        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
+        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(sdk.getWeb3().utils.toHex(1), signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
@@ -287,7 +288,7 @@ export const getOrders = async (
         throw new Error(ErrUnsupportedFilterStatus);
     }
 
-    let orders = await ingress.getOrders(sdk._contracts.orderbook, filter.start, filter.limit);
+    let orders = await ingress.getOrders(sdk.getWeb3(), sdk._contracts.orderbook, filter.start, filter.limit);
 
     if (filter.status) {
         orders = orders.filter((order: [string, OrderStatus, string]) => order[1] === filter.status).toList();

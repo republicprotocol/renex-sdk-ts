@@ -1,14 +1,14 @@
 import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
-import { PromiEvent } from "web3/types";
+import BN from "bn.js";
+import PromiEvent from "web3/promiEvent";
 
 import RenExSDK from "../index";
 import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
+import { ErrCanceledByUser, ErrFailedBalanceCheck, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
 import { balances, getTokenDetails } from "./balancesMethods";
@@ -68,7 +68,9 @@ export const deposit = async (
 
     // Check that we can deposit that amount
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
-    if (tokenBalance && value.gt(tokenBalance.nondeposited)) {
+    if (tokenBalance && tokenBalance.nondeposited === null) {
+        throw new Error(ErrFailedBalanceCheck);
+    } else if (tokenBalance && tokenBalance.nondeposited !== null && value.gt(tokenBalance.nondeposited)) {
         throw new Error(ErrInsufficientBalance);
     }
 
@@ -94,7 +96,7 @@ export const deposit = async (
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                valueBN,
+                sdk.getWeb3().utils.toHex(valueBN),
                 { value: valueBN.toString(), from: address, gasPrice },
             ));
 
@@ -129,12 +131,14 @@ export const deposit = async (
             // if there are any pending deposits for the same token
             const allowance = new BN(await tokenContract.allowance(address, sdk._contracts.renExBalances.address, { from: address, gasPrice }));
             if (allowance.lt(valueBN)) {
-                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, valueBN, { from: address, gasPrice }));
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address,
+                    sdk.getWeb3().utils.toHex(valueBN),
+                    { from: address, gasPrice }));
             }
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                valueBN,
+                sdk.getWeb3().utils.toHex(valueBN),
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
@@ -196,7 +200,9 @@ export const withdraw = async (
 
     // Check the balance before withdrawal attempt
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
-    if (tokenBalance && value.gt(tokenBalance.free)) {
+    if (tokenBalance && tokenBalance.free === null) {
+        throw new Error(ErrFailedBalanceCheck);
+    } else if (tokenBalance && tokenBalance.free !== null && value.gt(tokenBalance.free)) {
         throw new Error(ErrInsufficientBalance);
     }
 
@@ -222,7 +228,7 @@ export const withdraw = async (
 
         const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
-            valueBN,
+            sdk.getWeb3().utils.toHex(valueBN),
             signature.toHex(),
             { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
         ));

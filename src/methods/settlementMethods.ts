@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 
 import RenExSDK from "../index";
 
@@ -90,15 +90,6 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
                     orderStatus = OrderStatus.FAILED_TO_SETTLE;
                 }
             }
-        }
-    } else if (orderbookStatus === OrderStatus.OPEN) {
-        // Check if order is expired
-        const storedOrder = await sdk._storage.getOrder(orderID64);
-        // Note: Date.now() returns milliseconds
-        if (storedOrder && (storedOrder.orderInputs.expiry < (Date.now() / 1000))) {
-            orderStatus = OrderStatus.EXPIRED;
-        } else {
-            orderStatus = orderbookStatus;
         }
     } else {
         orderStatus = orderbookStatus;

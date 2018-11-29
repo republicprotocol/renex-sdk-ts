@@ -1,9 +1,23 @@
+import isNode from "detect-node";
+import os from "os";
+import path from "path";
+
 import { Config, Options } from "../types";
 
-export const defaultConfig: Config = {
+const defaultStorageProvider = (): string => {
+    if (isNode) {
+        // We will store data in "~/.renex" by default if in a Node environment
+        return path.join(os.homedir(), ".renex");
+    } else {
+        // We're in a browser (probably) so use localStorage
+        return "localStorage";
+    }
+};
+
+const defaultConfig: Config = {
     network: "mainnet",
     autoNormalizeOrders: false,
-    storageProvider: "localStorage",
+    storageProvider: defaultStorageProvider(),
 };
 
 export function generateConfig(options?: Options): Config {

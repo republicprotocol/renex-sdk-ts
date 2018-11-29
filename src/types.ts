@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { StorageProvider } from "./storage/interface";
 
 export { NetworkData } from "./lib/network";
@@ -19,7 +19,6 @@ export enum OrderStatus {
     CANCELED = "CANCELED",
     SETTLED = "SETTLED",
     SLASHED = "SLASHED",
-    EXPIRED = "EXPIRED",
 }
 
 export enum OrderSettlement {
@@ -71,14 +70,13 @@ export type MarketCode = string;
 export interface OrderInputs {
     // Required fields
     symbol: MarketCode;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-    side: OrderSide;         // Buy receives base token, sell receives quote token
+    side: string;            // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
 
     // Optional fields
     minVolume?: NumberInput; // In baseToken
     type?: OrderInputsAll["type"];
-    expiry?: OrderInputsAll["expiry"];
 }
 
 // OrderInputsAll extends OrderInputs and sets optional fields to be required.
@@ -86,11 +84,11 @@ export interface OrderInputsAll extends OrderInputs {
     // Restrict type
     price: BigNumber;
     volume: BigNumber;
+    side: OrderSide;
 
     // Change to non-optional
     minVolume: BigNumber;
     type: OrderType;
-    expiry: number;
 }
 
 export interface ComputedOrderDetails {
@@ -145,9 +143,9 @@ export interface TokenDetails {
 }
 
 export interface BalanceDetails {
-    free: BigNumber;
-    used: BigNumber;
-    nondeposited: BigNumber;
+    free: BigNumber | null;
+    used: BigNumber | null;
+    nondeposited: BigNumber | null;
 }
 
 export interface AtomicBalanceDetails {

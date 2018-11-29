@@ -1,7 +1,7 @@
 import RenExSDK from "../index";
 
 import { BigNumber } from "bignumber.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { Token, TokenCode, TokenDetails } from "../types";
 
 export function toSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
