@@ -4,7 +4,7 @@ import HDWalletProvider from "truffle-hdwallet-provider";
 import Web3 from "web3";
 import NonceSubprovider from "web3-provider-engine/subproviders/nonce-tracker";
 
-import RenExSDK, { BalanceDetails, NetworkData, NumberInput, TokenCode, TransactionStatus } from "../src/index";
+import RenExSDK, { BalanceDetails, NetworkData, NumberInput, OrderStatus, TokenCode, TransactionStatus } from "../src/index";
 import { networks } from "../src/lib/network";
 
 const MNEMONIC = process.env.MNEMONIC;
@@ -34,6 +34,7 @@ describe("SDK methods", () => {
         sdk = new RenExSDK(provider, {
             network: "testnet",
             storageProvider: "none",
+            autoNormalizeOrders: true,
         });
         web3 = new Web3(provider);
 
@@ -75,7 +76,7 @@ describe("SDK methods", () => {
 
     describe("SDK deposit methods", async () => {
         it("should successfully deposit ETH", async () => {
-            await expectTokenDeposit(sdk, "ETH", 1.1);
+            await expectTokenDeposit(sdk, "ETH", 3.3);
         });
 
         it("should successfully deposit REN", async () => {
@@ -93,6 +94,18 @@ describe("SDK methods", () => {
         });
     });
 
+    describe("SDK order methods", async () => {
+        let orderID;
+
+        it("should successfully open an order", async () => {
+            orderID = await expectOpenOrder(sdk);
+        });
+
+        it("should successfully cancel an order", async () => {
+            await expectCancelOrder(sdk, orderID);
+        });
+    });
+
 });
 
 // tslint:disable-next-line:no-any
@@ -105,6 +118,32 @@ async function awaitPromiseResponse(prom: () => Promise<any>, expected: any): Pr
         }
         sleep(1000);
     }
+}
+
+async function expectCancelOrder(sdk: RenExSDK, orderID: string): Promise<string> {
+    await sdk.cancelOrder(orderID);
+    await awaitPromiseResponse(() => {
+        return sdk.fetchOrderStatus(orderID);
+    }, OrderStatus.CANCELED);
+    const orderStatus = await sdk.fetchOrderStatus(orderID);
+    orderStatus.should.be.equal(OrderStatus.CANCELED);
+    return orderID;
+}
+
+async function expectOpenOrder(sdk: RenExSDK): Promise<string> {
+    const orderResponse = await sdk.openOrder({
+        symbol: "REN/ETH",
+        side: "buy",         // buying REN for ETH
+        price: 0.0001395678,  // ETH for 1 REN
+        volume: 7234,          // REN
+    });
+    const orderID = orderResponse.traderOrder.id;
+    await awaitPromiseResponse(() => {
+        return sdk.fetchOrderStatus(orderID);
+    }, OrderStatus.OPEN);
+    const orderStatus = await sdk.fetchOrderStatus(orderID);
+    orderStatus.should.be.equal(OrderStatus.OPEN);
+    return orderID;
 }
 
 async function expectTokenDeposit(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
