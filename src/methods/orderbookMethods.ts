@@ -32,7 +32,7 @@ const populateOrderDefaults = (
     const minVolume = marketDetail.base === Token.ETH ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, price);
     return {
         symbol: orderInputs.symbol,
-        side: orderInputs.side as OrderSide,
+        side: orderInputs.side.toLowerCase() as OrderSide,
         price,
         volume: new BigNumber(orderInputs.volume),
 
