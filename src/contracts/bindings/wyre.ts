@@ -5,7 +5,7 @@ import { Provider } from "web3/providers";
 import PromiEvent from "web3/promiEvent";
 import { TransactionReceipt, EventLog } from "web3/types";
 
-export interface Transaction { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
+interface Transaction { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
 
 type BigNumber = string;
 
