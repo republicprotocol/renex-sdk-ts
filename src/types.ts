@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { StorageProvider } from "./storage/interface";
 
 export { NetworkData } from "./lib/network";

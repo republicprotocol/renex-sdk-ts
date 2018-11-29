@@ -1,6 +1,6 @@
 // tslint:disable
 
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { Log, PromiEvent, TransactionReceipt, Tx, Provider } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: Log[]; }

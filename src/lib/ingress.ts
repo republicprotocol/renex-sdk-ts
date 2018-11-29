@@ -6,7 +6,7 @@ const NodeRSA = require("node-rsa") as { new(): NodeRSAType };
 
 import Web3 from "web3";
 
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { List, Map } from "immutable";
 
 import * as shamir from "./shamir";

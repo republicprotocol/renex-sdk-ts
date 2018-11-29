@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 
 import { BalanceAction, TraderOrder } from "../types";
 

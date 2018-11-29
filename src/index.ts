@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
-import { BN } from "bn.js";
+import BN from "bn.js";
 
 import { PromiEvent, Provider } from "web3/types";
 
