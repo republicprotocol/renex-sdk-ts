@@ -77,7 +77,7 @@ describe("SDK methods", () => {
 
     describe("SDK deposit methods", async () => {
         it("should successfully deposit ETH", async () => {
-            await expectTokenDeposit(sdk, "ETH", 3.3);
+            await expectTokenDeposit(sdk, "ETH", 1.1);
         });
 
         it("should successfully deposit REN", async () => {
@@ -97,6 +97,13 @@ describe("SDK methods", () => {
 
     describe("SDK order methods", async () => {
         let orderID;
+        before(async () => {
+            await expectTokenDeposit(sdk, "ETH", 1.1);
+        });
+
+        after(async () => {
+            await expectTokenWithdraw(sdk, "ETH", 1.1);
+        });
 
         it("should successfully open an order", async () => {
             orderID = await expectOpenOrder(sdk);
