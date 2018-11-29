@@ -12,7 +12,7 @@ The official Javascript SDK for interacting with [RenEx](https://ren.exchange) -
 Add the RenExSDK using NPM
 
 ```bash
-npm install --save @renex/renex
+npm install @renex/renex
 ```
 
 Add the RenExSDK using Yarn
