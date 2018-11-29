@@ -2,8 +2,9 @@ import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
 import BN from "bn.js";
+import PromiEvent from "web3/promiEvent";
 
-import { PromiEvent, Provider } from "web3/types";
+import { Provider } from "web3/providers";
 
 import LocalStorage from "./storage/localStorage";
 

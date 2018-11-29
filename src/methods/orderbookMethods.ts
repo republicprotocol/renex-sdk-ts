@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 
 import BN from "bn.js";
-import { PromiEvent } from "web3/types";
+import PromiEvent from "web3/promiEvent";
 
 import * as ingress from "../lib/ingress";
 
