@@ -25,6 +25,7 @@
     "watch": "cross-env NODE_ENV=development webpack --watch --mode development --display-error-details --progress --color",
     "build:dev": "cross-env NODE_ENV=development webpack --mode development --display-error-details --progress --color",
     "build:prod": "npm run clean && cross-env NODE_ENV=production webpack --mode production --progress --color",
+    "postinstall": "rm -f node_modules/web3/*.d.ts",
     "prepare": "# npm run lint && npm run build:dev",
     "test": "source .env; ./node_modules/ts-mocha/bin/ts-mocha --timeout 60000 --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts",
     "clean": "rm -rf dist"
@@ -35,6 +36,7 @@
     "@types/chai-as-promised": "7.1.0",
     "@types/expect": "^1.20.3",
     "@types/mocha": "^5.2.5",
+    "@types/web3": "^1.0.12",
     "awesome-typescript-loader": "5.2.1",
     "babel-loader": "8.0.2",
     "babel-plugin-transform-es2015-modules-simple-commonjs": "^0.3.0",
@@ -61,6 +63,7 @@
     "webpack-node-externals": "1.7.2"
   },
   "dependencies": {
+    "@types/bn.js": "^4.11.3",
     "@types/bs58": "3.0.30",
     "@types/detect-node": "^2.0.0",
     "@types/node-fetch": "2.1.2",
@@ -78,7 +81,7 @@
     "node-persist": "^3.0.1",
     "node-rsa": "1.0.1",
     "truffle-contract": "4.0.0-next.0",
-    "web3": "1.0.0-beta.35",
+    "web3": "^1.0.0-beta.34",
     "web3-provider-engine": "^14.1.0"
   }
 }
