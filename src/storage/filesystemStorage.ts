@@ -92,8 +92,8 @@ export class FilesystemStorage implements StorageProvider {
         await storage.init({
             dir: this.path,
         });
-        this.restoreTraderOrders();
-        this.restoreBalanceActions();
+        await this.restoreTraderOrders();
+        await this.restoreBalanceActions();
         this.initialized = true;
     }
 
