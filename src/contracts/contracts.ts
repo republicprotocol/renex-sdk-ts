@@ -1,6 +1,6 @@
 const contract = require("./truffle-contract/index.js");
 
-import { Provider } from "web3/types";
+import { Provider } from "web3/providers";
 
 // Bindings
 import { DarknodeRegistryArtifact } from "./bindings/darknode_registry";

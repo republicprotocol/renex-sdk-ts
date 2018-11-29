@@ -28,7 +28,7 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, va
             tokenContract = new (withProvider(sdk.getWeb3().currentProvider, ERC20))(tokenDetails.address);
             sdk._contracts.erc20.set(token, tokenContract);
         }
-        await tokenContract.transfer(addr, value);
+        await tokenContract.transfer(addr, sdk.getWeb3().utils.toHex(value));
     }
 };
 

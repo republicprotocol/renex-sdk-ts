@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
-import { BN } from "bn.js";
-import { PromiEvent } from "web3/types";
+import BN from "bn.js";
+import PromiEvent from "web3/promiEvent";
 
 import RenExSDK from "../index";
 import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
@@ -96,7 +96,7 @@ export const deposit = async (
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                valueBN,
+                sdk.getWeb3().utils.toHex(valueBN),
                 { value: valueBN.toString(), from: address, gasPrice },
             ));
 
@@ -131,12 +131,14 @@ export const deposit = async (
             // if there are any pending deposits for the same token
             const allowance = new BN(await tokenContract.allowance(address, sdk._contracts.renExBalances.address, { from: address, gasPrice }));
             if (allowance.lt(valueBN)) {
-                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address, valueBN, { from: address, gasPrice }));
+                await onTxHash(tokenContract.approve(sdk._contracts.renExBalances.address,
+                    sdk.getWeb3().utils.toHex(valueBN),
+                    { from: address, gasPrice }));
             }
 
             const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
-                valueBN,
+                sdk.getWeb3().utils.toHex(valueBN),
                 {
                     // Manually set gas limit since gas estimation won't work
                     // if the ethereum node hasn't seen the previous transaction
@@ -226,7 +228,7 @@ export const withdraw = async (
 
         const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
-            valueBN,
+            sdk.getWeb3().utils.toHex(valueBN),
             signature.toHex(),
             { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
         ));
