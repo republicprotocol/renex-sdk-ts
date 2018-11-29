@@ -80,7 +80,7 @@
     "node-persist": "^3.0.1",
     "node-rsa": "1.0.1",
     "truffle-contract": "4.0.0-next.0",
-    "web3": "^1.0.0-beta.36",
+    "web3": "1.0.0-beta.36",
     "web3-provider-engine": "^14.1.0"
   }
 }
