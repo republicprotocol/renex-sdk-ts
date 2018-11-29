@@ -235,7 +235,7 @@ export const openOrder = async (
     let txHash: string;
     let promiEvent;
     try {
-        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(1, signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
+        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(sdk.getWeb3().utils.toHex(1), signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
@@ -288,7 +288,7 @@ export const getOrders = async (
         throw new Error(ErrUnsupportedFilterStatus);
     }
 
-    let orders = await ingress.getOrders(sdk._contracts.orderbook, filter.start, filter.limit);
+    let orders = await ingress.getOrders(sdk.getWeb3(), sdk._contracts.orderbook, filter.start, filter.limit);
 
     if (filter.status) {
         orders = orders.filter((order: [string, OrderStatus, string]) => order[1] === filter.status).toList();

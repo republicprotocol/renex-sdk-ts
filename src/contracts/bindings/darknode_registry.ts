@@ -9,7 +9,7 @@ import { TransactionReceipt, EventLog } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
 
-type BigNumber = string | number | BN;
+type BigNumber = string;
 
 export interface DarknodeRegistryContract {
     numDarknodesNextEpoch(options?: Tx): Promise<BigNumber>;

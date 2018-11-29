@@ -8,7 +8,7 @@ import { TransactionReceipt, EventLog } from "web3/types";
 
 export interface Transaction { receipt: TransactionReceipt; tx: string; logs: EventLog[]; }
 
-type BigNumber = string | number | BN;
+type BigNumber = string;
 
 export interface RenExSettlementContract {
     orderStatus(index_0: string, options?: Tx): Promise<BigNumber>;
