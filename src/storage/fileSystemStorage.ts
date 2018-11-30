@@ -1,4 +1,6 @@
+import expandTilde from "expand-tilde";
 import storage from "node-persist";
+import path from "path";
 
 import { BalanceAction, OrderID, TraderOrder } from "../types";
 import { StorageProvider } from "./interface";
@@ -32,7 +34,7 @@ export class FileSystemStorage implements StorageProvider {
         const storageKey = (address) ? address : "default";
 
         this.initialized = false;
-        this.path = storagePath;
+        this.path = this.getAbsolutePath(storagePath);
         this.orders = {};
         this.balanceActions = {};
 
@@ -117,6 +119,16 @@ export class FileSystemStorage implements StorageProvider {
                 this.balanceActions[key] = deserializeBalanceAction(balanceActions[key]);
             }
         }
+    }
+
+    private getAbsolutePath(storagePath: string): string {
+        if ([`.${path.sep}`, `~${path.sep}`].includes(storagePath.trim().substring(0, 2))) {
+            return path.resolve(expandTilde(storagePath));
+        }
+        if (storagePath.trim()[0] === path.sep) {
+            return path.resolve(storagePath);
+        }
+        throw new Error("Storage path must start with either: '~/', './', or '/'");
     }
 
 }
