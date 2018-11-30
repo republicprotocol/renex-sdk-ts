@@ -56,7 +56,8 @@ var override = {
         try {
           await handlers.receipt(context, receipt);
         } catch (err) {
-          console.error(err);
+          // FIXME: this.removeListener is not a function is returned sometimes
+          // console.error(err);
         }
         return;
       }
