@@ -92,30 +92,14 @@ export const deposit = async (
     };
 
     try {
+        let promiEvent;
+        let tx;
         if (tokenIsEthereum(tokenDetails)) {
-
-            const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
+            tx = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 sdk.getWeb3().utils.toHex(valueBN),
                 { value: valueBN.toString(), from: address, gasPrice },
             ));
-
-            // We set the nonce after the transaction is created. We don't set
-            // it before hand in case the user signs other transactions while
-            // the wallet popup (or equivalent) is open. We rely on the wallet's
-            // nonce tracking to return the correct nonce immediately.
-            try {
-                balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
-            } catch (err) {
-                // Log the error but leave the nonce as undefined
-                console.error(err);
-            }
-
-            balanceAction.txHash = txHash;
-
-            sdk._storage.setBalanceAction(balanceAction).catch(console.error);
-
-            return { balanceAction, promiEvent };
         } else {
             // ERC20 token
             let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
@@ -136,7 +120,7 @@ export const deposit = async (
                     { from: address, gasPrice }));
             }
 
-            const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.deposit(
+            tx = await onTxHash(sdk._contracts.renExBalances.deposit(
                 tokenDetails.address,
                 sdk.getWeb3().utils.toHex(valueBN),
                 {
@@ -148,26 +132,26 @@ export const deposit = async (
                     // nonce: balanceAction.nonce,
                 }
             ));
-
-            balanceAction.txHash = txHash;
-
-            // We set the nonce after the transaction is created. We don't set
-            // it before hand in case the user signs other transactions while
-            // the wallet popup (or equivalent) is open. We rely on the wallet's
-            // nonce tracking to return the correct nonce immediately.
-            try {
-                balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
-            } catch (err) {
-                // Log the error but leave the nonce as undefined
-                console.error(err);
-            }
-
-            sdk._storage.setBalanceAction(balanceAction).catch(console.error);
-
-            return { balanceAction, promiEvent };
-
-            // TODO: https://github.com/MetaMask/metamask-extension/issues/3425
         }
+
+        promiEvent = tx.promiEvent;
+        balanceAction.txHash = tx.txHash;
+
+        // We set the nonce after the transaction is created. We don't set
+        // it before hand in case the user signs other transactions while
+        // the wallet popup (or equivalent) is open. We rely on the wallet's
+        // nonce tracking to return the correct nonce immediately.
+        try {
+            balanceAction.nonce = (await sdk.getWeb3().eth.getTransactionCount(address, "pending")) - 1;
+        } catch (err) {
+            // Log the error but leave the nonce as undefined
+            console.error(err);
+        }
+
+        sdk._storage.setBalanceAction(balanceAction).catch(console.error);
+
+        // TODO: https://github.com/MetaMask/metamask-extension/issues/3425
+        return { balanceAction, promiEvent };
     } catch (error) {
         if (error.tx) {
             balanceAction.txHash = error.tx;
