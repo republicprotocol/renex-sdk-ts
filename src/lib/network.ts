@@ -8,7 +8,7 @@ export interface NetworkData {
     etherscan: string;
     ethNetwork: string;
     ethNetworkLabel: string;
-    ledgerNetworkId: number;
+    ethNetworkId: number;
     contracts: [
         {
             darknodeRegistry: string;

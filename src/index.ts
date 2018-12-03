@@ -117,6 +117,13 @@ export class RenExSDK {
                 throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
 
+        // Show warning when the expected network ID is different from the provider network ID
+        this._web3.eth.net.getId().then(networkId => {
+            if (networkId !== this._networkData.ethNetworkId) {
+                console.warn(`Your provider is not using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
+            }
+        });
+
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
             .set(Token.ETH, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
