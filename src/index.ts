@@ -25,7 +25,7 @@ import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus, TransactionOptions, WithdrawTransactionOptions } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -164,18 +164,18 @@ export class RenExSDK {
     public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
-    public deposit = (value: NumberInput, token: TokenCode):
+    public deposit = (value: NumberInput, token: TokenCode, options?: TransactionOptions):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        deposit(this, value, token)
-    public withdraw = (value: NumberInput, token: TokenCode, withoutIngressSignature = false):
+        deposit(this, value, token, options)
+    public withdraw = (value: NumberInput, token: TokenCode, options?: WithdrawTransactionOptions):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        withdraw(this, value, token, withoutIngressSignature)
-    public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole):
+        withdraw(this, value, token, options)
+    public openOrder = (order: OrderInputs, options?: TransactionOptions):
         Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> =>
-        openOrder(this, order, simpleConsole)
-    public cancelOrder = (orderID: OrderID):
+        openOrder(this, order, options)
+    public cancelOrder = (orderID: OrderID, options?: TransactionOptions):
         Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
-        cancelOrder(this, orderID)
+        cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
