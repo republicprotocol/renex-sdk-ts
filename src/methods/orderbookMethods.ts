@@ -299,11 +299,14 @@ export const getOrders = async (
         orders = orders.filter((order: [string, OrderStatus, string]) => order[2].toLowerCase() === filterAddress.toLowerCase()).toList();
     }
 
-    return orders.map((order: [string, OrderStatus, string]) => ({
-        id: order[0],
-        status: order[1],
-        trader: order[2],
-    })).toArray();
+    return orders.map((order: [string, OrderStatus, string]) => {
+        const orderID = new EncodedData(order[0], Encodings.HEX).toBase64();
+        return {
+            id: orderID,
+            status: order[1],
+            trader: order[2],
+        };
+    }).toArray();
 };
 
 export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder[]): Promise<Map<string, OrderStatus>> => {
