@@ -5,7 +5,7 @@ The official Javascript SDK for interacting with [RenEx](https://ren.exchange) -
 ## Links
 
 * [Official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs)
-* [Cloneable Examples](https://github.com/republicprotocol/renex-sdk-examples-js)
+* [Cloneable Examples](https://github.com/republicprotocol/renex-sdk-examples)
 
 ## Installation
 
@@ -50,7 +50,7 @@ Before you can use account specific functions such as fetching account balances 
 sdk.setAddress("0xece04c40dc55b1c6e3882966ed41e7982f3d26a6");
 ```
 
-For information on SDK usage, check out the [official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs) or clone the [examples repository](https://github.com/republicprotocol/renex-sdk-examples-js).
+For information on SDK usage, check out the [official SDK Docs](https://republicprotocol.github.io/renex-sdk-docs) or clone the [examples repository](https://github.com/republicprotocol/renex-sdk-examples).
 
 ## For Developers
 
