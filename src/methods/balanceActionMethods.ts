@@ -12,7 +12,7 @@ import { ErrCanceledByUser, ErrFailedBalanceCheck, ErrInsufficientBalance, ErrIn
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
 import { balances, getTokenDetails } from "./balancesMethods";
-import { getGasPrice, getTransactionStatus } from "./generalMethods";
+import { getTransactionStatus } from "./generalMethods";
 import { defaultTransactionOptions } from "./orderbookMethods";
 import { fetchBalanceActions } from "./storageMethods";
 
