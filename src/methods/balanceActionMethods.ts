@@ -4,7 +4,7 @@ import BN from "bn.js";
 import PromiEvent from "web3/promiEvent";
 
 import RenExSDK from "../index";
-import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionOptions, TransactionStatus } from "../types";
+import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionOptions, TransactionStatus, WithdrawTransactionOptions } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
@@ -178,13 +178,12 @@ export const withdraw = async (
     sdk: RenExSDK,
     value: NumberInput,
     token: TokenCode,
-    withoutIngressSignature: boolean,
-    options?: TransactionOptions,
+    options?: WithdrawTransactionOptions,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BigNumber(value);
 
     // Trustless withdrawals are not implemented yet
-    if (withoutIngressSignature === true) {
+    if (options && options.withoutIngressSignature === true) {
         throw new Error(ErrUnimplemented);
     }
 

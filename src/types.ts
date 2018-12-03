@@ -171,6 +171,10 @@ export interface TransactionOptions {
     simpleConsole?: SimpleConsole;
 }
 
+export interface WithdrawTransactionOptions extends TransactionOptions {
+    withoutIngressSignature?: boolean;
+}
+
 // If BalanceAction is changed, then it's serialize / deserialize functions
 // should be updated as well.
 export interface BalanceAction {
