@@ -165,6 +165,16 @@ export enum TransactionStatus {
     Replaced = "replaced",
 }
 
+export interface TransactionOptions {
+    awaitConfirmation?: boolean;
+    gasPrice?: number | undefined;
+    simpleConsole?: SimpleConsole;
+}
+
+export interface WithdrawTransactionOptions extends TransactionOptions {
+    withoutIngressSignature?: boolean;
+}
+
 // If BalanceAction is changed, then it's serialize / deserialize functions
 // should be updated as well.
 export interface BalanceAction {

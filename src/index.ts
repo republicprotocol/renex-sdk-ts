@@ -25,7 +25,7 @@ import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionStatus } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WithdrawTransactionOptions } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -39,6 +39,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 // Export all types
 export * from "./types";
 export { StorageProvider } from "./storage/interface";
+export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./storage/serializers";
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
@@ -117,6 +118,13 @@ export class RenExSDK {
                 throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
 
+        // Show warning when the expected network ID is different from the provider network ID
+        this._web3.eth.net.getId().then(networkId => {
+            if (networkId !== this._networkData.ethNetworkId) {
+                console.warn(`Your provider is not using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
+            }
+        });
+
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
             .set(Token.ETH, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
@@ -157,18 +165,18 @@ export class RenExSDK {
     public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
-    public deposit = (value: NumberInput, token: TokenCode):
+    public deposit = (value: NumberInput, token: TokenCode, options?: TransactionOptions):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        deposit(this, value, token)
-    public withdraw = (value: NumberInput, token: TokenCode, withoutIngressSignature = false):
+        deposit(this, value, token, options)
+    public withdraw = (value: NumberInput, token: TokenCode, options?: WithdrawTransactionOptions):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        withdraw(this, value, token, withoutIngressSignature)
-    public openOrder = (order: OrderInputs, simpleConsole?: SimpleConsole):
+        withdraw(this, value, token, options)
+    public openOrder = (order: OrderInputs, options?: TransactionOptions):
         Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> =>
-        openOrder(this, order, simpleConsole)
-    public cancelOrder = (orderID: OrderID):
+        openOrder(this, order, options)
+    public cancelOrder = (orderID: OrderID, options?: TransactionOptions):
         Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
-        cancelOrder(this, orderID)
+        cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);

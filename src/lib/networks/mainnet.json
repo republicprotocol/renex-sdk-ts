@@ -5,7 +5,7 @@
     "etherscan": "https://etherscan.io",
     "ethNetwork": "main",
     "ethNetworkLabel": "Main",
-    "ledgerNetworkId": 42,
+    "ethNetworkId": 1,
     "contracts": [
         {
             "darknodeRegistry": "0x3799006a87FDE3CCFC7666B3E6553B03ED341c2F",

@@ -12,7 +12,7 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
-import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TraderOrder, Transaction } from "../types";
+import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
@@ -73,7 +73,7 @@ const isValidDecimals = (order: OrderInputsAll, decimals: number): boolean => {
 export const openOrder = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
-    simpleConsole = NullConsole,
+    options?: TransactionOptions,
 ): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
     const marketDetail = MarketPairs.get(orderInputsIn.symbol);
     if (!marketDetail) {
@@ -119,6 +119,9 @@ export const openOrder = async (
 
     const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
     let balance = new BigNumber(0);
+
+    const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
+
     simpleConsole.log("Verifying trader balance");
     if (orderSettlement === OrderSettlement.RenEx) {
         const spendTokenBalance = retrievedBalances.get(spendToken);
@@ -231,7 +234,6 @@ export const openOrder = async (
 
     // Submit order and the signature to the orderbook
     simpleConsole.log("Waiting for transaction signature");
-    const gasPrice = await getGasPrice(sdk);
     let txHash: string;
     let promiEvent;
     try {
@@ -242,6 +244,11 @@ export const openOrder = async (
     }
 
     simpleConsole.log("Order submitted.");
+
+    if (awaitConfirmation) {
+        await promiEvent;
+        simpleConsole.log("Order confirmed.");
+    }
 
     const traderOrder = {
         orderInputs,
@@ -270,12 +277,17 @@ export const openOrder = async (
 export const cancelOrder = async (
     sdk: RenExSDK,
     orderID: OrderID,
+    options?: TransactionOptions,
 ): Promise<{ promiEvent: PromiEvent<Transaction> | null }> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
+    const { awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
-    const gasPrice = await getGasPrice(sdk);
+    const promiEvent = sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.getAddress(), gasPrice });
+    if (awaitConfirmation) {
+        await promiEvent;
+    }
     return {
-        promiEvent: sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.getAddress(), gasPrice })
+        promiEvent
     };
 };
 
@@ -299,11 +311,14 @@ export const getOrders = async (
         orders = orders.filter((order: [string, OrderStatus, string]) => order[2].toLowerCase() === filterAddress.toLowerCase()).toList();
     }
 
-    return orders.map((order: [string, OrderStatus, string]) => ({
-        id: order[0],
-        status: order[1],
-        trader: order[2],
-    })).toArray();
+    return orders.map((order: [string, OrderStatus, string]) => {
+        const orderID = new EncodedData(order[0], Encodings.HEX).toBase64();
+        return {
+            id: orderID,
+            status: order[1],
+            trader: order[2],
+        };
+    }).toArray();
 };
 
 export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder[]): Promise<Map<string, OrderStatus>> => {
@@ -326,4 +341,24 @@ export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder
 export const getOrderBlockNumber = async (sdk: RenExSDK, orderID: string): Promise<number> => {
     const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
     return new BN(await sdk._contracts.orderbook.orderBlockNumber(orderIDHex)).toNumber();
+};
+
+export const defaultTransactionOptions = async (sdk: RenExSDK, options?: TransactionOptions): Promise<{
+    awaitConfirmation: boolean;
+    gasPrice: number | undefined;
+    simpleConsole: SimpleConsole;
+}> => {
+    let awaitConfirmation = true;
+    let gasPrice;
+    let simpleConsole = NullConsole;
+    if (options) {
+        awaitConfirmation = options.awaitConfirmation || awaitConfirmation;
+        gasPrice = options.gasPrice || await getGasPrice(sdk);
+        simpleConsole = options.simpleConsole || simpleConsole;
+    }
+    return {
+        awaitConfirmation,
+        gasPrice,
+        simpleConsole,
+    };
 };
