@@ -4,7 +4,7 @@ import BN from "bn.js";
 import PromiEvent from "web3/promiEvent";
 
 import RenExSDK from "../index";
-import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionStatus } from "../types";
+import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenDetails, Transaction, TransactionOptions, TransactionStatus } from "../types";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
@@ -13,6 +13,7 @@ import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice, getTransactionStatus } from "./generalMethods";
+import { defaultTransactionOptions } from "./orderbookMethods";
 import { fetchBalanceActions } from "./storageMethods";
 
 const tokenIsEthereum = (token: TokenDetails) => {
@@ -63,6 +64,7 @@ export const deposit = async (
     sdk: RenExSDK,
     value: NumberInput,
     token: TokenCode,
+    options?: TransactionOptions,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BigNumber(value);
 
@@ -76,7 +78,7 @@ export const deposit = async (
 
     const address = sdk.getAddress();
     const tokenDetails = await getTokenDetails(sdk, token);
-    const gasPrice = await getGasPrice(sdk);
+    const { awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
@@ -151,6 +153,9 @@ export const deposit = async (
         sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
         // TODO: https://github.com/MetaMask/metamask-extension/issues/3425
+        if (awaitConfirmation) {
+            await promiEvent;
+        }
         return { balanceAction, promiEvent };
     } catch (error) {
         if (error.tx) {
@@ -174,6 +179,7 @@ export const withdraw = async (
     value: NumberInput,
     token: TokenCode,
     withoutIngressSignature: boolean,
+    options?: TransactionOptions,
 ): Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> => {
     value = new BigNumber(value);
 
@@ -192,7 +198,7 @@ export const withdraw = async (
 
     const address = sdk.getAddress();
     const tokenDetails = await getTokenDetails(sdk, token);
-    const gasPrice = await getGasPrice(sdk);
+    const { awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
@@ -233,6 +239,9 @@ export const withdraw = async (
 
         sdk._storage.setBalanceAction(balanceAction).catch(console.error);
 
+        if (awaitConfirmation) {
+            await promiEvent;
+        }
         return { balanceAction, promiEvent };
 
     } catch (error) {
