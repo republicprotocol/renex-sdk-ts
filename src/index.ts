@@ -39,6 +39,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 // Export all types
 export * from "./types";
 export { StorageProvider } from "./storage/interface";
+export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./storage/serializers";
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
