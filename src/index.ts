@@ -25,7 +25,7 @@ import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WithdrawTransactionOptions } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, Token, TokenCode, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WithdrawTransactionOptions } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
