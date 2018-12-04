@@ -121,7 +121,7 @@ export class RenExSDK {
         // Show warning when the expected network ID is different from the provider network ID
         this._web3.eth.net.getId().then(networkId => {
             if (networkId !== this._networkData.ethNetworkId) {
-                console.warn(`Your provider is not using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
+                console.warn(`Incorrect provider network! Your provider should be using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
             }
         });
 
