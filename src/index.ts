@@ -132,7 +132,8 @@ export class RenExSDK {
             .set(Token.TUSD, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
             .set(Token.REN, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
             .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
-            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
+            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }))
+            .set(Token.WBTC, Promise.resolve({ addr: this._networkData.tokens.WBTC, decimals: new BN(8), registered: true }));
 
         this._storage = this.setupStorageProvider();
 

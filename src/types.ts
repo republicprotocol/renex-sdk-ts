@@ -46,9 +46,11 @@ export enum Token {
     REN = "REN",
     ZRX = "ZRX",
     OMG = "OMG",
+    WBTC = "WBTC",
 }
 
 export enum MarketPair {
+    WBTC_BTC = "WBTC/BTC",
     ETH_BTC = "ETH/BTC",
     DGX_ETH = "DGX/ETH",
     TUSD_ETH = "TUSD/ETH",

@@ -32,6 +32,8 @@ export function tokenToID(token: TokenCode): number {
             return 65537;
         case Token.OMG:
             return 65538;
+        case Token.WBTC:
+            return 65539;
     }
     throw new Error(`Invalid token: ${token}`);
 }
@@ -52,6 +54,8 @@ export function idToToken(token: number): TokenCode {
             return Token.ZRX;
         case 65538:
             return Token.OMG;
+        case 65539:
+            return Token.WBTC;
     }
     throw new Error(`Invalid token ID: ${token}`);
 }
