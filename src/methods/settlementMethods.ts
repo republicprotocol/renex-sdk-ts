@@ -5,7 +5,7 @@ import RenExSDK from "../index";
 
 import { getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
+import { orderbookStateToOrderStatus } from "../lib/order";
 import { idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 import { atomConnected } from "./atomicMethods";
