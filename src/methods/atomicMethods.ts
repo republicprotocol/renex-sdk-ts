@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { _authorizeAtom, _connectToAtom, getAtomicBalances, submitSwap, SwapBlob } from "../lib/swapper";
+import { _authorizeAtom, _connectToAtom, getAtomicBalances, submitSwap, SwapBlob, signMessage } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -157,6 +157,14 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
     const spendTokenDetails = await getTokenDetails(sdk, spendToken);
     const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
+    const tokenAddress = await atomicAddresses(sdk, [spendToken, receiveToken]);
+    const message = {
+        order_id: orderID.toBase64(),
+        kyc_addr: sdk.getAddress(),
+        send_token_addr: tokenAddress[0],
+        receive_token_addr: tokenAddress[1],
+    };
+    const signature = await signMessage(sdk.getWeb3(), sdk.getAddress(), JSON.stringify(message));
 
     const req: SwapBlob = {
         sendToken: spendToken,
@@ -167,8 +175,8 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
         delayed: true,
         delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
         delayInfo: {
-            order_id: orderID.toBase64(),
-            kyc_addr: sdk.getAddress(),
+            message,
+            signature,
         }
     };
     console.log(JSON.stringify(req));

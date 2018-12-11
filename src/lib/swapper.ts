@@ -186,7 +186,7 @@ export async function getAtomicBalances(options: { network: string }): Promise<B
     return response;
 }
 
-async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
+export async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
     const hashForSigning: string = web3.utils.toHex(message);
     let signature: EncodedData;
     try {
