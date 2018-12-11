@@ -352,9 +352,9 @@ export const defaultTransactionOptions = async (sdk: RenExSDK, options?: Transac
     let gasPrice;
     let simpleConsole = NullConsole;
     if (options) {
-        awaitConfirmation = options.awaitConfirmation || awaitConfirmation;
-        gasPrice = options.gasPrice || await getGasPrice(sdk);
-        simpleConsole = options.simpleConsole || simpleConsole;
+        awaitConfirmation = options.awaitConfirmation !== undefined ? options.awaitConfirmation : awaitConfirmation;
+        gasPrice = options.gasPrice !== undefined ? options.gasPrice : await getGasPrice(sdk);
+        simpleConsole = options.simpleConsole !== undefined ? options.simpleConsole : simpleConsole;
     }
     return {
         awaitConfirmation,
