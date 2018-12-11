@@ -11,9 +11,8 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
-import { submitOrderToAtom } from "../lib/swapper";
 import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
-import { atomicBalances } from "./atomicMethods";
+import { atomicBalances, submitOrder } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
@@ -200,7 +199,7 @@ export const openOrder = async (
     if (orderSettlement === OrderSettlement.RenExAtomic) {
         simpleConsole.log("Submitting order to Atomic Swapper");
         try {
-            await submitOrderToAtom(orderID);
+            await submitOrder(sdk, orderID, orderInputs);
         } catch (err) {
             simpleConsole.error(err.message || err);
             throw new Error(`Error sending order to Atomic Swapper: ${err}`);

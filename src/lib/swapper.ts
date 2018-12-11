@@ -34,14 +34,14 @@ interface WhoamiResponse {
     signature: string;
 }
 
-interface OrdersParameters {
-    orderID: string; // hexadecimal
-}
+// interface OrdersParameters {
+//     orderID: string; // hexadecimal
+// }
 
-interface OrdersResponse {
-    orderID: string;
-    signature: string;
-}
+// interface OrdersResponse {
+//     orderID: string;
+//     signature: string;
+// }
 
 interface BalanceObject {
     address: string;
@@ -127,26 +127,31 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
     return new AtomAuthorizationRequest({ atomAddress: checkedAddress.toHex(), signature });
 }
 
-export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
-    throw new Error("Unimplemented");
+export interface SwapBlob {
+    id?: string;
+    sendToken?: string;
+    receiveToken?: string;
+    sendAmount?: string;
+    receiveAmount?: string;
+    minimumReceiveAmount?: string;
+    sendTo?: string;
+    receiveFrom?: string;
+    timeLock?: number;
+    secretHash?: string;
+    shouldInitiateFirst?: boolean;
+    delayed?: boolean;
+    // tslint:disable-next-line:no-any
+    delayInfo?: any;
+    delayCallbackUrl?: string;
+}
 
-    // orderID and signature should be hex-encoded
-    const data: OrdersParameters = {
-        orderID: orderID.toHex(""),
-    };
-
-    let response: OrdersResponse;
-    try {
-        response = (await axios.post(`${API}/orders`, data)).data;
-    } catch (error) {
-        throw error;
-    }
-
-    if (response.orderID !== data.orderID) {
-        throw new Error("Invalid order ID returned by Atom");
-    }
-
-    // TODO: Check response.signature against Atom's address
+// tslint:disable-next-line:no-any
+export async function submitSwap(swap: SwapBlob, network: string): Promise<string> {
+    console.log(JSON.stringify(swap));
+    const resp = await axios.post(`${API}/swaps?network=${network}`, swap);
+    console.log(resp.data);
+    // FIXME: use actual swap id
+    return "swap-id";
 }
 
 export async function getOrderStatus(orderID: EncodedData): Promise<OrderStatus> {

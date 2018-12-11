@@ -2,9 +2,11 @@ import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
-import { _authorizeAtom, _connectToAtom, getAtomicBalances } from "../lib/swapper";
-import { fromSmallestUnit } from "../lib/tokens";
-import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
+import { EncodedData } from "../lib/encodedData";
+import { MarketPairs } from "../lib/market";
+import { _authorizeAtom, _connectToAtom, getAtomicBalances, submitSwap, SwapBlob } from "../lib/swapper";
+import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
+import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
@@ -136,4 +138,39 @@ export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promis
         });
         return atomicBalance;
     });
+};
+
+// tslint:disable-next-line:no-any
+export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInputs: OrderInputsAll): Promise<any> => {
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!marketDetail) {
+        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
+    }
+    const baseToken = marketDetail.base;
+    const quoteToken = marketDetail.quote;
+    const quoteVolume = orderInputs.volume.times(orderInputs.price);
+
+    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
+    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
+    const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
+    const minimumReceiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.minVolume : orderInputs.price.times(orderInputs.minVolume);
+    const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
+    const spendTokenDetails = await getTokenDetails(sdk, spendToken);
+    const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
+
+    const req: SwapBlob = {
+        sendToken: spendToken,
+        receiveToken,
+        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toString(),
+        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toString(),
+        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toString(),
+        delayed: true,
+        delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
+        delayInfo: {
+            order_id: orderID.toBase64(),
+            kyc_addr: sdk.getAddress(),
+        }
+    };
+    console.log(JSON.stringify(req));
+    return submitSwap(req, sdk._networkData.network);
 };
