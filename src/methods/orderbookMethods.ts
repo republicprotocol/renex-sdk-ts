@@ -203,7 +203,7 @@ export const openOrder = async (
             await submitOrderToAtom(orderID);
         } catch (err) {
             simpleConsole.error(err.message || err);
-            throw new Error("Error sending order to Atomic Swapper");
+            throw new Error(`Error sending order to Atomic Swapper: ${err}`);
         }
     }
 
