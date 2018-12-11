@@ -149,8 +149,8 @@ export interface BalanceDetails {
 }
 
 export interface AtomicBalanceDetails {
-    free: BigNumber;
-    used: BigNumber;
+    free: BigNumber | null;
+    used: BigNumber | null;
 }
 
 export enum BalanceActionType {

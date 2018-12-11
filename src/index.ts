@@ -73,7 +73,7 @@ export class RenExSDK {
         resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
         authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
-        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
+        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(this, tokens),
     };
 
     public utils = {

@@ -135,7 +135,7 @@ export const openOrder = async (
     } else {
         try {
             const atomicBalance = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
-            if (atomicBalance) {
+            if (atomicBalance && atomicBalance.free !== null) {
                 balance = atomicBalance.free;
             }
         } catch (err) {

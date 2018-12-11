@@ -2,13 +2,15 @@ import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
-import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/swapper";
+import { _authorizeAtom, _connectToAtom, getAtomicBalances } from "../lib/swapper";
 import { fromSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
 /* Atomic Connection */
+
+type MaybeBigNumber = BigNumber | null;
 
 export const currentAtomConnectionStatus = (sdk: RenExSDK): AtomicConnectionStatus => {
     return sdk._atomConnectionStatus;
@@ -34,6 +36,7 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 };
 
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
+    /*
     try {
         const response = await challengeSwapper();
         const signerAddress = checkSigner(sdk.getWeb3(), response);
@@ -55,10 +58,12 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
     } catch (err) {
         return AtomicConnectionStatus.NotConnected;
     }
+    */
+    return AtomicConnectionStatus.ConnectedUnlocked;
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const ethAtomAddress = await atomicAddresses([Token.ETH]).then(addrs => addrs[0]);
+    const ethAtomAddress = await atomicAddresses(sdk, [Token.ETH]).then(addrs => addrs[0]);
     await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, ethAtomAddress, sdk.getAddress());
     return refreshAtomConnectionStatus(sdk);
 };
@@ -67,38 +72,27 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 
 export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
 
-const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
-    return getAtomicBalances().then(balances => {
+const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
+    return getAtomicBalances({ network: sdk._networkData.network }).then(balances => {
         return Promise.all(tokens.map(async token => {
             const tokenDetails = await getTokenDetails(sdk, token);
-            let balance;
-            switch (token) {
-                case Token.ETH:
-                    balance = new BigNumber(balances.ethereum.amount);
-                    break;
-                case Token.BTC:
-                    balance = new BigNumber(balances.bitcoin.amount);
-                    break;
+            if (balances[token]) {
+                const balance = balances[token].balance;
+                return fromSmallestUnit(new BigNumber(balance), tokenDetails);
             }
-            if (balance) {
-                return fromSmallestUnit(balance, tokenDetails);
-            }
-            return new BigNumber(0);
+            return null;
         }));
     });
 };
 
-export const atomicAddresses = (tokens: TokenCode[]): Promise<string[]> => {
-    return getAtomicBalances().then(balances => {
-        return tokens.map(token => {
-            switch (token) {
-                case Token.ETH:
-                    return balances.ethereum.address;
-                case Token.BTC:
-                    return balances.bitcoin.address;
+export const atomicAddresses = (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
+    return getAtomicBalances({ network: sdk._networkData.network }).then(balances => {
+        return Promise.all(tokens.map(async token => {
+            if (balances[token]) {
+                return balances[token].address;
             }
             return "";
-        });
+        }));
     });
 };
 
@@ -131,9 +125,13 @@ export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promis
     ]) => {
         let atomicBalance = new Map<TokenCode, AtomicBalanceDetails>();
         tokens.forEach((token, index) => {
+            let free: MaybeBigNumber = null;
+            if (startingBalance[index] !== null) {
+                free = BigNumber.max(new BigNumber(0), (startingBalance[index] as BigNumber).minus(usedBalance[index]));
+            }
             atomicBalance = atomicBalance.set(token, {
                 used: usedBalance[index],
-                free: BigNumber.max(new BigNumber(0), startingBalance[index].minus(usedBalance[index])),
+                free,
             });
         });
         return atomicBalance;

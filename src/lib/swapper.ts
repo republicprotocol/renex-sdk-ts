@@ -6,11 +6,11 @@ import Web3 from "web3";
 import { AtomicConnectionStatus, OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
-import { AtomAuthorizationRequest, authorizeSwapper, checkAtomAuthorization } from "./ingress";
+import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
 // import { Order } from "@Library/ingress";
 // import { NetworkData } from "@Library/network";
 
-const API = "http://localhost:18516";
+const API = "http://localhost:7928";
 
 export const ErrorAtomNotLinked = "Atom back-end not linked to wallet";
 export const ErrorUnableToConnect = "Unable to connect go Atom back-end";
@@ -45,15 +45,15 @@ interface OrdersResponse {
 
 interface BalanceObject {
     address: string;
-    amount: string;
+    balance: string;
 }
 
 interface BalancesResponse {
-    ethereum: BalanceObject;
-    bitcoin: BalanceObject;
+    [token: string]: BalanceObject;
 }
 
 export function checkSigner(web3: Web3, response: WhoamiResponse): string {
+    throw new Error("Unimplemented");
     const message = JSON.stringify(response.whoAmI);
     const whoamiString = "\x19Ethereum Signed Message:\n" + message.length + message;
     const hash = web3.utils.keccak256(whoamiString);
@@ -71,6 +71,7 @@ export function checkSigner(web3: Web3, response: WhoamiResponse): string {
 }
 
 export async function challengeSwapper(): Promise<WhoamiResponse> {
+    throw new Error("Unimplemented");
     const challenge = crypto.randomBytes(20).toString("hex");
 
     const response: WhoamiResponse = await axios.get(`${API}/whoami/${challenge}`).then(resp => resp.data);
@@ -84,6 +85,8 @@ export async function challengeSwapper(): Promise<WhoamiResponse> {
 }
 
 export async function _connectToAtom(response: WhoamiResponse, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
+    throw new Error("Unimplemented");
+    /*
     const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => {
         return new EncodedData(addr, Encodings.HEX).toHex().toLowerCase();
     });
@@ -106,14 +109,17 @@ export async function _connectToAtom(response: WhoamiResponse, ingressURL: strin
     }
 
     return AtomicConnectionStatus.AtomNotAuthorized;
+    */
 }
 
 export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
+    throw new Error("Unimplemented");
     const req = await getAtomAuthorizationRequest(web3, atomAddress, address);
     await authorizeSwapper(ingressURL, req);
 }
 
 async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
+    throw new Error("Unimplemented");
     const prefix: string = "RenEx: authorize: ";
     const checkedAddress = new EncodedData(atomAddress, Encodings.HEX);
     const message = prefix + checkedAddress.toString();
@@ -122,6 +128,7 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
 }
 
 export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
+    throw new Error("Unimplemented");
 
     // orderID and signature should be hex-encoded
     const data: OrdersParameters = {
@@ -143,6 +150,7 @@ export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
 }
 
 export async function getOrderStatus(orderID: EncodedData): Promise<OrderStatus> {
+    throw new Error("Unimplemented");
 
     let response: StatusResponse;
     try {
@@ -160,11 +168,11 @@ export async function getOrderStatus(orderID: EncodedData): Promise<OrderStatus>
     return response.status;
 }
 
-export async function getAtomicBalances(): Promise<BalancesResponse> {
+export async function getAtomicBalances(options: { network: string }): Promise<BalancesResponse> {
 
     let response: BalancesResponse;
     try {
-        response = (await axios.get(`${API}/balances`)).data;
+        response = (await axios.get(`${API}/balances?network=${options.network}`)).data;
     } catch (error) {
         console.error(error);
         throw new Error(ErrorUnableToRetrieveStatus);
