@@ -3,9 +3,9 @@ import BN from "bn.js";
 
 import RenExSDK from "../index";
 
-import { getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
+import { getOrderStatus } from "../lib/swapper";
 import { idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 import { atomConnected } from "./atomicMethods";

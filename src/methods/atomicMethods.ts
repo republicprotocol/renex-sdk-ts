@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
-import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/atomic";
+import { _authorizeAtom, _connectToAtom, challengeSwapper, checkSigner, getAtomicBalances } from "../lib/swapper";
 import { fromSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderSettlement, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";

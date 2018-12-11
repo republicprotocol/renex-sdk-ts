@@ -7,11 +7,11 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK from "../index";
 
-import { submitOrderToAtom } from "../lib/atomic";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
+import { submitOrderToAtom } from "../lib/swapper";
 import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
