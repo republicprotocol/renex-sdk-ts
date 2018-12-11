@@ -114,30 +114,11 @@ export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress
 }
 
 async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
-    const prefix: string = web3.utils.toHex("RenEx: authorize: ");
+    const prefix: string = "RenEx: authorize: ";
     const checkedAddress = new EncodedData(atomAddress, Encodings.HEX);
-    const hashForSigning: string = (prefix + checkedAddress.toHex(""));
-
-    let signature: EncodedData;
-    try {
-        // tslint:disable-next-line:no-any
-        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
-    } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrSignatureCanceledByUser));
-        }
-        return Promise.reject(new Error(ErrUnsignedTransaction));
-    }
-
-    const buff = signature.toBuffer();
-    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
-    // but for future compatibility, we stick to one format)
-    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
-    if (buff[64] === 27 || buff[64] === 28) {
-        buff[64] = buff[64] - 27;
-    }
-
-    return new AtomAuthorizationRequest({ atomAddress: checkedAddress.toHex(), signature: buff.toString("base64") });
+    const message = prefix + checkedAddress.toString();
+    const signature = await signMessage(web3, address, message);
+    return new AtomAuthorizationRequest({ atomAddress: checkedAddress.toHex(), signature });
 }
 
 export async function submitOrderToAtom(orderID: EncodedData): Promise<void> {
@@ -190,4 +171,28 @@ export async function getAtomicBalances(): Promise<BalancesResponse> {
     }
 
     return response;
+}
+
+async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
+    const hashForSigning: string = web3.utils.toHex(message);
+    let signature: EncodedData;
+    try {
+        // tslint:disable-next-line:no-any
+        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
+    } catch (error) {
+        if (error.message.match(/User denied message signature/)) {
+            return Promise.reject(new Error(ErrSignatureCanceledByUser));
+        }
+        return Promise.reject(new Error(ErrUnsignedTransaction));
+    }
+
+    const buff = signature.toBuffer();
+    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
+    // but for future compatibility, we stick to one format)
+    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
+    if (buff[64] === 27 || buff[64] === 28) {
+        buff[64] = buff[64] - 27;
+    }
+
+    return buff.toString("base64");
 }
