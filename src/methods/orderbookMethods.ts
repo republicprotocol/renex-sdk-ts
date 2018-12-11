@@ -117,14 +117,13 @@ export const openOrder = async (
         feeAmount = orderInputs.volume.times(feePercent);
     }
 
-    const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
     let balance = new BigNumber(0);
 
     const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
     simpleConsole.log("Verifying trader balance");
     if (orderSettlement === OrderSettlement.RenEx) {
-        const spendTokenBalance = retrievedBalances.get(spendToken);
+        const spendTokenBalance = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
         if (spendTokenBalance) {
             if (spendTokenBalance.free === null) {
                 simpleConsole.error(ErrFailedBalanceCheck);
@@ -183,7 +182,7 @@ export const openOrder = async (
     }
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
-        const usableFeeTokenBalance = retrievedBalances.get(feeToken);
+        const usableFeeTokenBalance = await atomicBalances(sdk, [feeToken]).then(bal => bal.get(feeToken));
         if (usableFeeTokenBalance && usableFeeTokenBalance.free !== null && feeAmount.gt(usableFeeTokenBalance.free)) {
             simpleConsole.error("Insufficient balance for fees");
             throw new Error("Insufficient balance for fees");
