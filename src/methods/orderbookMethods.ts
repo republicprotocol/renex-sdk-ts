@@ -245,6 +245,7 @@ export const openOrder = async (
     simpleConsole.log("Order submitted.");
 
     if (awaitConfirmation) {
+        simpleConsole.log("Waiting for order confirmation...");
         await promiEvent;
         simpleConsole.log("Order confirmed.");
     }
