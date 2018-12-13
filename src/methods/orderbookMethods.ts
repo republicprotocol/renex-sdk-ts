@@ -11,7 +11,7 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
-import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
+import { AtomicBalanceDetails, BalanceDetails, MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
 import { atomicBalances, submitOrder } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
@@ -109,37 +109,29 @@ export const openOrder = async (
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
     const feePercent = await darknodeFees(sdk);
-    let feeToken = receiveToken;
-    let feeAmount = quoteVolume.times(feePercent);
-    if (orderSettlement === OrderSettlement.RenExAtomic && baseToken === Token.ETH) {
-        feeToken = Token.ETH;
-        feeAmount = orderInputs.volume.times(feePercent);
-    }
+    const feeToken = receiveToken;
+    const feeAmount = quoteVolume.times(feePercent);
 
-    let balance = new BigNumber(0);
+    let balanceDetails: BalanceDetails | AtomicBalanceDetails | undefined;
+    let balance: BigNumber;
 
     const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
     simpleConsole.log("Verifying trader balance");
-    if (orderSettlement === OrderSettlement.RenEx) {
-        const spendTokenBalance = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
-        if (spendTokenBalance) {
-            if (spendTokenBalance.free === null) {
-                simpleConsole.error(ErrFailedBalanceCheck);
-                throw new Error(ErrFailedBalanceCheck);
-            }
-            balance = spendTokenBalance.free;
+    try {
+        if (orderSettlement === OrderSettlement.RenEx) {
+            balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
+        } else {
+            balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
         }
-    } else {
-        try {
-            const atomicBalance = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
-            if (atomicBalance && atomicBalance.free !== null) {
-                balance = atomicBalance.free;
-            }
-        } catch (err) {
-            simpleConsole.error(err.message || err);
-            throw err;
+        if (!balanceDetails || balanceDetails.free === null) {
+            simpleConsole.error(ErrFailedBalanceCheck);
+            throw new Error(ErrFailedBalanceCheck);
         }
+        balance = balanceDetails.free;
+    } catch (err) {
+        simpleConsole.error(err.message || err);
+        throw err;
     }
     if (spendVolume.gt(balance)) {
         simpleConsole.error(ErrInsufficientBalance);
@@ -178,17 +170,6 @@ export const openOrder = async (
         const errMsg = `Volume must be greater or equal to minimum volume: (${orderInputs.minVolume})`;
         simpleConsole.error(errMsg);
         throw new Error(errMsg);
-    }
-
-    if (orderSettlement === OrderSettlement.RenExAtomic) {
-        const usableFeeTokenBalance = await atomicBalances(sdk, [feeToken]).then(bal => bal.get(feeToken));
-        if (usableFeeTokenBalance && usableFeeTokenBalance.free !== null && feeAmount.gt(usableFeeTokenBalance.free)) {
-            simpleConsole.error("Insufficient balance for fees");
-            throw new Error("Insufficient balance for fees");
-        } else if (usableFeeTokenBalance && usableFeeTokenBalance.free === null) {
-            simpleConsole.error(ErrFailedBalanceCheck);
-            throw new Error(ErrFailedBalanceCheck);
-        }
     }
 
     const nonce = ingress.randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex"));
