@@ -37,7 +37,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
 
     // Ask RenEx Swapper for status
     try {
-        let orderStatus = await getOrderStatus(orderID);
+        let orderStatus = await getOrderStatus(orderID, sdk._networkData.network);
 
         // The Swapper may not have the most recent status
         if (orderStatus === OrderStatus.OPEN || orderStatus === OrderStatus.NOT_SUBMITTED) {
