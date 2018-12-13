@@ -1,14 +1,10 @@
 import axios from "axios";
-import crypto from "crypto";
 import Web3 from "web3";
 
-// import { second, sleep } from "@Library/conversion";
-import { AtomicConnectionStatus, OrderStatus } from "../types";
+import { OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
-// import { Order } from "@Library/ingress";
-// import { NetworkData } from "@Library/network";
 
 const API = "http://localhost:7928";
 const SIGNATURE_PREFIX = "RenEx: swapperd: ";
@@ -20,15 +16,17 @@ export const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
 export const ErrorUnableToRetrieveSwaps = "Unable to retrieve swaps";
 export const ErrorUnableToRetrieveBalances = "Unable to retrieve Atomic balances";
 
-interface WhoamiResponse {
-    whoAmI: {
-        challenge: string;
-        version: string;
-        network: string;
-        authorizedAddresses: string[];
-        supportedCurrencies: string[];
-    };
-    signature: string;
+export enum SwapperConnectionStatus {
+    NotConnected = "not_connected",
+    ConnectedUnlocked = "connected_unlocked",
+    ConnectedLocked = "connected_locked",
+}
+
+interface InfoResponse {
+    version: string;
+    bootloaded: boolean;
+    supportedBlockchains: Array<{ name: string, address: string }>;
+    supportedTokens: Array<{ name: string, blockchain: string }>;
 }
 
 // interface OrdersParameters {
@@ -49,64 +47,16 @@ interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
-export function checkSigner(web3: Web3, response: WhoamiResponse): string {
-    throw new Error("Unimplemented");
-    const message = JSON.stringify(response.whoAmI);
-    const whoamiString = "\x19Ethereum Signed Message:\n" + message.length + message;
-    const hash = web3.utils.keccak256(whoamiString);
-    const r = "0x" + response.signature.slice(0, 64);
-    const s = "0x" + response.signature.slice(64, 128);
-    const recovery = "0x" + response.signature.slice(128, 130);
-    const v = "0x" + (parseInt(recovery, 16) + 27).toString(16);
-    // tslint:disable-next-line:no-any
-    return (web3.eth.accounts as any).recover({
-        messageHash: hash,
-        r,
-        s,
-        v,
-    });
-}
-
-export async function challengeSwapper(): Promise<WhoamiResponse> {
-    throw new Error("Unimplemented");
-    const challenge = crypto.randomBytes(20).toString("hex");
-
-    const response: WhoamiResponse = await axios.get(`${API}/whoami/${challenge}`).then(resp => resp.data);
-    if (response === undefined ||
-        response.whoAmI === undefined ||
-        response.whoAmI.authorizedAddresses === undefined ||
-        response.whoAmI.authorizedAddresses === null) {
-        throw new Error("Failed the swapper whoami challenge.");
+export async function fetchSwapperStatus(network: string): Promise<SwapperConnectionStatus> {
+    try {
+        const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
+        if (response.bootloaded) {
+            return SwapperConnectionStatus.ConnectedUnlocked;
+        }
+        return SwapperConnectionStatus.ConnectedLocked;
+    } catch (error) {
+        return SwapperConnectionStatus.NotConnected;
     }
-    return response;
-}
-
-export async function _connectToAtom(response: WhoamiResponse, ingressURL: string, address: string): Promise<AtomicConnectionStatus> {
-    throw new Error("Unimplemented");
-    /*
-    const authorizedAddresses = response.whoAmI.authorizedAddresses.map(addr => {
-        return new EncodedData(addr, Encodings.HEX).toHex().toLowerCase();
-    });
-    const comparisonAddress = new EncodedData(address, Encodings.HEX).toHex().toLowerCase();
-    if (authorizedAddresses.indexOf(comparisonAddress) === -1) {
-        // TODO: Inform user address is not authorized
-        return AtomicConnectionStatus.NotAuthorized;
-    }
-
-    // TODO: Use web3 from store
-    // const msg = "0x" + new Buffer(JSON.stringify(response.whoAmI)).toString("hex");
-    // const chaHash = web3.utils.keccak256(msg);
-    // const swapperAddress = web3.eth.accounts.recover(chaHash, "0x" + response.signature, true as any);
-    const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
-
-    // Check with Ingress if Atomic address is authorized
-    const atomAuthorized = await checkAtomAuthorization(ingressURL, address, expectedEthAddress);
-    if (atomAuthorized) {
-        return AtomicConnectionStatus.ConnectedUnlocked;
-    }
-
-    return AtomicConnectionStatus.AtomNotAuthorized;
-    */
 }
 
 export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {

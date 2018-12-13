@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { _authorizeAtom, _connectToAtom, generateSignature, getAtomicBalances, submitSwap, SwapBlob } from "../lib/swapper";
+import { _authorizeAtom, fetchSwapperStatus, generateSignature, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -39,30 +39,17 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 };
 
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    /*
-    try {
-        const response = await challengeSwapper();
-        const signerAddress = checkSigner(sdk.getWeb3(), response);
-        if (sdk._atomConnectedAddress === "") {
-            const expectedEthAddress = await getAtomicBalances().then(resp => resp.ethereum.address);
-            if (expectedEthAddress !== signerAddress) {
-                // The signer and the balances address is different
-                return AtomicConnectionStatus.InvalidSwapper;
-            }
-            sdk._atomConnectedAddress = signerAddress;
-        } else if (sdk._atomConnectedAddress !== signerAddress) {
-            // A new address was used to sign swapper messages
-            return AtomicConnectionStatus.ChangedSwapper;
-        }
-        if (sdk.getAddress()) {
-            return _connectToAtom(response, sdk._networkData.ingress, sdk.getAddress());
-        }
-        return AtomicConnectionStatus.NotConnected;
-    } catch (err) {
-        return AtomicConnectionStatus.NotConnected;
+    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network);
+    switch (swapperStatus) {
+        case SwapperConnectionStatus.NotConnected:
+            return AtomicConnectionStatus.NotConnected;
+        case SwapperConnectionStatus.ConnectedLocked:
+            return AtomicConnectionStatus.ConnectedLocked;
+        case SwapperConnectionStatus.ConnectedUnlocked:
+            return AtomicConnectionStatus.ConnectedUnlocked;
+        default:
+            throw new Error(`Unknown swapper status: ${swapperStatus}`);
     }
-    */
-    return AtomicConnectionStatus.ConnectedUnlocked;
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
