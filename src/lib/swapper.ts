@@ -6,7 +6,7 @@ import Web3 from "web3";
 import { AtomicConnectionStatus, OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
-import { AtomAuthorizationRequest, authorizeSwapper, Order } from "./ingress";
+import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
 // import { Order } from "@Library/ingress";
 // import { NetworkData } from "@Library/network";
 
