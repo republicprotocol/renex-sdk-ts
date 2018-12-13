@@ -6,7 +6,7 @@ import Web3 from "web3";
 import { AtomicConnectionStatus, OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
-import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
+import { AtomAuthorizationRequest, authorizeSwapper, Order } from "./ingress";
 // import { Order } from "@Library/ingress";
 // import { NetworkData } from "@Library/network";
 
@@ -16,12 +16,8 @@ export const ErrorAtomNotLinked = "Atom back-end not linked to wallet";
 export const ErrorUnableToConnect = "Unable to connect go Atom back-end";
 export const ErrorAddressNotAuthorized = "Ethereum address not authorized for Atom";
 export const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
+export const ErrorUnableToRetrieveSwaps = "Unable to retrieve swaps";
 export const ErrorUnableToRetrieveBalances = "Unable to retrieve Atomic balances";
-
-interface StatusResponse {
-    order_id: string;
-    status: OrderStatus;
-}
 
 interface WhoamiResponse {
     whoAmI: {
@@ -138,7 +134,56 @@ interface SwapCore {
     delayInfo?: any;
 }
 
-export type SwapStatus = number;
+export enum SwapStatus {
+    INACTIVE = "inactive",
+    INITIATED = "initiated",
+    AUDITED = "audited",
+    AUDIT_FAILED = "audit_failed",
+    REDEEMED = "redeemed",
+    REFUNDED = "refunded",
+    CANCELLED = "cancelled",
+    EXPIRED = "expired",
+}
+
+function toSwapStatus(num: number): SwapStatus {
+    switch (num) {
+        case 0:
+            return SwapStatus.INACTIVE;
+        case 1:
+            return SwapStatus.INITIATED;
+        case 2:
+            return SwapStatus.AUDITED;
+        case 3:
+            return SwapStatus.AUDIT_FAILED;
+        case 4:
+            return SwapStatus.REDEEMED;
+        case 5:
+            return SwapStatus.REFUNDED;
+        case 6:
+            return SwapStatus.CANCELLED;
+        case 7:
+            return SwapStatus.EXPIRED;
+        default:
+            throw new Error(`Invalid SwapStatus number: ${num}`);
+    }
+}
+
+function toOrderStatus(status: SwapStatus): OrderStatus {
+    switch (status) {
+        case SwapStatus.INACTIVE:
+        case SwapStatus.INITIATED:
+        case SwapStatus.AUDITED:
+            return OrderStatus.CONFIRMED;
+        case SwapStatus.AUDIT_FAILED:
+        case SwapStatus.REFUNDED:
+            return OrderStatus.FAILED_TO_SETTLE;
+        case SwapStatus.REDEEMED:
+            return OrderStatus.SETTLED;
+        case SwapStatus.CANCELLED:
+        case SwapStatus.EXPIRED:
+            return OrderStatus.CANCELED;
+    }
+}
 
 export interface SwapBlob extends SwapCore {
     minimumReceiveAmount?: string;
@@ -157,7 +202,7 @@ export interface SwapReceipt extends SwapCore {
     // tslint:disable-next-line:no-any
     receiveCost: any;
     timestamp: number;
-    status: SwapStatus;
+    status: number;
 }
 
 export async function submitSwap(swap: SwapBlob, network: string): Promise<string> {
@@ -168,23 +213,23 @@ export async function submitSwap(swap: SwapBlob, network: string): Promise<strin
     return "swap-id";
 }
 
-export async function getOrderStatus(orderID: EncodedData): Promise<OrderStatus> {
-    throw new Error("Unimplemented");
-
-    let response: StatusResponse;
+export async function getOrderStatus(orderID: EncodedData, network: string): Promise<OrderStatus> {
+    let response: { swaps: SwapReceipt[] };
     try {
-        response = (await axios.get(`${API}/status/${orderID.toHex("")}`)).data;
+        response = (await axios.get(`${API}/swaps?network=${network}`)).data;
     } catch (error) {
         console.error(error);
-        throw new Error(ErrorUnableToRetrieveStatus);
+        throw new Error(ErrorUnableToRetrieveSwaps);
     }
 
-    // if (response.order_id !== orderID.toHex()) {
-    //     console.error(`Unexpected order ID returned from /status GET request to Atom`);
-    //     throw new Error(ErrorUnableToRetrieveStatus);
-    // }
+    for (const swap of response.swaps) {
+        if (swap.delay && swap.delayInfo.message.orderID === orderID.toBase64()) {
+            return toOrderStatus(toSwapStatus(swap.status));
+        }
+    }
 
-    return response.status;
+    console.error(`Couldn't find a swap with matching orderID: ${orderID}`);
+    throw new Error(ErrorUnableToRetrieveStatus);
 }
 
 export async function getAtomicBalances(options: { network: string }): Promise<BalancesResponse> {
