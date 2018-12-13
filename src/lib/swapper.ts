@@ -11,6 +11,7 @@ import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
 // import { NetworkData } from "@Library/network";
 
 const API = "http://localhost:7928";
+const SIGNATURE_PREFIX = "RenEx: swapperd: ";
 
 export const ErrorAtomNotLinked = "Atom back-end not linked to wallet";
 export const ErrorUnableToConnect = "Unable to connect go Atom back-end";
@@ -245,7 +246,7 @@ export async function getAtomicBalances(options: { network: string }): Promise<B
     return response;
 }
 
-export async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
+async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
     const hashForSigning: string = web3.utils.toHex(message);
     let signature: EncodedData;
     try {
@@ -267,4 +268,18 @@ export async function signMessage(web3: Web3, address: string, message: string):
     }
 
     return buff.toString("base64");
+}
+
+export async function generateSignature(
+    web3: Web3,
+    address: string,
+    message: {
+        orderID: string;
+        kycAddr: string;
+        sendTokenAddr: string;
+        receiveTokenAddr: string;
+    },
+): Promise<string> {
+    const toSign = SIGNATURE_PREFIX + JSON.stringify(message);
+    return signMessage(web3, address, toSign);
 }

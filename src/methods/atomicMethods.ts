@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { _authorizeAtom, _connectToAtom, getAtomicBalances, signMessage, submitSwap, SwapBlob } from "../lib/swapper";
+import { _authorizeAtom, _connectToAtom, generateSignature, getAtomicBalances, submitSwap, SwapBlob } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -165,7 +165,7 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
         sendTokenAddr: tokenAddress[0],
         receiveTokenAddr: tokenAddress[1],
     };
-    const signature = await signMessage(sdk.getWeb3(), sdk.getAddress(), JSON.stringify(message));
+    const signature: string = await generateSignature(sdk.getWeb3(), sdk.getAddress(), message);
 
     // Convert the fee fraction to bips by multiplying by 10000
     const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
