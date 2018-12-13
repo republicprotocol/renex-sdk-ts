@@ -160,10 +160,10 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
     const tokenAddress = await atomicAddresses(sdk, [spendToken, receiveToken]);
     const message = {
-        order_id: orderID.toBase64(),
-        kyc_addr: sdk.getAddress(),
-        send_token_addr: tokenAddress[0],
-        receive_token_addr: tokenAddress[1],
+        orderID: orderID.toBase64(),
+        kycAddr: sdk.getAddress(),
+        sendTokenAddr: tokenAddress[0],
+        receiveTokenAddr: tokenAddress[1],
     };
     const signature = await signMessage(sdk.getWeb3(), sdk.getAddress(), JSON.stringify(message));
 
