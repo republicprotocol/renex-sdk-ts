@@ -13,42 +13,28 @@ import { getOrderBlockNumber } from "./orderbookMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
+    let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
+
+    const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
+    if (storedOrder) {
+        defaultStatus = !storedOrder.status ? defaultStatus : storedOrder.status;
+        // If order is an atomic order, ask Swapper for status
+        if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic && atomConnected(sdk)) {
+            try {
+                return await getOrderStatus(orderID, sdk._networkData.network);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    }
 
     try {
         await matchDetails(sdk, orderID.toBase64());
-    } catch (error) {
-        return OrderStatus.CONFIRMED;
-    }
-
-    // Retrieve order from storage to see if order is an Atomic Swap
-    const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
-
-    // If not atomic, return settled
-    if (!storedOrder || storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
         return OrderStatus.SETTLED;
-    }
-
-    const storedStatus = !storedOrder.status ? OrderStatus.CONFIRMED : storedOrder.status;
-
-    // If RenEx Swapper is not connected, return previous status
-    if (!atomConnected(sdk)) {
-        return storedStatus;
-    }
-
-    // Ask RenEx Swapper for status
-    try {
-        let orderStatus = await getOrderStatus(orderID, sdk._networkData.network);
-
-        // The Swapper may not have the most recent status
-        if (orderStatus === OrderStatus.OPEN || orderStatus === OrderStatus.NOT_SUBMITTED) {
-            orderStatus = OrderStatus.CONFIRMED;
-        }
-
-        return orderStatus;
     } catch (error) {
-        // Return previous status;
-        return storedStatus;
+        console.error(error);
     }
+    return defaultStatus;
 };
 
 export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
