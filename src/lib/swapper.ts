@@ -143,6 +143,7 @@ export interface SwapBlob {
     // tslint:disable-next-line:no-any
     delayInfo?: any;
     delayCallbackUrl?: string;
+    brokerFee ?: number;
 }
 
 // tslint:disable-next-line:no-any

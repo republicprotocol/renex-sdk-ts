@@ -172,6 +172,7 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
         sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toString(),
         receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toString(),
         minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toString(),
+        brokerFee: 20,
         delayed: true,
         delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
         delayInfo: {
