@@ -127,26 +127,39 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
     return new AtomAuthorizationRequest({ atomAddress: checkedAddress.toHex(), signature });
 }
 
-export interface SwapBlob {
+interface SwapCore {
     id?: string;
     sendToken?: string;
     receiveToken?: string;
     sendAmount?: string;
     receiveAmount?: string;
+    delay?: boolean;
+    // tslint:disable-next-line:no-any
+    delayInfo?: any;
+}
+
+export type SwapStatus = number;
+
+export interface SwapBlob extends SwapCore {
     minimumReceiveAmount?: string;
     sendTo?: string;
     receiveFrom?: string;
     timeLock?: number;
     secretHash?: string;
     shouldInitiateFirst?: boolean;
-    delayed?: boolean;
-    // tslint:disable-next-line:no-any
-    delayInfo?: any;
-    delayCallbackUrl?: string;
-    brokerFee ?: number;
+    delayCallbackUrl: string;
+    brokerFee?: number;
 }
 
-// tslint:disable-next-line:no-any
+export interface SwapReceipt extends SwapCore {
+    // tslint:disable-next-line:no-any
+    sendCost: any;
+    // tslint:disable-next-line:no-any
+    receiveCost: any;
+    timestamp: number;
+    status: SwapStatus;
+}
+
 export async function submitSwap(swap: SwapBlob, network: string): Promise<string> {
     console.log(JSON.stringify(swap));
     const resp = await axios.post(`${API}/swaps?network=${network}`, swap);
