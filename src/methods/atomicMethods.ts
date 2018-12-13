@@ -8,6 +8,7 @@ import { _authorizeAtom, _connectToAtom, getAtomicBalances, signMessage, submitS
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
+import { darknodeFees } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
 /* Atomic Connection */
@@ -166,13 +167,16 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     };
     const signature = await signMessage(sdk.getWeb3(), sdk.getAddress(), JSON.stringify(message));
 
+    // Convert the fee fraction to bips by multiplying by 10000
+    const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
+
     const req: SwapBlob = {
         sendToken: spendToken,
         receiveToken,
         sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toString(),
         receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toString(),
         minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toString(),
-        brokerFee: 20,
+        brokerFee,
         delayed: true,
         delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
         delayInfo: {
