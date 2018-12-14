@@ -155,7 +155,7 @@ export class RenExSDK {
     public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
     public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => fetchOrderStatus(this, orderID);
-    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
+    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails | undefined> => matchDetails(this, orderID);
     public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
     public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 

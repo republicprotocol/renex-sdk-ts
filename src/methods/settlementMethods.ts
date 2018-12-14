@@ -13,7 +13,6 @@ import { getOrderBlockNumber } from "./orderbookMethods";
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
     let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
-
     try {
         const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
         if (storedOrder) {
@@ -24,12 +23,14 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
                 return status;
             }
         }
-
-        await matchDetails(sdk, orderID.toBase64());
-        return OrderStatus.SETTLED;
+        const match = await matchDetails(sdk, orderID.toBase64());
+        if (match !== undefined) {
+            return OrderStatus.SETTLED;
+        }
     } catch (error) {
         return defaultStatus;
     }
+    return defaultStatus;
 };
 
 export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
@@ -96,7 +97,7 @@ export const darknodeFees = async (sdk: RenExSDK): Promise<BigNumber> => {
     return numerator.dividedBy(denominator);
 };
 
-export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {
+export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails | undefined> => {
 
     // Check if we already have the match details
     const storedOrder = await sdk._storage.getOrder(orderID64);
@@ -110,7 +111,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
 
     if (!details.settled) {
-        throw new Error("Not settled");
+        return undefined;
     }
 
     const orderMatchDetails: MatchDetails = (details.orderIsBuy) ?
