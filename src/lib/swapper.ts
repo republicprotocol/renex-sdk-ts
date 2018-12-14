@@ -111,7 +111,7 @@ interface InnerSwapReceipt extends SwapCore {
 }
 
 /**
- * This replaces the swapReceipt status from type number to type SwapStatus
+ * This replaces the InnerSwapReceipt status from type number to type SwapStatus
  */
 export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerSwapReceipt, "status">> {
     status: SwapStatus;
