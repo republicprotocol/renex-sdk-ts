@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { _authorizeAtom, fetchSwapperStatus, findMatchingSwapReceipt, generateSignature, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapStatus } from "../lib/swapper";
+import { fetchSwapperStatus, findMatchingSwapReceipt, generateSignature, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -53,8 +53,6 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const ethAtomAddress = await atomicAddresses(sdk, [Token.ETH]).then(addrs => addrs[0]);
-    await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, ethAtomAddress, sdk.getAddress());
     return refreshAtomConnectionStatus(sdk);
 };
 

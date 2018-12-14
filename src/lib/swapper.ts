@@ -1,19 +1,15 @@
 import axios from "axios";
 import Web3 from "web3";
 
-import { EncodedData, Encodings } from "./encodedData";
+import { EncodedData } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
-import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
 
 const API = "http://localhost:7928";
 const SIGNATURE_PREFIX = "RenEx: swapperd: ";
 
-export const ErrorAtomNotLinked = "Atom back-end not linked to wallet";
-export const ErrorUnableToConnect = "Unable to connect go Atom back-end";
-export const ErrorAddressNotAuthorized = "Ethereum address not authorized for Atom";
-export const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
-export const ErrorUnableToRetrieveSwaps = "Unable to retrieve swaps";
-export const ErrorUnableToRetrieveBalances = "Unable to retrieve Atomic balances";
+const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
+const ErrorUnableToRetrieveSwaps = "Unable to retrieve swaps";
+const ErrorUnableToFindMatchingSwap = "Unable to find matching swap";
 
 export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
@@ -27,15 +23,6 @@ interface InfoResponse {
     supportedBlockchains: Array<{ name: string, address: string }>;
     supportedTokens: Array<{ name: string, blockchain: string }>;
 }
-
-// interface OrdersParameters {
-//     orderID: string; // hexadecimal
-// }
-
-// interface OrdersResponse {
-//     orderID: string;
-//     signature: string;
-// }
 
 interface BalanceObject {
     address: string;
@@ -56,21 +43,6 @@ export async function fetchSwapperStatus(network: string): Promise<SwapperConnec
     } catch (error) {
         return SwapperConnectionStatus.NotConnected;
     }
-}
-
-export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
-    throw new Error("Unimplemented");
-    const req = await getAtomAuthorizationRequest(web3, atomAddress, address);
-    await authorizeSwapper(ingressURL, req);
-}
-
-async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
-    throw new Error("Unimplemented");
-    const prefix: string = "RenEx: authorize: ";
-    const checkedAddress = new EncodedData(atomAddress, Encodings.HEX);
-    const message = prefix + checkedAddress.toString();
-    const signature = await signMessage(web3, address, message);
-    return new AtomAuthorizationRequest({ atomAddress: checkedAddress.toHex(), signature });
 }
 
 interface SwapCore {
