@@ -36,7 +36,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
     return defaultStatus;
 };
 
-export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
+export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
     // Convert orderID from base64
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
 

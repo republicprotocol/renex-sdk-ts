@@ -16,7 +16,7 @@ import { atomicBalances, submitOrder } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
-import { darknodeFees, status } from "./settlementMethods";
+import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
 // TODO: Read these from the contract
@@ -309,7 +309,7 @@ export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder
     await Promise.all(orders.map(async order => {
         if (order.status === OrderStatus.NOT_SUBMITTED ||
             order.status === OrderStatus.OPEN) {
-            const newStatus = await status(sdk, order.id);
+            const newStatus = await fetchOrderStatus(sdk, order.id);
             if (newStatus !== order.status) {
                 newStatuses.set(order.id, newStatus);
             }
