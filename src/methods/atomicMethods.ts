@@ -65,7 +65,7 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 
 /* Atomic balances */
 
-export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH];
+export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.WBTC];
 
 const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return getAtomicBalances().then(balances => {
