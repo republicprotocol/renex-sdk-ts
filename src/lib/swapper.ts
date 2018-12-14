@@ -1,7 +1,6 @@
 import axios from "axios";
 import Web3 from "web3";
 
-import { OrderStatus } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { AtomAuthorizationRequest, authorizeSwapper } from "./ingress";
@@ -119,23 +118,6 @@ function toSwapStatus(num: number): SwapStatus {
     }
 }
 
-function toOrderStatus(status: SwapStatus): OrderStatus {
-    switch (status) {
-        case SwapStatus.INACTIVE:
-        case SwapStatus.INITIATED:
-        case SwapStatus.AUDITED:
-            return OrderStatus.CONFIRMED;
-        case SwapStatus.AUDIT_FAILED:
-        case SwapStatus.REFUNDED:
-            return OrderStatus.FAILED_TO_SETTLE;
-        case SwapStatus.REDEEMED:
-            return OrderStatus.SETTLED;
-        case SwapStatus.CANCELLED:
-        case SwapStatus.EXPIRED:
-            return OrderStatus.CANCELED;
-    }
-}
-
 export interface SwapBlob extends SwapCore {
     minimumReceiveAmount?: string;
     sendTo?: string;
@@ -147,13 +129,20 @@ export interface SwapBlob extends SwapCore {
     brokerFee?: number;
 }
 
-export interface SwapReceipt extends SwapCore {
+interface InnerSwapReceipt extends SwapCore {
     // tslint:disable-next-line:no-any
     sendCost: any;
     // tslint:disable-next-line:no-any
     receiveCost: any;
     timestamp: number;
     status: number;
+}
+
+/**
+ * This replaces the swapReceipt status from type number to type SwapStatus
+ */
+export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerSwapReceipt, "status">> {
+    status: SwapStatus;
 }
 
 export async function submitSwap(swap: SwapBlob, network: string): Promise<string> {
@@ -164,8 +153,8 @@ export async function submitSwap(swap: SwapBlob, network: string): Promise<strin
     return "swap-id";
 }
 
-export async function getOrderStatus(orderID: EncodedData, network: string): Promise<OrderStatus> {
-    let response: { swaps: SwapReceipt[] };
+export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => boolean, network: string): Promise<SwapReceipt> {
+    let response: { swaps: InnerSwapReceipt[] };
     try {
         response = (await axios.get(`${API}/swaps?network=${network}`)).data;
     } catch (error) {
@@ -173,14 +162,13 @@ export async function getOrderStatus(orderID: EncodedData, network: string): Pro
         throw new Error(ErrorUnableToRetrieveSwaps);
     }
 
-    for (const swap of response.swaps) {
-        if (swap.delay && swap.delayInfo.message.orderID === orderID.toBase64()) {
-            return toOrderStatus(toSwapStatus(swap.status));
+    for (const innerSwap of response.swaps) {
+        const swap: SwapReceipt = fixSwapType(innerSwap);
+        if (check(swap)) {
+            return swap;
         }
     }
-
-    console.error(`Couldn't find a swap with matching orderID: ${orderID}`);
-    throw new Error(ErrorUnableToRetrieveStatus);
+    throw new Error(ErrorUnableToFindMatchingSwap);
 }
 
 export async function getAtomicBalances(options: { network: string }): Promise<BalancesResponse> {
@@ -232,4 +220,10 @@ export async function generateSignature(
 ): Promise<string> {
     const toSign = SIGNATURE_PREFIX + JSON.stringify(message);
     return signMessage(web3, address, toSign);
+}
+
+function fixSwapType(swap: InnerSwapReceipt): SwapReceipt {
+    const { status, ...details } = swap;
+    const result: SwapReceipt = Object.assign({ status: toSwapStatus(status) }, details);
+    return result;
 }

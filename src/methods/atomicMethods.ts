@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { _authorizeAtom, fetchSwapperStatus, generateSignature, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus } from "../lib/swapper";
+import { _authorizeAtom, fetchSwapperStatus, findMatchingSwapReceipt, generateSignature, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -174,3 +174,32 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     console.log(JSON.stringify(req));
     return submitSwap(req, sdk._networkData.network);
 };
+
+export async function fetchAtomicOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
+    try {
+        const swap = await findMatchingSwapReceipt((swapReceipt) => {
+            return swapReceipt.delay !== undefined && swapReceipt.delayInfo.message.orderID === orderID.toBase64();
+        }, sdk._networkData.network);
+        return toOrderStatus(swap.status);
+    } catch (error) {
+        console.error(error);
+        throw new Error(`Couldn't find a swap with matching orderID: ${orderID.toBase64()}`);
+    }
+}
+
+function toOrderStatus(status: SwapStatus): OrderStatus {
+    switch (status) {
+        case SwapStatus.INACTIVE:
+        case SwapStatus.INITIATED:
+        case SwapStatus.AUDITED:
+            return OrderStatus.CONFIRMED;
+        case SwapStatus.AUDIT_FAILED:
+        case SwapStatus.REFUNDED:
+            return OrderStatus.FAILED_TO_SETTLE;
+        case SwapStatus.REDEEMED:
+            return OrderStatus.SETTLED;
+        case SwapStatus.CANCELLED:
+        case SwapStatus.EXPIRED:
+            return OrderStatus.CANCELED;
+    }
+}

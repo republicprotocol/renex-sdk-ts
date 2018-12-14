@@ -5,10 +5,9 @@ import RenExSDK from "../index";
 
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
-import { getOrderStatus } from "../lib/swapper";
 import { idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
-import { atomConnected } from "./atomicMethods";
+import { atomConnected, fetchAtomicOrderStatus } from "./atomicMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
 
 // This function is called if the Orderbook returns Confirmed
@@ -21,7 +20,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
         // If order is an atomic order, ask Swapper for status
         if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic && atomConnected(sdk)) {
             try {
-                return await getOrderStatus(orderID, sdk._networkData.network);
+                return await fetchAtomicOrderStatus(sdk, orderID);
             } catch (error) {
                 console.error(error);
             }
