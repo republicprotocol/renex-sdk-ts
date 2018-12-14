@@ -7,17 +7,16 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK from "../index";
 
-import { submitOrderToAtom } from "../lib/atomic";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
-import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
-import { atomicBalances } from "./atomicMethods";
+import { AtomicBalanceDetails, BalanceDetails, MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
+import { atomicBalances, submitOrder } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
-import { darknodeFees, status } from "./settlementMethods";
+import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
 // TODO: Read these from the contract
@@ -110,38 +109,29 @@ export const openOrder = async (
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
     const feePercent = await darknodeFees(sdk);
-    let feeToken = receiveToken;
-    let feeAmount = quoteVolume.times(feePercent);
-    if (orderSettlement === OrderSettlement.RenExAtomic && baseToken === Token.ETH) {
-        feeToken = Token.ETH;
-        feeAmount = orderInputs.volume.times(feePercent);
-    }
+    const feeToken = receiveToken;
+    const feeAmount = quoteVolume.times(feePercent);
 
-    const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
-    let balance = new BigNumber(0);
+    let balanceDetails: BalanceDetails | AtomicBalanceDetails | undefined;
+    let balance: BigNumber;
 
     const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
     simpleConsole.log("Verifying trader balance");
-    if (orderSettlement === OrderSettlement.RenEx) {
-        const spendTokenBalance = retrievedBalances.get(spendToken);
-        if (spendTokenBalance) {
-            if (spendTokenBalance.free === null) {
-                simpleConsole.error(ErrFailedBalanceCheck);
-                throw new Error(ErrFailedBalanceCheck);
-            }
-            balance = spendTokenBalance.free;
+    try {
+        if (orderSettlement === OrderSettlement.RenEx) {
+            balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
+        } else {
+            balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
         }
-    } else {
-        try {
-            const atomicBalance = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
-            if (atomicBalance) {
-                balance = atomicBalance.free;
-            }
-        } catch (err) {
-            simpleConsole.error(err.message || err);
-            throw err;
+        if (!balanceDetails || balanceDetails.free === null) {
+            simpleConsole.error(ErrFailedBalanceCheck);
+            throw new Error(ErrFailedBalanceCheck);
         }
+        balance = balanceDetails.free;
+    } catch (err) {
+        simpleConsole.error(err.message || err);
+        throw err;
     }
     if (spendVolume.gt(balance)) {
         simpleConsole.error(ErrInsufficientBalance);
@@ -182,17 +172,6 @@ export const openOrder = async (
         throw new Error(errMsg);
     }
 
-    if (orderSettlement === OrderSettlement.RenExAtomic) {
-        const usableFeeTokenBalance = retrievedBalances.get(feeToken);
-        if (usableFeeTokenBalance && usableFeeTokenBalance.free !== null && feeAmount.gt(usableFeeTokenBalance.free)) {
-            simpleConsole.error("Insufficient balance for fees");
-            throw new Error("Insufficient balance for fees");
-        } else if (usableFeeTokenBalance && usableFeeTokenBalance.free === null) {
-            simpleConsole.error(ErrFailedBalanceCheck);
-            throw new Error(ErrFailedBalanceCheck);
-        }
-    }
-
     const nonce = ingress.randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex"));
     let ingressOrder = ingress.createOrder(orderInputs, nonce);
     const orderID = ingress.getOrderID(sdk.getWeb3(), ingressOrder);
@@ -201,10 +180,10 @@ export const openOrder = async (
     if (orderSettlement === OrderSettlement.RenExAtomic) {
         simpleConsole.log("Submitting order to Atomic Swapper");
         try {
-            await submitOrderToAtom(orderID);
+            await submitOrder(sdk, orderID, orderInputs);
         } catch (err) {
             simpleConsole.error(err.message || err);
-            throw new Error("Error sending order to Atomic Swapper");
+            throw new Error(`Error sending order to Atomic Swapper: ${err}`);
         }
     }
 
@@ -246,6 +225,7 @@ export const openOrder = async (
     simpleConsole.log("Order submitted.");
 
     if (awaitConfirmation) {
+        simpleConsole.log("Waiting for order confirmation...");
         await promiEvent;
         simpleConsole.log("Order confirmed.");
     }
@@ -329,7 +309,7 @@ export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder
     await Promise.all(orders.map(async order => {
         if (order.status === OrderStatus.NOT_SUBMITTED ||
             order.status === OrderStatus.OPEN) {
-            const newStatus = await status(sdk, order.id);
+            const newStatus = await fetchOrderStatus(sdk, order.id);
             if (newStatus !== order.status) {
                 newStatuses.set(order.id, newStatus);
             }
@@ -352,9 +332,9 @@ export const defaultTransactionOptions = async (sdk: RenExSDK, options?: Transac
     let gasPrice;
     let simpleConsole = NullConsole;
     if (options) {
-        awaitConfirmation = options.awaitConfirmation || awaitConfirmation;
-        gasPrice = options.gasPrice || await getGasPrice(sdk);
-        simpleConsole = options.simpleConsole || simpleConsole;
+        awaitConfirmation = options.awaitConfirmation !== undefined ? options.awaitConfirmation : awaitConfirmation;
+        gasPrice = options.gasPrice !== undefined ? options.gasPrice : await getGasPrice(sdk);
+        simpleConsole = options.simpleConsole !== undefined ? options.simpleConsole : simpleConsole;
     }
     return {
         awaitConfirmation,

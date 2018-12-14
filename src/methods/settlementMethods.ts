@@ -3,55 +3,38 @@ import BN from "bn.js";
 
 import RenExSDK from "../index";
 
-import { getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
-import { idToToken } from "../lib/tokens";
+import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
-import { atomConnected } from "./atomicMethods";
+import { atomConnected, fetchAtomicOrderStatus } from "./atomicMethods";
+import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
-
+    let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
     try {
-        await matchDetails(sdk, orderID.toBase64());
-    } catch (error) {
-        return OrderStatus.CONFIRMED;
-    }
-
-    // Retrieve order from storage to see if order is an Atomic Swap
-    const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
-
-    // If not atomic, return settled
-    if (!storedOrder || storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
-        return OrderStatus.SETTLED;
-    }
-
-    const storedStatus = !storedOrder.status ? OrderStatus.CONFIRMED : storedOrder.status;
-
-    // If RenEx Swapper is not connected, return previous status
-    if (!atomConnected(sdk)) {
-        return storedStatus;
-    }
-
-    // Ask RenEx Swapper for status
-    try {
-        let orderStatus = await getOrderStatus(orderID);
-
-        // The Swapper may not have the most recent status
-        if (orderStatus === OrderStatus.OPEN || orderStatus === OrderStatus.NOT_SUBMITTED) {
-            orderStatus = OrderStatus.CONFIRMED;
+        const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
+        if (storedOrder) {
+            defaultStatus = !storedOrder.status ? defaultStatus : storedOrder.status;
+            // If order is an atomic order, ask Swapper for status
+            if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic && atomConnected(sdk)) {
+                const status = await fetchAtomicOrderStatus(sdk, orderID);
+                return status;
+            }
         }
-
-        return orderStatus;
+        const match = await matchDetails(sdk, orderID.toBase64());
+        if (match !== undefined) {
+            return OrderStatus.SETTLED;
+        }
     } catch (error) {
-        // Return previous status;
-        return storedStatus;
+        return defaultStatus;
     }
+    return defaultStatus;
 };
 
-export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
+export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
     // Convert orderID from base64
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
 
@@ -115,7 +98,7 @@ export const darknodeFees = async (sdk: RenExSDK): Promise<BigNumber> => {
     return numerator.dividedBy(denominator);
 };
 
-export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {
+export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails | undefined> => {
 
     // Check if we already have the match details
     const storedOrder = await sdk._storage.getOrder(orderID64);
@@ -125,54 +108,29 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
 
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
     const details = await sdk._contracts.renExSettlement.getMatchDetails(orderID.toHex());
-
     const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
 
     if (!details.settled) {
-        throw new Error("Not settled");
+        return undefined;
     }
 
-    const orderMatchDetails: MatchDetails = (details.orderIsBuy) ?
-        {
-            orderID: orderID64,
-            matchedID: matchedID.toBase64(),
+    const fee = (details.orderIsBuy) ? details.priorityFee : details.secondaryFee;
+    const spentToken = idToToken(new BN((details.orderIsBuy) ? details.priorityToken : details.secondaryToken).toNumber());
+    const spentVolume = (details.orderIsBuy) ? details.priorityVolume : details.secondaryVolume;
+    const spentTokenDetails = await getTokenDetails(sdk, spentToken);
+    const receivedToken = idToToken(new BN((details.orderIsBuy) ? details.secondaryToken : details.priorityToken).toNumber());
+    const receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
+    const receivedTokenDetails = await getTokenDetails(sdk, receivedToken);
 
-            receivedToken: idToToken(new BN(details.secondaryToken).toNumber()),
-            receivedVolume: new BigNumber(details.secondaryVolume),
-
-            fee: new BigNumber(details.priorityFee),
-            spentToken: idToToken(new BN(details.priorityToken).toNumber()),
-            spentVolume: new BigNumber(details.priorityVolume),
-        } :
-        {
-            orderID: orderID64,
-            matchedID: matchedID.toBase64(),
-
-            receivedToken: idToToken(new BN(details.priorityToken).toNumber()),
-            receivedVolume: new BigNumber(details.priorityVolume),
-
-            fee: new BigNumber(details.secondaryFee),
-            spentToken: idToToken(new BN(details.secondaryToken).toNumber()),
-            spentVolume: new BigNumber(details.secondaryVolume),
-        };
-
-    // If the order is an Atomic Swap, add fees and volumes since fees are
-    // separate
-    if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
-        const [receivedVolume, spentVolume] = (details.orderIsBuy) ?
-            [
-                new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),
-                new BigNumber(details.priorityVolume).plus(new BigNumber(details.priorityFee)),
-            ] : [
-                new BigNumber(details.priorityVolume).plus(new BigNumber(details.priorityFee)),
-                new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),
-            ];
-        orderMatchDetails.receivedVolume = receivedVolume;
-        orderMatchDetails.spentVolume = spentVolume;
-
-        // TODO: Calculate fees
-        orderMatchDetails.fee = new BigNumber(0);
-    }
+    const orderMatchDetails: MatchDetails = {
+        orderID: orderID64,
+        matchedID: matchedID.toBase64(),
+        receivedToken,
+        receivedVolume: fromSmallestUnit(receivedVolume, receivedTokenDetails),
+        fee: fromSmallestUnit(fee, spentTokenDetails),
+        spentToken,
+        spentVolume: fromSmallestUnit(spentVolume, spentTokenDetails),
+    };
 
     // Update local storage (without awaiting)
     sdk._storage.getOrder(orderID64).then(async (reStoredOrder: TraderOrder | undefined) => {
