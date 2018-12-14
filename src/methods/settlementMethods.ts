@@ -14,26 +14,22 @@ import { getOrderBlockNumber } from "./orderbookMethods";
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
     let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
 
-    const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
-    if (storedOrder) {
-        defaultStatus = !storedOrder.status ? defaultStatus : storedOrder.status;
-        // If order is an atomic order, ask Swapper for status
-        if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic && atomConnected(sdk)) {
-            try {
-                return await fetchAtomicOrderStatus(sdk, orderID);
-            } catch (error) {
-                console.error(error);
+    try {
+        const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
+        if (storedOrder) {
+            defaultStatus = !storedOrder.status ? defaultStatus : storedOrder.status;
+            // If order is an atomic order, ask Swapper for status
+            if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic && atomConnected(sdk)) {
+                const status = await fetchAtomicOrderStatus(sdk, orderID);
+                return status;
             }
         }
-    }
 
-    try {
         await matchDetails(sdk, orderID.toBase64());
         return OrderStatus.SETTLED;
     } catch (error) {
-        console.error(error);
+        return defaultStatus;
     }
-    return defaultStatus;
 };
 
 export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {

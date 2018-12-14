@@ -176,11 +176,14 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
 export async function fetchAtomicOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
     try {
         const swap = await findMatchingSwapReceipt((swapReceipt) => {
-            return swapReceipt.delay !== undefined && swapReceipt.delayInfo.message.orderID === orderID.toBase64();
+            try {
+                return swapReceipt.delay !== undefined && swapReceipt.delayInfo.message.orderID === orderID.toBase64();
+            } catch (error) {
+                return false;
+            }
         }, sdk._networkData.network);
         return toOrderStatus(swap.status);
     } catch (error) {
-        console.error(error);
         throw new Error(`Couldn't find a swap with matching orderID: ${orderID.toBase64()}`);
     }
 }
