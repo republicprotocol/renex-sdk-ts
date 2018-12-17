@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperStatus, findMatchingSwapReceipt, generateSignature, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapStatus } from "../lib/swapper";
+import { fetchSwapperStatus, findMatchingSwapReceipt, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
