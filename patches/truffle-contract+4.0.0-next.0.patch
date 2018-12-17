@@ -1,0 +1,719 @@
+patch-package
+--- a/node_modules/truffle-contract/lib/contract.js
++++ b/node_modules/truffle-contract/lib/contract.js
+@@ -222,11 +222,14 @@ var contract = (function(module) {
+       return new Promise(function(accept, reject) {
+         // Try to get the current blockLimit
+         constructor.web3.eth.getBlock('latest').then(function(block){
++          // Fallback to 7 million gas
++          const blockLimit = block && block.gasLimit ? block.gasLimit : 7000000;
++
+           // Try to detect the network we have artifacts for.
+           if (constructor.network_id) {
+             // We have a network id and a configuration, let's go with it.
+             if (constructor.networks[constructor.network_id] != null) {
+-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++              return accept({id: constructor.network_id, blockLimit});
+             }
+           }
+ 
+@@ -235,7 +238,7 @@ var contract = (function(module) {
+             if (constructor.hasNetwork(network_id)) {
+ 
+               constructor.setNetwork(network_id);
+-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++              return accept({id: constructor.network_id, blockLimit});
+             }
+ 
+             // Otherwise, go through all the networks that are listed as
+@@ -254,13 +257,13 @@ var contract = (function(module) {
+               for (var i = 0; i < results.length; i++) {
+                 if (results[i]) {
+                   constructor.setNetwork(uris[i]);
+-                  return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++                  return accept({id: constructor.network_id, blockLimit});
+                 }
+               }
+ 
+               // We found nothing. Set the network id to whatever the provider states.
+               constructor.setNetwork(network_id);
+-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++              return accept({id: constructor.network_id, blockLimit});
+             });
+ 
+           }).catch(reject);
+--- a/node_modules/truffle-contract/lib/execute.js
++++ b/node_modules/truffle-contract/lib/execute.js
+@@ -17,13 +17,13 @@ var execute = {
+    * @param  {Number} blockLimit  most recent network block.blockLimit
+    * @return {Number}             gas estimate
+    */
+-  getGasEstimate: function(params, blockLimit){
++  getGasEstimate: function (params, blockLimit) {
+     var constructor = this;
+     var web3 = this.web3;
+ 
+-    return new Promise(function(accept, reject){
++    return new Promise(function (accept, reject) {
+       // Always prefer specified gas - this includes gas set by class_defaults
+-      if (params.gas)           return accept(params.gas);
++      if (params.gas) return accept(params.gas);
+       if (!constructor.autoGas) return accept();
+ 
+       web3.eth
+@@ -32,12 +32,11 @@ var execute = {
+           var bestEstimate = Math.floor(constructor.gasMultiplier * gas);
+ 
+           // Don't go over blockLimit
+-          (bestEstimate >= blockLimit)
+-            ? accept(blockLimit - 1)
+-            : accept(bestEstimate);
++          (bestEstimate >= blockLimit) ?
++          accept(blockLimit - 1): accept(bestEstimate);
+ 
+-        // We need to let txs that revert through.
+-        // Often that's exactly what you are testing.
++          // We need to let txs that revert through.
++          // Often that's exactly what you are testing.
+         }).catch(err => accept());
+     })
+   },
+@@ -49,13 +48,18 @@ var execute = {
+    * @param  {Array}  _arguments    Arguments passed to method invocation
+    * @return {Promise}              Resolves object w/ tx params disambiguated from arguments
+    */
+-  prepareCall: function(constructor, _arguments){
++  prepareCall: function (constructor, _arguments) {
+     var args = Array.prototype.slice.call(_arguments);
+     var params = utils.getTxParams.call(constructor, args);
+ 
+     return constructor
+       .detectNetwork()
+-      .then(() => {return {args: args, params: params}});
++      .then(() => {
++        return {
++          args: args,
++          params: params
++        }
++      });
+   },
+ 
+   /**
+@@ -63,7 +67,7 @@ var execute = {
+    * @param  {Any}  arg
+    * @return {Boolean}
+    */
+-  hasTxParams: function(arg){
++  hasTxParams: function (arg) {
+     return utils.is_object(arg) && !utils.is_big_number(arg);
+   },
+ 
+@@ -75,7 +79,7 @@ var execute = {
+    * @param  {Array}  inputs     ABI segment defining method arguments
+    * @return {Boolean}           true if final argument is `defaultBlock`
+    */
+-  hasDefaultBlock:  function(args, lastArg, inputs){
++  hasDefaultBlock: function (args, lastArg, inputs) {
+     var hasDefaultBlock = !execute.hasTxParams(lastArg) && (args.length > inputs.length);
+     var hasDefaultBlockWithParams = execute.hasTxParams(lastArg) && (args.length - 1 > inputs.length);
+     return hasDefaultBlock || hasDefaultBlockWithParams;
+@@ -89,18 +93,18 @@ var execute = {
+    * @param  {Object}   methodABI  function ABI segment w/ inputs & outputs keys.
+    * @return {Promise}             Return value of the call.
+    */
+-  call: function(fn, methodABI, address) {
++  call: function (fn, methodABI, address) {
+     var constructor = this;
+ 
+-    return function() {
++    return function () {
+       var params = {};
+       var defaultBlock = 'latest';
+       var args = Array.prototype.slice.call(arguments);
+       var lastArg = args[args.length - 1];
+ 
+       // Extract defaultBlock parameter
+-      if (execute.hasDefaultBlock(args, lastArg, methodABI.inputs)){
+-          defaultBlock = args.pop();
++      if (execute.hasDefaultBlock(args, lastArg, methodABI.inputs)) {
++        defaultBlock = args.pop();
+       }
+ 
+       // Extract tx params
+@@ -134,18 +138,18 @@ var execute = {
+    * @param  {String}     address  Deployed address of the targeted instance
+    * @return {PromiEvent}          Resolves a transaction receipt (via the receipt handler)
+    */
+-  send: function(fn, address) {
++  send: function (fn, address) {
+     var constructor = this;
+     var web3 = constructor.web3;
+ 
+-    return function() {
++    return function () {
+       var deferred;
+       var args = Array.prototype.slice.call(arguments);
+       var params = utils.getTxParams.call(constructor, args);
+       var promiEvent = new Web3PromiEvent();
+ 
+       var context = {
+-        contract: constructor,   // Can't name this field `constructor` or `_constructor`
++        contract: constructor, // Can't name this field `constructor` or `_constructor`
+         promiEvent: promiEvent,
+         params: params
+       }
+@@ -177,8 +181,8 @@ var execute = {
+    * @param  {Object} context     Context object that exposes execution state to event handlers.
+    * @param  {Number} blockLimit  `block.gasLimit`
+    * @return {PromiEvent}         Resolves a TruffleContract instance
+-  */
+-  deploy: function(args, context, blockLimit) {
++   */
++  deploy: function (args, context, blockLimit) {
+     var constructor = this;
+     var abi = constructor.abi;
+     var web3 = constructor.web3;
+@@ -203,7 +207,7 @@ var execute = {
+         handlers.setup(deferred, context);
+ 
+         deferred.then(async (receipt) => {
+-          if (!receipt.status){
++          if (!receipt.status) {
+             var reason = await Reason.get(params, web3);
+ 
+             var error = new StatusError(
+@@ -221,8 +225,8 @@ var execute = {
+ 
+           context.promiEvent.resolve(new constructor(web3Instance));
+ 
+-        // Manage web3's 50 blocks' timeout error.
+-        // Web3's own subscriptions go dead here.
++          // Manage web3's 50 blocks' timeout error.
++          // Web3's own subscriptions go dead here.
+         }).catch(override.start.bind(constructor, context))
+       }).catch(context.promiEvent.reject);
+   },
+@@ -232,27 +236,27 @@ var execute = {
+    * @param  {Function} fn  Solidity event method
+    * @return {Emitter}      Event emitter
+    */
+-  event: function(fn){
++  event: function (fn) {
+     var constructor = this;
+     var decode = utils.decodeLogs;
+     var currentLogID = null;
+ 
+     // Someone upstream is firing duplicates :/
+-    function dedupe(id){
+-      return (id === currentLogID)
+-        ? false
+-        : currentLogID = id;
++    function dedupe(id) {
++      return (id === currentLogID) ?
++        false :
++        currentLogID = id;
+     }
+ 
+-    return function(params, callback){
++    return function (params, callback) {
+       if (typeof params == "function") {
+         callback = params;
+         params = {};
+       }
+ 
+       // As callback
+-      if (callback !== undefined){
+-        var intermediary = function(err, e){
++      if (callback !== undefined) {
++        var intermediary = function (err, e) {
+           if (err) callback(err);
+           var event = dedupe(e.id) && decode.call(constructor, e, true)[0];
+           callback(null, event);
+@@ -281,19 +285,19 @@ var execute = {
+    * Wraps web3 `allEvents`, with additional log decoding
+    * @return {PromiEvent}  EventEmitter
+    */
+-  allEvents: function(web3Instance){
++  allEvents: function (web3Instance) {
+     var constructor = this;
+     var decode = utils.decodeLogs;
+     var currentLogID = null;
+ 
+     // Someone upstream is firing duplicates :/
+-    function dedupe(id){
+-      return (id === currentLogID)
+-        ? false
+-        : currentLogID = id;
++    function dedupe(id) {
++      return (id === currentLogID) ?
++        false :
++        currentLogID = id;
+     }
+ 
+-    return function(params){
++    return function (params) {
+       var emitter = new EventEmitter();
+ 
+       constructor.detectNetwork().then(() => {
+@@ -312,11 +316,11 @@ var execute = {
+    * Wraps web3 `getPastEvents`, with additional log decoding
+    * @return {Promise}  Resolves array of event objects
+    */
+-  getPastEvents: function(web3Instance){
++  getPastEvents: function (web3Instance) {
+     var constructor = this;
+     var decode = utils.decodeLogs;
+ 
+-    return function(event, options){
++    return function (event, options) {
+       return web3Instance
+         .getPastEvents(event, options)
+         .then(events => decode.call(constructor, events, false))
+@@ -328,9 +332,9 @@ var execute = {
+    * @param  {Function} fn  Method to target
+    * @return {Promise}
+    */
+-  estimate : function(fn){
++  estimate: function (fn) {
+     var constructor = this;
+-    return function() {
++    return function () {
+ 
+       return execute
+         .prepareCall(constructor, arguments)
+@@ -338,9 +342,9 @@ var execute = {
+     };
+   },
+ 
+-  request : function(fn){
++  request: function (fn) {
+     var constructor = this;
+-    return function() {
++    return function () {
+ 
+       return execute
+         .prepareCall(constructor, arguments)
+@@ -350,7 +354,7 @@ var execute = {
+ 
+   // This gets attached to `.new` (declared as a static_method in `contract`)
+   // during bootstrapping as `estimate`
+-  estimateDeployment : function(){
++  estimateDeployment: function () {
+     var constructor = this;
+     return execute
+       .prepareCall(constructor, arguments)
+@@ -360,7 +364,7 @@ var execute = {
+           arguments: res.args
+         };
+ 
+-        delete res.params['data'];  // Is this necessary?
++        delete res.params['data']; // Is this necessary?
+ 
+         var instance = new constructor.web3.eth.Contract(constructor.abi, res.params);
+         return instance.deploy(options).estimateGas(res.params);
+@@ -369,4 +373,3 @@ var execute = {
+ };
+ 
+ module.exports = execute;
+\ No newline at end of file
+-
+--- a/node_modules/truffle-contract/lib/handlers.js
++++ b/node_modules/truffle-contract/lib/handlers.js
+@@ -9,9 +9,9 @@ var handlers = {
+ 
+   // ----------------------------------- Constants -------------------------------------------------
+ 
+-  maxConfirmations: 24,          // Maximum number of confirmation web3 emits
+-  defaultTimeoutBlocks: 50,      // Maximum number of blocks web3 will wait before abandoning tx
+-  timeoutMessage: '50 blocks',   // Substring of web3 timeout error.
++  maxConfirmations: 24, // Maximum number of confirmation web3 emits
++  defaultTimeoutBlocks: 50, // Maximum number of blocks web3 will wait before abandoning tx
++  timeoutMessage: '50 blocks', // Substring of web3 timeout error.
+ 
+   // -----------------------------------  Helpers --------------------------------------------------
+ 
+@@ -21,12 +21,12 @@ var handlers = {
+    * @param  {Object} error   error
+    * @return {Boolean}
+    */
+-  ignoreTimeoutError: function(context, error){
++  ignoreTimeoutError: function (context, error) {
+     var timedOut = error.message && error.message.includes(handlers.timeoutMessage);
+ 
+     var shouldWait = context.contract &&
+-                     context.contract.timeoutBlocks &&
+-                     context.contract.timeoutBlocks > handlers.defaultTimeoutBlocks;
++      context.contract.timeoutBlocks &&
++      context.contract.timeoutBlocks > handlers.defaultTimeoutBlocks;
+ 
+     return timedOut && shouldWait;
+   },
+@@ -36,11 +36,11 @@ var handlers = {
+    * @param {Object}       context  execution state
+    * @param {PromiEvent}   emitter  promiEvent returned by a web3 method call
+    */
+-  setup: function(emitter, context){
+-    emitter.on('error',           handlers.error.bind(emitter, context))
++  setup: function (emitter, context) {
++    emitter.on('error', handlers.error.bind(emitter, context))
+     emitter.on('transactionHash', handlers.hash.bind(emitter, context))
+-    emitter.on('confirmation',    handlers.confirmation.bind(emitter, context))
+-    emitter.on('receipt',         handlers.receipt.bind(emitter, context));
++    emitter.on('confirmation', handlers.confirmation.bind(emitter, context))
++    emitter.on('receipt', handlers.receipt.bind(emitter, context));
+   },
+ 
+   // -----------------------------------  Handlers -------------------------------------------------
+@@ -50,8 +50,8 @@ var handlers = {
+    * @param  {Object} context   execution state
+    * @param  {Object} error     error
+    */
+-  error: function(context, error){
+-    if (!handlers.ignoreTimeoutError(context, error)){
++  error: function (context, error) {
++    if (!handlers.ignoreTimeoutError(context, error)) {
+       context.promiEvent.eventEmitter.emit('error', error);
+       this.removeListener('error', handlers.error);
+     }
+@@ -63,13 +63,13 @@ var handlers = {
+    * @param  {Object} context   execution state
+    * @param  {String} hash      transaction hash
+    */
+-  hash: function(context, hash){
++  hash: function (context, hash) {
+     context.transactionHash = hash;
+     context.promiEvent.eventEmitter.emit('transactionHash', hash);
+     this.removeListener('transactionHash', handlers.hash);
+   },
+ 
+-  confirmation: function(context, number, receipt){
++  confirmation: function (context, number, receipt) {
+     context.promiEvent.eventEmitter.emit('confirmation', number, receipt)
+ 
+     // Per web3: initial confirmation index is 0
+@@ -84,25 +84,29 @@ var handlers = {
+    * @param  {Object} context   execution state
+    * @param  {Object} receipt   transaction receipt
+    */
+-  receipt: async function(context, receipt){
++  receipt: async function (context, receipt) {
+     // Decode logs
+     var logs;
+ 
+-    (receipt.logs)
+-      ? logs = Utils.decodeLogs.call(context.contract, receipt.logs)
+-      : logs = [];
++    if (!receipt.transactionHash) {
++      receipt.transactionHash = context.transactionHash;
++      receipt.status = 1;
++    }
++
++    (receipt.logs) ?
++    logs = Utils.decodeLogs.call(context.contract, receipt.logs): logs = [];
+ 
+     // Emit receipt
+     context.promiEvent.eventEmitter.emit('receipt', receipt)
+ 
+     // .new(): Exit early. We need the promiEvent to resolve a contract instance.
+-    if(context.onlyEmitReceipt){
++    if (context.onlyEmitReceipt) {
+       context.receipt = receipt;
+       return;
+     }
+ 
+     // .method(): resolve/reject receipt in handler
+-    if (!receipt.status){
++    if (!receipt.status) {
+       var reason = await Reason.get(context.params, context.contract.web3);
+ 
+       var error = new StatusError(
+--- a/node_modules/truffle-contract/lib/override.js
++++ b/node_modules/truffle-contract/lib/override.js
+@@ -4,7 +4,7 @@ var handlers = require('./handlers');
+ var override = {
+ 
+   timeoutMessage: 'not mined within', // Substring of timeout err fired by web3
+-  defaultMaxBlocks: 50,               // Max # of blocks web3 will wait for a tx
++  defaultMaxBlocks: 50, // Max # of blocks web3 will wait for a tx
+   pollingInterval: 1000,
+ 
+   /**
+@@ -12,16 +12,16 @@ var override = {
+    * @param  {Object} message       web3 error
+    * @return {Object|undefined} receipt
+    */
+-  extractReceipt(message){
++  extractReceipt(message) {
+     const hasReceipt = message &&
+-                       message.includes('{')
+-                       message.includes('}');
++      message.includes('{')
++    message.includes('}');
+ 
+-    if (hasReceipt){
+-      const receiptString =  '{' + message.split('{')[1].trim();
++    if (hasReceipt) {
++      const receiptString = '{' + message.split('{')[1].trim();
+       try {
+         return JSON.parse(receiptString)
+-      } catch (err){
++      } catch (err) {
+         // ignore
+       }
+     }
+@@ -36,7 +36,7 @@ var override = {
+    * @param  {Object} context execution state
+    * @param  {Object} err     error
+    */
+-  start: async function(context, web3Error){
++  start: async function (context, web3Error) {
+     var constructor = this;
+     var blockNumber = null;
+     var currentBlock = override.defaultMaxBlocks;
+@@ -46,20 +46,30 @@ var override = {
+     var shouldWait = maxBlocks > currentBlock;
+ 
+     // Reject after attempting to get reason string if we shouldn't be waiting.
+-    if (!timedOut || !shouldWait){
++    if (!timedOut || !shouldWait) {
+ 
+       // We might have been routed here in web3 >= beta.34 by their own status check
+       // error. We want to extract the receipt, emit a receipt event
+       // and reject it ourselves.
+       var receipt = override.extractReceipt(web3Error.message);
+-      if (receipt){
+-        await handlers.receipt(context, receipt);
++      if (receipt) {
++        try {
++          await handlers.receipt(context, receipt);
++        } catch (err) {
++          // FIXME: this.removeListener is not a function is returned sometimes
++          // console.error(err);
++        }
+         return;
+       }
+ 
+       // This will run if there's a reason and no status field
+       // e.g: revert with reason ganache-cli --vmErrorsOnRPCResponse=true
+-      var reason = await Reason.get(context.params, constructor.web3);
++      var reason;
++      try {
++        reason = await Reason.get(context.params, constructor.web3);
++      } catch (err) {
++        console.error(err);
++      }
+       if (reason) {
+         web3Error.reason = reason;
+         web3Error.message += ` -- Reason given: ${reason}.`;
+@@ -69,11 +79,11 @@ var override = {
+     }
+ 
+     // This will run every block from now until contract.timeoutBlocks
+-    var listener = function(pollID){
++    var listener = function (pollID) {
+       var self = this;
+       currentBlock++;
+ 
+-      if (currentBlock > constructor.timeoutBlocks){
++      if (currentBlock > constructor.timeoutBlocks) {
+         clearInterval(pollID)
+         return;
+       }
+@@ -82,11 +92,11 @@ var override = {
+         .then(result => {
+           if (!result) return;
+ 
+-          (result.contractAddress)
+-            ? constructor
+-                .at(result.contractAddress)
+-                .then(context.promiEvent.resolve)
+-                .catch(context.promiEvent.reject)
++          (result.contractAddress) ?
++          constructor
++            .at(result.contractAddress)
++            .then(context.promiEvent.resolve)
++            .catch(context.promiEvent.reject)
+ 
+             : constructor.promiEvent.resolve(result);
+ 
+@@ -100,10 +110,10 @@ var override = {
+     // Start polling
+     let currentPollingBlock = await constructor.web3.eth.getBlockNumber();
+ 
+-    const pollID = setInterval(async() => {
++    const pollID = setInterval(async () => {
+       const newBlock = await constructor.web3.eth.getBlockNumber();
+ 
+-      if(newBlock > currentPollingBlock){
++      if (newBlock > currentPollingBlock) {
+         currentPollingBlock = newBlock;
+         listener(pollID);
+       }
+--- a/node_modules/truffle-contract/lib/reason.js
++++ b/node_modules/truffle-contract/lib/reason.js
+@@ -9,7 +9,7 @@ const reason = {
+    * @param  {Web3}             web3 a helpful friend
+    * @return {String|Undefined}      decoded reason string
+    */
+-  _extract: function(res, web3){
++  _extract: function (res, web3) {
+     if (!res || (!res.error && !res.result)) return;
+ 
+     const errorStringHash = '0x08c379a0';
+@@ -21,11 +21,11 @@ const reason = {
+       const data = res.error.data;
+       const hash = Object.keys(data)[0];
+ 
+-      if (data[hash].return && data[hash].return.includes(errorStringHash)){
++      if (data[hash].return && data[hash].return.includes(errorStringHash)) {
+         return web3.eth.abi.decodeParameter('string', data[hash].return.slice(10))
+       }
+ 
+-    } else if (isString && res.result.includes(errorStringHash)){
++    } else if (isString && res.result.includes(errorStringHash)) {
+       return web3.eth.abi.decodeParameter('string', res.result.slice(10))
+     }
+   },
+@@ -35,7 +35,7 @@ const reason = {
+    * @param  {Object} web3
+    * @return {String|Undefined}
+    */
+-  get: function(params, web3){
++  get: function (params, web3) {
+     const packet = {
+       jsonrpc: "2.0",
+       method: "eth_call",
+@@ -44,7 +44,7 @@ const reason = {
+     }
+ 
+     return new Promise(resolve => {
+-      web3.currentProvider.send(packet, (err, response) => {
++      web3.currentProvider.sendAsync(packet, (err, response) => {
+         const reasonString = reason._extract(response, web3);
+         resolve(reasonString);
+       })
+--- a/node_modules/truffle-contract/test/util.js
++++ b/node_modules/truffle-contract/test/util.js
+@@ -19,19 +19,20 @@ var util = {
+   realReceipt: null,
+ 
+   // Compiles and instantiates (our friend) Example.sol
+-  createExample: function() {
++  createExample: function () {
+     var contractObj;
+     var contractName;
+ 
+-    var result = solc.compile(fs.readFileSync("./test/sources/Example.sol", {encoding: "utf8"}), 1);
++    var result = solc.compile(fs.readFileSync("./test/sources/Example.sol", {
++      encoding: "utf8"
++    }), 1);
+ 
+-    if (process.listeners("uncaughtException").length){
++    if (process.listeners("uncaughtException").length) {
+       process.removeListener("uncaughtException", process.listeners("uncaughtException")[0]);
+     }
+ 
+-    (result.contracts["Example"])
+-      ? contractName = "Example"
+-      : contractName = ":Example";
++    (result.contracts["Example"]) ?
++    contractName = "Example": contractName = ":Example";
+ 
+     contractObj = result.contracts[contractName];
+     contractObj.contractName = contractName;
+@@ -40,23 +41,25 @@ var util = {
+ 
+   // Spins up ganache with arbitrary options and
+   // binds web3 & a contract instance to it.
+-  setUpProvider: function(instance, options){
++  setUpProvider: function (instance, options) {
+     options = options || {};
+-    Object.assign(options, {logger: log, ws: true})
++    Object.assign(options, {
++      logger: log,
++      ws: true
++    })
+ 
+-    return new Promise(function(accept, reject){
++    return new Promise(function (accept, reject) {
+       var provider;
+       var web3 = new Web3();
+ 
+-      (process.env.GETH)
+-        ? provider = new Web3.providers.WebsocketProvider('ws://localhost:8546')
+-        : provider = ganache.provider(options);
++      (process.env.GETH) ?
++      provider = new Web3.providers.WebsocketProvider('ws://localhost:8546'): provider = ganache.provider(options);
+ 
+       web3.setProvider(provider);
+       instance.setProvider(provider);
+       util.web3 = web3;
+ 
+-      web3.eth.getAccounts(function(err, accs) {
++      web3.eth.getAccounts(function (err, accs) {
+         if (err) reject(err);
+         instance.defaults({
+           from: accs[0]
+@@ -71,20 +74,20 @@ var util = {
+   },
+ 
+   // RPC Methods
+-  evm_mine: function(){
+-    return new Promise(function(accept, reject){
+-      util.web3.currentProvider.send({
++  evm_mine: function () {
++    return new Promise(function (accept, reject) {
++      util.web3.currentProvider.sendAsync({
+         jsonrpc: "2.0",
+         method: "evm_mine",
+         id: new Date().getTime()
+-      }, function(err, result){
+-          (err) ? reject(err) : accept(result);
++      }, function (err, result) {
++        (err) ? reject(err): accept(result);
+       });
+     });
+   },
+ 
+   // Mocks for delayed tx resolution to simulate real clients
+-  fakeSendTransaction: function(params){
++  fakeSendTransaction: function (params) {
+     util.fakePromiEvent = new Web3PromiEvent();
+     var real = util.web3.eth.sendTransaction(params)
+ 
+@@ -93,7 +96,7 @@ var util = {
+       util.fakePromiEvent.eventEmitter.emit('transactionHash', hash)
+     });
+ 
+-    real.on('receipt', function(receipt) {
++    real.on('receipt', function (receipt) {
+       util.realReceipt = receipt;
+       this.removeAllListeners()
+     });
+@@ -101,22 +104,22 @@ var util = {
+     return util.fakePromiEvent.eventEmitter;
+   },
+ 
+-  fakeReject: function(msg){
++  fakeReject: function (msg) {
+     var error = msg || "Transaction was not mined within 50 blocks";
+     util.fakePromiEvent.reject(new Error(error));
+   },
+ 
+-  fakeNoReceipt: function(transactionHash){
++  fakeNoReceipt: function (transactionHash) {
+     return Promise.resolve(null);
+   },
+ 
+-  fakeGotReceipt: function(transactionHash){
++  fakeGotReceipt: function (transactionHash) {
+     // Verify we are polling for the right hash
+     if (transactionHash === util.realHash)
+       return Promise.resolve(util.realReceipt)
+   },
+ 
+-  waitMS: async function(ms){
++  waitMS: async function (ms) {
+     return new Promise(resolve => setTimeout(resolve, ms));
+   }
+ }
