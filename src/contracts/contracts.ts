@@ -1,4 +1,4 @@
-const contract = require("./truffle-contract/index.js");
+const contract = require("./truffle-contract");
 
 import { Provider } from "web3/providers";
 

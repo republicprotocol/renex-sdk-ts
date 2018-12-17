@@ -1,0 +1,96 @@
+patch-package
+--- a/node_modules/truffle-contract/lib/contract.js
++++ b/node_modules/truffle-contract/lib/contract.js
+@@ -222,11 +222,13 @@ var contract = (function(module) {
+       return new Promise(function(accept, reject) {
+         // Try to get the current blockLimit
+         constructor.web3.eth.getBlock('latest').then(function(block){
++          // Fallback to 7 million gas
++          const blockLimit = block && block.gasLimit ? block.gasLimit : 7000000;
+           // Try to detect the network we have artifacts for.
+           if (constructor.network_id) {
+             // We have a network id and a configuration, let's go with it.
+             if (constructor.networks[constructor.network_id] != null) {
+-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++              return accept({id: constructor.network_id, blockLimit});
+             }
+           }
+ 
+@@ -235,7 +237,7 @@ var contract = (function(module) {
+             if (constructor.hasNetwork(network_id)) {
+ 
+               constructor.setNetwork(network_id);
+-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++              return accept({id: constructor.network_id, blockLimit});
+             }
+ 
+             // Otherwise, go through all the networks that are listed as
+@@ -254,13 +256,13 @@ var contract = (function(module) {
+               for (var i = 0; i < results.length; i++) {
+                 if (results[i]) {
+                   constructor.setNetwork(uris[i]);
+-                  return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++                  return accept({id: constructor.network_id, blockLimit});
+                 }
+               }
+ 
+               // We found nothing. Set the network id to whatever the provider states.
+               constructor.setNetwork(network_id);
+-              return accept({id: constructor.network_id, blockLimit: block.gasLimit});
++              return accept({id: constructor.network_id, blockLimit});
+             });
+ 
+           }).catch(reject);
+--- a/node_modules/truffle-contract/lib/handlers.js
++++ b/node_modules/truffle-contract/lib/handlers.js
+@@ -92,6 +92,11 @@ var handlers = {
+       ? logs = Utils.decodeLogs.call(context.contract, receipt.logs)
+       : logs = [];
+ 
++    if (!receipt.transactionHash) {
++      receipt.transactionHash = context.transactionHash;
++      receipt.status = 1;
++    }
++
+     // Emit receipt
+     context.promiEvent.eventEmitter.emit('receipt', receipt)
+ 
+--- a/node_modules/truffle-contract/lib/override.js
++++ b/node_modules/truffle-contract/lib/override.js
+@@ -53,13 +53,23 @@ var override = {
+       // and reject it ourselves.
+       var receipt = override.extractReceipt(web3Error.message);
+       if (receipt){
+-        await handlers.receipt(context, receipt);
++        try {
++          await handlers.receipt(context, receipt);
++        } catch (err) {
++          // FIXME: this.removeListener is not a function is returned sometimes
++          // console.error(err);
++        }
+         return;
+       }
+ 
+       // This will run if there's a reason and no status field
+       // e.g: revert with reason ganache-cli --vmErrorsOnRPCResponse=true
+-      var reason = await Reason.get(context.params, constructor.web3);
++      var reason;
++      try {
++        await Reason.get(context.params, constructor.web3);
++      } catch (err) {
++        console.error(err);
++      }
+       if (reason) {
+         web3Error.reason = reason;
+         web3Error.message += ` -- Reason given: ${reason}.`;
+--- a/node_modules/truffle-contract/lib/reason.js
++++ b/node_modules/truffle-contract/lib/reason.js
+@@ -44,7 +44,7 @@ const reason = {
+     }
+ 
+     return new Promise(resolve => {
+-      web3.currentProvider.send(packet, (err, response) => {
++      web3.currentProvider.sendAsync(packet, (err, response) => {
+         const reasonString = reason._extract(response, web3);
+         resolve(reasonString);
+       })
