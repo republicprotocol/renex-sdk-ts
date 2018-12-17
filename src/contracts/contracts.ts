@@ -1,4 +1,4 @@
-import contract from "truffle-contract";
+const contract = require("./truffle-contract");
 
 import { Provider } from "web3/providers";
 
