@@ -144,14 +144,6 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const spendTokenDetails = await getTokenDetails(sdk, spendToken);
     const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
     const tokenAddress = await atomicAddresses(sdk, [spendToken, receiveToken]);
-    const message = {
-        orderID: orderID.toBase64(),
-        kycAddr: sdk.getAddress(),
-        sendTokenAddr: tokenAddress[0],
-        receiveTokenAddr: tokenAddress[1],
-    };
-    const signature: string = await generateSignature(sdk.getWeb3(), sdk.getAddress(), message);
-
     // Convert the fee fraction to bips by multiplying by 10000
     const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
@@ -165,8 +157,10 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
         delay: true,
         delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
         delayInfo: {
-            message,
-            signature,
+            orderID: orderID.toBase64(),
+            kycAddr: sdk.getAddress(),
+            sendTokenAddr: tokenAddress[0],
+            receiveTokenAddr: tokenAddress[1],
         }
     };
     console.log(JSON.stringify(req));
