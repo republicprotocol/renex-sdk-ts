@@ -50,7 +50,7 @@ async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, re
     if (serverTokenBalance.lt(amount)) {
         throw new Error(`Swap server has insufficient ${toToken} balance for the swap`);
     }
-    if (serverEthBalance.lt(sdk.getWeb3().utils.toWei(MIN_ETH_BALANCE))) {
+    if (serverEthBalance.lt(sdk.getWeb3().utils.toWei(MIN_ETH_BALANCE.toString()))) {
         throw new Error("Swap server has insufficient Ethereum balance for the swap");
     }
     return true;
