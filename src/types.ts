@@ -50,7 +50,6 @@ export enum Token {
 }
 
 export enum MarketPair {
-    WBTC_BTC = "WBTC/BTC",
     ETH_BTC = "ETH/BTC",
     DGX_ETH = "DGX/ETH",
     TUSD_ETH = "TUSD/ETH",
