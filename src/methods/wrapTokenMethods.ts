@@ -6,7 +6,6 @@ import RenExSDK, { NumberInput, Token } from "../index";
 import { getAtomicBalances, submitSwap, SubmitSwapResponse, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { getTokenDetails } from "./balancesMethods";
-import { darknodeFees } from "./settlementMethods";
 
 const API = "https://swapperd-kyc-server.herokuapp.com";
 const MIN_ETH_BALANCE = 0.5;
@@ -87,8 +86,6 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
     await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken);
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
 
-    // Convert the fee fraction to bips by multiplying by 10000
-    const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
     const req: SwapBlob = {
         sendTo: response[fromToken].address,
         receiveFrom: response[toToken].address,
@@ -97,7 +94,7 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         sendAmount: amountBigNumber.toString(),
         receiveAmount: amountBigNumber.toString(),
         shouldInitiateFirst: true,
-        brokerFee,
+        brokerFee: 0,
     };
     console.log(JSON.stringify(req));
     const swapResponse: SubmitSwapResponse = await submitSwap(req, sdk._networkData.network) as SubmitSwapResponse;
