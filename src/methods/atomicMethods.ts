@@ -66,7 +66,7 @@ const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promi
             const tokenDetails = await getTokenDetails(sdk, token);
             if (balances[token]) {
                 const balance = balances[token].balance;
-                return fromSmallestUnit(new BigNumber(balance), tokenDetails);
+                return fromSmallestUnit(balance, tokenDetails);
             }
             return null;
         }));
