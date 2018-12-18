@@ -1,7 +1,7 @@
 import axios from "axios";
 import BigNumber from "bignumber.js";
 
-import RenExSDK, { NumberInput } from "../index";
+import RenExSDK, { NumberInput, Token } from "../index";
 
 import { getAtomicBalances, submitSwap, SubmitSwapResponse, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
@@ -22,8 +22,8 @@ interface BalanceResponse {
 
 function wrapped(token: string): string {
     switch (token) {
-        case "BTC":
-            return "WBTC";
+        case Token.BTC:
+            return Token.WBTC;
         default:
             throw new Error(`No wrapped version of token: ${token}`);
     }
@@ -31,8 +31,8 @@ function wrapped(token: string): string {
 
 function unwrapped(token: string): string {
     switch (token) {
-        case "WBTC":
-            return "BTC";
+        case Token.WBTC:
+            return Token.BTC;
         default:
             throw new Error(`No unwrapped version of token: ${token}`);
     }
