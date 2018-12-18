@@ -29,7 +29,7 @@ interface BalanceObject {
     balance: string;
 }
 
-interface BalancesResponse {
+export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
