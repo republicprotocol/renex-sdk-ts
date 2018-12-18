@@ -102,6 +102,14 @@ export interface SwapBlob extends SwapCore {
     receiveFee?: string;
 }
 
+export interface SubmitSwapResponse {
+    swap: SwapBlob & {
+        brokerSendTokenAddr?: string;
+        brokerReceiveTokenAddr?: string;
+    };
+    signature: string;
+}
+
 interface InnerSwapReceipt extends SwapCore {
     // tslint:disable-next-line:no-any
     sendCost: any;
@@ -118,12 +126,16 @@ export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerS
     status: SwapStatus;
 }
 
-export async function submitSwap(swap: SwapBlob, network: string): Promise<string> {
+export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitSwapResponse> {
     console.log(JSON.stringify(swap));
     const resp = await axios.post(`${API}/swaps?network=${network}`, swap);
-    console.log(resp.data);
-    // FIXME: use actual swap id
-    return "swap-id";
+    if (resp.status === 201) {
+        if (swap.delay !== undefined && swap.delay) {
+            return true;
+        }
+        return resp.data as SubmitSwapResponse;
+    }
+    return false;
 }
 
 export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => boolean, network: string): Promise<SwapReceipt> {
