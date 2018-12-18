@@ -45,17 +45,6 @@ export async function fetchSwapperStatus(network: string): Promise<SwapperConnec
     }
 }
 
-interface SwapCore {
-    id?: string;
-    sendToken?: string;
-    receiveToken?: string;
-    sendAmount?: string;
-    receiveAmount?: string;
-    delay?: boolean;
-    // tslint:disable-next-line:no-any
-    delayInfo?: any;
-}
-
 export enum SwapStatus {
     INACTIVE = "inactive",
     INITIATED = "initiated",
@@ -89,6 +78,16 @@ function toSwapStatus(num: number): SwapStatus {
             throw new Error(`Invalid SwapStatus number: ${num}`);
     }
 }
+interface SwapCore {
+    id?: string;
+    sendToken?: string;
+    receiveToken?: string;
+    sendAmount?: string;
+    receiveAmount?: string;
+    delay?: boolean;
+    // tslint:disable-next-line:no-any
+    delayInfo?: any;
+}
 
 export interface SwapBlob extends SwapCore {
     minimumReceiveAmount?: string;
@@ -97,8 +96,10 @@ export interface SwapBlob extends SwapCore {
     timeLock?: number;
     secretHash?: string;
     shouldInitiateFirst?: boolean;
-    delayCallbackUrl: string;
+    delayCallbackUrl?: string;
     brokerFee?: number;
+    sendFee?: string;
+    receiveFee?: string;
 }
 
 interface InnerSwapReceipt extends SwapCore {
