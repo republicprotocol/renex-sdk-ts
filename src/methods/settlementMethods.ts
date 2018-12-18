@@ -19,7 +19,11 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
         if (storedOrder) {
             defaultStatus = !storedOrder.status ? defaultStatus : storedOrder.status;
             // If order is an atomic order, ask Swapper for status
-            if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic && atomConnected(sdk)) {
+            if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
+                // If the Swapper is disconnected we won't know the swap status
+                if (!atomConnected(sdk)) {
+                    return defaultStatus;
+                }
                 const status = await fetchAtomicOrderStatus(sdk, orderID);
                 return status;
             }
