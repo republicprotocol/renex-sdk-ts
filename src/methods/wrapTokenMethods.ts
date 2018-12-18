@@ -86,7 +86,6 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
     await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken);
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
 
-    const swapperBalances = await getAtomicBalances({ network: sdk._networkData.network });
     const req: SwapBlob = {
         sendTo: response[fromToken].address,
         receiveFrom: response[toToken].address,
@@ -94,11 +93,7 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         receiveToken: toToken,
         sendAmount: amountBigNumber.toFixed(),
         receiveAmount: amountBigNumber.toFixed(),
-        minimumReceiveAmount: amountBigNumber.toFixed(),
         shouldInitiateFirst: true,
-        brokerFee: 0,
-        brokerReceiveTokenAddr: swapperBalances[fromToken].address,
-        brokerSendTokenAddr: swapperBalances[toToken].address,
     };
     console.log(JSON.stringify(req));
     const swapResponse: SubmitSwapResponse = await submitSwap(req, sdk._networkData.network) as SubmitSwapResponse;
