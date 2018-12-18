@@ -100,13 +100,12 @@ export interface SwapBlob extends SwapCore {
     brokerFee?: number;
     sendFee?: string;
     receiveFee?: string;
+    brokerSendTokenAddr?: string;
+    brokerReceiveTokenAddr?: string;
 }
 
 export interface SubmitSwapResponse {
-    swap: SwapBlob & {
-        brokerSendTokenAddr?: string;
-        brokerReceiveTokenAddr?: string;
-    };
+    swap: SwapBlob;
     signature: string;
 }
 
