@@ -8,7 +8,7 @@ import { toSmallestUnit } from "../lib/tokens";
 import { getTokenDetails } from "./balancesMethods";
 import { darknodeFees } from "./settlementMethods";
 
-const API = "http://3.81.26.95:18515";
+const API = "https://3.81.26.95:18515";
 const MIN_ETH_BALANCE = 0.5;
 
 const ErrorCouldNotConnectSwapServer = "Could not connect to swap server";
