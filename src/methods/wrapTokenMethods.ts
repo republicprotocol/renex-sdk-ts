@@ -91,8 +91,8 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         receiveFrom: response[toToken].address,
         sendToken: fromToken,
         receiveToken: toToken,
-        sendAmount: amountBigNumber.toString(),
-        receiveAmount: amountBigNumber.toString(),
+        sendAmount: amountBigNumber.toFixed(),
+        receiveAmount: amountBigNumber.toFixed(),
         shouldInitiateFirst: true,
         brokerFee: 0,
     };

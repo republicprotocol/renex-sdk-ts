@@ -150,9 +150,9 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const req: SwapBlob = {
         sendToken: spendToken,
         receiveToken,
-        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toString(),
-        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toString(),
-        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toString(),
+        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toFixed(),
+        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toFixed(),
         brokerFee,
         delay: true,
         delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
