@@ -115,6 +115,7 @@ interface InnerSwapReceipt extends SwapCore {
     // tslint:disable-next-line:no-any
     receiveCost: any;
     timestamp: number;
+    timeLock: number;
     status: number;
 }
 
