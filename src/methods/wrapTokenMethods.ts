@@ -49,11 +49,16 @@ async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, re
     const initiateFee = new BigNumber(10000);
     const serverTokenBalance = BigNumber.max(0, new BigNumber(response[toToken].balance).minus(initiateFee));
     const serverEthBalance = new BigNumber(response.ETH.balance);
+    let err;
     if (serverTokenBalance.lt(amount)) {
-        throw new Error(`Swap server has insufficient ${toToken} balance for the swap`);
+        err = `Swap server has insufficient ${toToken} balance for the swap`;
+        console.error(err);
+        throw new Error(err);
     }
     if (serverEthBalance.lt(sdk.getWeb3().utils.toWei(MIN_ETH_BALANCE.toString()))) {
-        throw new Error("Swap server has insufficient Ethereum balance for the swap");
+        err = "Swap server has insufficient Ethereum balance for the swap";
+        console.error(err);
+        throw new Error(err);
     }
     return true;
 }
