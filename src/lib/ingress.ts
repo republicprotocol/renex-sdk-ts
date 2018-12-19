@@ -28,7 +28,7 @@ const NULL = "0x0000000000000000000000000000000000000000";
 
 export enum OrderSettlement {
     RenEx = 1,
-    RenExAtomic = 2,
+    RenExAtomic = 3,
 }
 
 function orderSettlementMapper(settlement: RenExOrderSettlement) {
