@@ -80,10 +80,10 @@ function toSwapStatus(num: number): SwapStatus {
 }
 interface SwapCore {
     id?: string;
-    sendToken?: string;
-    receiveToken?: string;
-    sendAmount?: string;
-    receiveAmount?: string;
+    sendToken: string;
+    receiveToken: string;
+    sendAmount: string;
+    receiveAmount: string;
     delay?: boolean;
     // tslint:disable-next-line:no-any
     delayInfo?: any;
