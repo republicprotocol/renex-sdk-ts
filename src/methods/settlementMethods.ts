@@ -7,7 +7,7 @@ import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
 import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
-import { atomConnected, fetchAtomicOrderStatus } from "./atomicMethods";
+import { atomConnected, fetchAtomicOrder, fetchAtomicOrderStatus } from "./atomicMethods";
 import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
 
@@ -114,16 +114,32 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     const details = await sdk._contracts.renExSettlement.getMatchDetails(orderID.toHex());
     const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
 
-    if (!details.settled) {
+    let fee: string;
+    let spentToken: string;
+    let spentVolume: string;
+    let receivedToken: string;
+    let receivedVolume: string;
+    if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
+        if (details.settled) {
+            return undefined;
+        }
+        fee = (details.orderIsBuy) ? details.priorityFee : details.secondaryFee;
+        spentToken = idToToken(new BN((details.orderIsBuy) ? details.priorityToken : details.secondaryToken).toNumber());
+        spentVolume = (details.orderIsBuy) ? details.priorityVolume : details.secondaryVolume;
+        receivedToken = idToToken(new BN((details.orderIsBuy) ? details.secondaryToken : details.priorityToken).toNumber());
+        receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
+    } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
+        const swap = await fetchAtomicOrder(sdk, orderID);
+        fee = swap.sendCost[swap.sendToken];
+        spentToken = swap.sendToken;
+        spentVolume = new BigNumber(swap.sendAmount).plus(swap.sendCost[swap.sendToken]).toFixed();
+        receivedToken = swap.receiveToken;
+        receivedVolume = new BigNumber(swap.receiveAmount).minus(swap.receiveCost[swap.receiveToken]).toFixed();
+    } else {
         return undefined;
     }
 
-    const fee = (details.orderIsBuy) ? details.priorityFee : details.secondaryFee;
-    const spentToken = idToToken(new BN((details.orderIsBuy) ? details.priorityToken : details.secondaryToken).toNumber());
-    const spentVolume = (details.orderIsBuy) ? details.priorityVolume : details.secondaryVolume;
     const spentTokenDetails = await getTokenDetails(sdk, spentToken);
-    const receivedToken = idToToken(new BN((details.orderIsBuy) ? details.secondaryToken : details.priorityToken).toNumber());
-    const receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
     const receivedTokenDetails = await getTokenDetails(sdk, receivedToken);
 
     const orderMatchDetails: MatchDetails = {
