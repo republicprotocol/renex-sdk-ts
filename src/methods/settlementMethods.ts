@@ -7,7 +7,7 @@ import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
 import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
-import { atomConnected, fetchAtomicOrder, fetchAtomicOrderStatus } from "./atomicMethods";
+import { atomConnected, fetchAtomicOrder, fetchAtomicOrderStatus, toOrderStatus } from "./atomicMethods";
 import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
 
@@ -130,6 +130,9 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
         receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
     } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
         const swap = await fetchAtomicOrder(sdk, orderID);
+        if (toOrderStatus(swap.status) !== OrderStatus.SETTLED) {
+            return undefined;
+        }
         fee = swap.sendCost[swap.sendToken];
         spentToken = swap.sendToken;
         spentVolume = new BigNumber(swap.sendAmount).plus(swap.sendCost[swap.sendToken]).toFixed();
