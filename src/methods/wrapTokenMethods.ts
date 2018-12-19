@@ -45,7 +45,9 @@ function unwrapped(token: string): string {
  * @param {string} fromToken
  */
 async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, response: BalanceResponse, toToken: string): Promise<boolean> {
-    const serverTokenBalance = new BigNumber(response[toToken].balance);
+    // The fee required to be in the server for initiation
+    const initiateFee = new BigNumber(10000);
+    const serverTokenBalance = BigNumber.max(0, new BigNumber(response[toToken].balance).minus(initiateFee));
     const serverEthBalance = new BigNumber(response.ETH.balance);
     if (serverTokenBalance.lt(amount)) {
         throw new Error(`Swap server has insufficient ${toToken} balance for the swap`);
