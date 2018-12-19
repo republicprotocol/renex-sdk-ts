@@ -187,7 +187,7 @@ export async function fetchAtomicOrder(sdk: RenExSDK, orderID: EncodedData): Pro
     }
 }
 
-function toOrderStatus(status: SwapStatus): OrderStatus {
+export function toOrderStatus(status: SwapStatus): OrderStatus {
     switch (status) {
         case SwapStatus.INACTIVE:
         case SwapStatus.INITIATED:
