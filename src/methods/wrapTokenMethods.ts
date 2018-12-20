@@ -102,14 +102,11 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         receiveAmount: amountBigNumber.toFixed(),
         shouldInitiateFirst: true,
     };
-    console.log(JSON.stringify(req));
     const swapResponse: SubmitSwapResponse = await submitSwap(req, sdk._networkData.network) as SubmitSwapResponse;
     try {
         const finalResponse = await axios.post(`${API}/swap`, swapResponse);
-        console.log(JSON.stringify(finalResponse));
         return finalResponse;
     } catch (error) {
-        console.error(error);
         throw new Error(ErrorCouldNotConnectSwapServer);
     }
 }
