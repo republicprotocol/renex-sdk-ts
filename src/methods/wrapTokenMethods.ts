@@ -9,6 +9,7 @@ import { getTokenDetails } from "./balancesMethods";
 
 const API = "https://swapperd-kyc-server.herokuapp.com";
 const MIN_ETH_BALANCE = 0.5;
+const WRAPPING_FEE_BIPS = 10;
 
 const ErrorCouldNotConnectSwapServer = "Could not connect to swap server";
 
@@ -92,6 +93,7 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
     const amountBigNumber = toSmallestUnit(amount, fromTokenDetails);
     await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken);
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
+    const brokerFee = (await wrappingFees(sdk)).times(10000).toNumber();
 
     const req: SwapBlob = {
         sendTo: response[fromToken].address,
@@ -101,6 +103,10 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         sendAmount: amountBigNumber.toFixed(),
         receiveAmount: amountBigNumber.toFixed(),
         shouldInitiateFirst: true,
+        // FIXME: The broker is currently the KYC swap server but in the future it could be different
+        brokerFee,
+        brokerSendTokenAddr: response[fromToken].address,
+        brokerReceiveTokenAddr: response[toToken].address,
     };
     const swapResponse: SubmitSwapResponse = await submitSwap(req, sdk._networkData.network) as SubmitSwapResponse;
     try {
@@ -121,4 +127,8 @@ export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: string
 export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<any> {
     const toToken = unwrapped(fromToken);
     return convert(sdk, amount, fromToken, toToken);
+}
+
+export async function wrappingFees(sdk: RenExSDK): Promise<BigNumber> {
+    return Promise.resolve(new BigNumber(WRAPPING_FEE_BIPS).dividedBy(10000));
 }
