@@ -22,7 +22,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
-import { unwrap, wrap } from "./methods/wrapTokenMethods";
+import { unwrap, wrap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
@@ -185,6 +185,7 @@ export class RenExSDK {
         cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
+    public fetchWrappingFeePercent = (): Promise<BigNumber> => wrappingFees(this);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
     public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
