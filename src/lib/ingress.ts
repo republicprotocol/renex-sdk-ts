@@ -361,7 +361,9 @@ export async function buildOrderMapping(
                 try {
                     darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
                 } catch (error) {
-                    Promise.reject(error);
+                    // We don't want everything to crash if even one darknode is malicious
+                    // Log the error but keep going
+                    console.error(error);
                 }
 
                 const [
