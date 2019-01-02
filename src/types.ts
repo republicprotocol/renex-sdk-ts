@@ -21,7 +21,6 @@ export enum OrderStatus {
     CANCELED = "CANCELED",
     SETTLED = "SETTLED",
     SLASHED = "SLASHED",
-    EXPIRED = "EXPIRED",
 }
 
 export enum OrderSettlement {
@@ -55,7 +54,6 @@ export interface OrderInputs {
     type?: OrderInputsAll["type"];
     orderSettlement?: OrderInputsAll["orderSettlement"];
     nonce?: OrderInputsAll["nonce"];
-    expiry?: OrderInputsAll["expiry"];
 }
 
 // OrderInputsAll extends OrderInputs and sets optional fields to be required.
@@ -69,7 +67,6 @@ export interface OrderInputsAll extends OrderInputs {
     type: OrderType;
     orderSettlement: OrderSettlement;
     nonce: BN;
-    expiry: number;
 }
 
 export interface ComputedOrderDetails {

@@ -22,9 +22,6 @@ import { usableBalance } from "./balancesMethods";
 const PRICE_OFFSET = 12;
 const VOLUME_OFFSET = 12;
 
-// Default time an order is open for (24 hours)
-const DEFAULT_EXPIRY_OFFSET = 60 * 60 * 24;
-
 const populateOrderDefaults = (
     sdk: RenExSDK,
     orderInputs: OrderInputs,
@@ -39,7 +36,6 @@ const populateOrderDefaults = (
 
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
-        expiry: orderInputs.expiry !== undefined ? orderInputs.expiry : unixSeconds + DEFAULT_EXPIRY_OFFSET,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };
@@ -142,7 +138,6 @@ export const openOrder = async (
     let ingressOrder = new ingress.Order({
         type: orderInputs.type,
         orderSettlement: orderInputs.orderSettlement,
-        expiry: orderInputs.expiry,
         nonce: orderInputs.nonce,
 
         parity,
