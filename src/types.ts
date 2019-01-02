@@ -19,6 +19,7 @@ export enum OrderStatus {
     CANCELED = "CANCELED",
     SETTLED = "SETTLED",
     SLASHED = "SLASHED",
+    EXPIRED = "EXPIRED",
 }
 
 export enum OrderSettlement {
