@@ -36,6 +36,7 @@ const populateOrderDefaults = (
 
         orderSettlement: orderInputs.orderSettlement ? orderInputs.orderSettlement : OrderSettlement.RenEx,
         nonce: orderInputs.nonce !== undefined ? orderInputs.nonce : ingress.randomNonce(() => new BN(sdk.web3().utils.randomHex(8).slice(2), "hex")),
+        expiry: 0,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };
