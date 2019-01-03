@@ -250,7 +250,8 @@ export const openOrder = async (
         simpleConsole.log("Order confirmed.");
     }
 
-    const traderOrder = {
+    const traderOrder: TraderOrder = {
+        version: 1,
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.getAddress(),

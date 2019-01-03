@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
+import { migrateV0toV1 } from "../migration/migration";
 import { BalanceAction, TraderOrder } from "../types";
 
 export const serializeTraderOrder = (order: TraderOrder): string => {
@@ -9,6 +10,9 @@ export const serializeTraderOrder = (order: TraderOrder): string => {
 
 export const deserializeTraderOrder = (orderString: string): TraderOrder => {
     const order: TraderOrder = JSON.parse(orderString);
+    if (order.version === undefined) {
+        return migrateV0toV1(orderString);
+    }
 
     if (order.matchDetails) {
         order.matchDetails.fee = new BigNumber(order.matchDetails.fee);
