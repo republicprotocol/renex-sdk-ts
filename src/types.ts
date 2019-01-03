@@ -68,6 +68,8 @@ export interface OrderInputsAll extends OrderInputs {
     type: OrderType;
     orderSettlement: OrderSettlement;
     nonce: BN;
+    // This may have been set in the past but now defaults to zero
+    expiry: number;
 }
 
 export interface ComputedOrderDetails {
