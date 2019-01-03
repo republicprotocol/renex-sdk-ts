@@ -11,7 +11,11 @@ export const serializeTraderOrder = (order: TraderOrder): string => {
 export const deserializeTraderOrder = (orderString: string): TraderOrder => {
     const order: TraderOrder = JSON.parse(orderString);
     if (order.version === undefined) {
-        return migrateV0toV1(orderString);
+        try {
+            return migrateV0toV1(orderString);
+        } catch (error) {
+            // We probably errored because it's already the latest version
+        }
     }
 
     if (order.matchDetails) {
