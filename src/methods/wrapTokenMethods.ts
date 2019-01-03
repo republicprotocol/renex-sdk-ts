@@ -9,7 +9,7 @@ import { getTokenDetails } from "./balancesMethods";
 
 const API = "https://swapperd-kyc-server.herokuapp.com";
 const MIN_ETH_BALANCE = 0.5;
-const WRAPPING_FEE_BIPS = 0;
+const WRAPPING_FEE_BIPS = 10;
 
 const ErrorCouldNotConnectSwapServer = "Could not connect to swap server";
 
