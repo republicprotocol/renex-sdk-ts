@@ -135,7 +135,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
         }
         fee = swap.sendCost[swap.sendToken];
         spentToken = swap.sendToken;
-        spentVolume = new BigNumber(swap.sendAmount).plus(swap.sendCost[swap.sendToken]).toFixed();
+        spentVolume = new BigNumber(swap.sendAmount).toFixed();
         receivedToken = swap.receiveToken;
         receivedVolume = new BigNumber(swap.receiveAmount).minus(swap.receiveCost[swap.receiveToken]).toFixed();
     } else {
