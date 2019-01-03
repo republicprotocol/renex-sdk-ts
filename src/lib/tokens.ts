@@ -2,14 +2,26 @@ import RenExSDK from "../index";
 
 import { BigNumber } from "bignumber.js";
 import BN from "bn.js";
-import { Token, TokenCode, TokenDetails } from "../types";
+import { NumberInput, Token, TokenCode, TokenDetails } from "../types";
 
-export function toSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
-    return amount.times(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+export function toSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
+    let decimals: number;
+    if (typeof tokenDetails === "number") {
+        decimals = tokenDetails;
+    } else {
+        decimals = tokenDetails.decimals;
+    }
+    return new BigNumber(amount).times(new BigNumber(10).exponentiatedBy(decimals));
 }
 
-export function fromSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
-    return amount.div(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+export function fromSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
+    let decimals: number;
+    if (typeof tokenDetails === "number") {
+        decimals = tokenDetails;
+    } else {
+        decimals = tokenDetails.decimals;
+    }
+    return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
 }
 
 export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
