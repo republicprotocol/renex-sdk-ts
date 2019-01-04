@@ -37,6 +37,7 @@ const populateOrderDefaults = (
         volume: new BigNumber(orderInputs.volume),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : minVolume,
+        expiry: 0,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };
