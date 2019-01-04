@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { OrderSettlement, OrderSide, OrderType, Token, TokenCode } from "../types";
+import { OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TokenCode } from "../types";
 
 interface ComputedOrderDetails {
     receiveVolume: BN;
@@ -140,6 +140,27 @@ export function OrderSettlementMapper(settlement: V0OrderSettlement): OrderSettl
             return OrderSettlement.RenEx;
         case V0OrderSettlement.RenExAtomic:
             return OrderSettlement.RenExAtomic;
+    }
+}
+
+export function OrderStatusMapper(status: V0OrderStatus): OrderStatus {
+    switch (status) {
+        case V0OrderStatus.NOT_SUBMITTED:
+            return OrderStatus.NOT_SUBMITTED;
+        case V0OrderStatus.FAILED_TO_SETTLE:
+            return OrderStatus.FAILED_TO_SETTLE;
+        case V0OrderStatus.OPEN:
+            return OrderStatus.OPEN;
+        case V0OrderStatus.CONFIRMED:
+            return OrderStatus.CONFIRMED;
+        case V0OrderStatus.CANCELED:
+            return OrderStatus.CANCELED;
+        case V0OrderStatus.SETTLED:
+            return OrderStatus.SETTLED;
+        case V0OrderStatus.SLASHED:
+            return OrderStatus.SLASHED;
+        case V0OrderStatus.EXPIRED:
+            return OrderStatus.EXPIRED;
     }
 }
 
