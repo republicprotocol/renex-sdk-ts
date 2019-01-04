@@ -11,6 +11,7 @@ import { ERC20, withProvider } from "../contracts/contracts";
 import { ErrCanceledByUser, ErrFailedBalanceCheck, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
+import { LATEST_BALANCE_ACTION_VERSION } from "../storage/serializers";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 import { defaultTransactionOptions } from "./orderbookMethods";
@@ -83,7 +84,7 @@ export const deposit = async (
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
-        version: 1,
+        version: LATEST_BALANCE_ACTION_VERSION,
         action: BalanceActionType.Deposit,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
@@ -203,7 +204,7 @@ export const withdraw = async (
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
-        version: 1,
+        version: LATEST_BALANCE_ACTION_VERSION,
         action: BalanceActionType.Withdraw,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),

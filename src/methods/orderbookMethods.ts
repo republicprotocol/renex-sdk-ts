@@ -12,6 +12,7 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
+import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
 import { atomicBalances } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
@@ -252,7 +253,7 @@ export const openOrder = async (
     }
 
     const traderOrder: TraderOrder = {
-        version: 1,
+        version: LATEST_TRADER_ORDER_VERSION,
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.getAddress(),

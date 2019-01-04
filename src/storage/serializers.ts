@@ -4,6 +4,9 @@ import BN from "bn.js";
 import { migrateV0BalanceActiontoV1, migrateV0TraderOrdertoV1 } from "../migration/migration";
 import { BalanceAction, TraderOrder } from "../types";
 
+export const LATEST_TRADER_ORDER_VERSION = 1;
+export const LATEST_BALANCE_ACTION_VERSION = 1;
+
 export const serializeTraderOrder = (order: TraderOrder): string => {
     return JSON.stringify(order);
 };

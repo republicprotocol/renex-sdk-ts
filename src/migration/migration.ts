@@ -1,4 +1,5 @@
 import { fromSmallestUnit } from "../lib/tokens";
+import { LATEST_BALANCE_ACTION_VERSION, LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { BalanceAction, MatchDetails, TraderOrder } from "../types";
 import { BalanceActionMapper, deserializeV0BalanceAction, deserializeV0TraderOrder, idToToken, OrderSettlementMapper, OrderSideMapper, OrderStatusMapper, OrderTypeMapper, tokenToDigits, TransactionStatusMapper, V0BalanceAction, V0TraderOrder } from "./version0Types";
 
@@ -6,7 +7,7 @@ import { BalanceActionMapper, deserializeV0BalanceAction, deserializeV0TraderOrd
 export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
     let matchDetails: MatchDetails | undefined;
     const parsedOrder = JSON.parse(orderString);
-    if (parsedOrder.version === 1) {
+    if (parsedOrder.version === LATEST_TRADER_ORDER_VERSION) {
         return parsedOrder;
     }
 
@@ -35,7 +36,7 @@ export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
     const priorityToken = order.orderInputs.receiveToken > order.orderInputs.spendToken ? order.orderInputs.spendToken : order.orderInputs.receiveToken;
 
     const newOrder: TraderOrder = {
-        version: 1,
+        version: LATEST_TRADER_ORDER_VERSION,
         id: order.id,
         trader: order.trader,
         status: OrderStatusMapper(order.status),
@@ -67,7 +68,7 @@ export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
 
 export function migrateV0BalanceActiontoV1(balanceActionString: string): BalanceAction {
     const parsedBalanceAction = JSON.parse(balanceActionString);
-    if (parsedBalanceAction.version === 1) {
+    if (parsedBalanceAction.version === LATEST_BALANCE_ACTION_VERSION) {
         return parsedBalanceAction;
     }
 
@@ -75,7 +76,7 @@ export function migrateV0BalanceActiontoV1(balanceActionString: string): Balance
     const token = idToToken(action.token);
     const amount = fromSmallestUnit(action.amount.toString(), tokenToDigits(token));
     const newBalanceAction: BalanceAction = {
-        version: 1,
+        version: LATEST_BALANCE_ACTION_VERSION,
         action: BalanceActionMapper(action.action),
         amount,
         time: action.time,
