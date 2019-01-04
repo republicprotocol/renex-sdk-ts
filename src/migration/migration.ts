@@ -4,7 +4,7 @@ import { BalanceAction, MatchDetails, TraderOrder } from "../types";
 import { BalanceActionMapper, deserializeV0BalanceAction, deserializeV0TraderOrder, idToToken, OrderSettlementMapper, OrderSideMapper, OrderStatusMapper, OrderTypeMapper, tokenToDigits, TransactionStatusMapper, V0BalanceAction, V0TraderOrder } from "./version0Types";
 
 // Migrate stored orders for backwards compatibility
-export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
+export function migrateV0TraderOrder(orderString: string): TraderOrder {
     let matchDetails: MatchDetails | undefined;
     const parsedOrder = JSON.parse(orderString);
     if (parsedOrder.version === LATEST_TRADER_ORDER_VERSION) {
@@ -66,7 +66,7 @@ export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
     return newOrder;
 }
 
-export function migrateV0BalanceActiontoV1(balanceActionString: string): BalanceAction {
+export function migrateV0BalanceAction(balanceActionString: string): BalanceAction {
     const parsedBalanceAction = JSON.parse(balanceActionString);
     if (parsedBalanceAction.version === LATEST_BALANCE_ACTION_VERSION) {
         return parsedBalanceAction;
