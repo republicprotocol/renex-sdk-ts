@@ -120,7 +120,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     let receivedToken: string;
     let receivedVolume: string;
     if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
-        if (details.settled) {
+        if (!details.settled) {
             return undefined;
         }
         fee = (details.orderIsBuy) ? details.priorityFee : details.secondaryFee;
