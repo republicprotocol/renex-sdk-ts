@@ -78,6 +78,17 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promi
                 }
             }
         }
+    } else if (orderbookStatus === OrderStatus.OPEN) {
+        // Check if order is expired
+        const storedOrder = await sdk._storage.getOrder(orderID64);
+        if (storedOrder &&
+            storedOrder.orderInputs.expiry !== 0 &&
+            // Note: Date.now() returns milliseconds
+            (storedOrder.orderInputs.expiry < (Date.now() / 1000))) {
+            orderStatus = OrderStatus.EXPIRED;
+        } else {
+            orderStatus = orderbookStatus;
+        }
     } else {
         orderStatus = orderbookStatus;
     }
