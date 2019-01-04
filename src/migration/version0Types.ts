@@ -1,7 +1,58 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { OrderSettlement, OrderSide, OrderStatus, OrderType, Token, TokenCode } from "../types";
+import { BalanceAction, BalanceActionType, OrderSettlement,OrderSide, OrderStatus, OrderType, Token, TokenCode, TransactionStatus } from "../types";
+
+enum V0BalanceActionType {
+    Withdraw = "withdraw",
+    Deposit = "deposit",
+}
+
+enum V0TransactionStatus {
+    Pending = "pending",
+    Done = "done",
+    Failed = "failed",
+    Replaced = "replaced",
+}
+
+export interface V0BalanceAction {
+    action: V0BalanceActionType;
+    amount: BN;
+    time: number;
+    status: V0TransactionStatus;
+    token: number;
+    trader: string;
+    txHash: string;
+    nonce: number | undefined;
+}
+
+export const deserializeV0BalanceAction = (balanceActionString: string): V0BalanceAction => {
+    const balanceAction: V0BalanceAction = JSON.parse(balanceActionString);
+    balanceAction.amount = new BN(balanceAction.amount, "hex");
+    return balanceAction;
+};
+
+export function BalanceActionMapper(actionType: V0BalanceActionType): BalanceActionType {
+    switch (actionType) {
+        case V0BalanceActionType.Deposit:
+            return BalanceActionType.Deposit;
+        case V0BalanceActionType.Withdraw:
+            return BalanceActionType.Withdraw;
+    }
+}
+
+export function TransactionStatusMapper(status: V0TransactionStatus): TransactionStatus {
+    switch (status) {
+        case V0TransactionStatus.Pending:
+            return TransactionStatus.Pending;
+        case V0TransactionStatus.Done:
+            return TransactionStatus.Done;
+        case V0TransactionStatus.Failed:
+            return TransactionStatus.Failed;
+        case V0TransactionStatus.Replaced:
+            return TransactionStatus.Replaced;
+    }
+}
 
 interface ComputedOrderDetails {
     receiveVolume: BN;

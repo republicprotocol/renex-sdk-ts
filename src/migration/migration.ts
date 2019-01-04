@@ -1,6 +1,6 @@
 import { fromSmallestUnit } from "../lib/tokens";
-import { MatchDetails, TraderOrder } from "../types";
-import { deserializeV0TraderOrder, idToToken, OrderSettlementMapper, OrderSideMapper, OrderStatusMapper, OrderTypeMapper, tokenToDigits, V0TraderOrder } from "./version0Types";
+import { BalanceAction, MatchDetails, TraderOrder } from "../types";
+import { BalanceActionMapper, deserializeV0BalanceAction, deserializeV0TraderOrder, idToToken, OrderSettlementMapper, OrderSideMapper, OrderStatusMapper, OrderTypeMapper, tokenToDigits, TransactionStatusMapper, V0BalanceAction, V0TraderOrder } from "./version0Types";
 
 // Migrate stored orders for backwards compatibility
 export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
@@ -63,4 +63,27 @@ export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
         transactionHash: order.transactionHash,
     };
     return newOrder;
+}
+
+export function migrateV0BalanceActiontoV1(balanceActionString: string): BalanceAction {
+    const parsedBalanceAction = JSON.parse(balanceActionString);
+    if (parsedBalanceAction.version === 1) {
+        return parsedBalanceAction;
+    }
+
+    const action: V0BalanceAction = deserializeV0BalanceAction(balanceActionString);
+    const token = idToToken(action.token);
+    const amount = fromSmallestUnit(action.amount.toString(), tokenToDigits(token));
+    const newBalanceAction: BalanceAction = {
+        version: 1,
+        action: BalanceActionMapper(action.action),
+        amount,
+        time: action.time,
+        status: TransactionStatusMapper(action.status),
+        token,
+        trader: action.trader,
+        txHash: action.txHash,
+        nonce: action.nonce,
+    };
+    return newBalanceAction;
 }

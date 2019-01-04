@@ -83,6 +83,7 @@ export const deposit = async (
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
+        version: 1,
         action: BalanceActionType.Deposit,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
@@ -202,6 +203,7 @@ export const withdraw = async (
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
+        version: 1,
         action: BalanceActionType.Withdraw,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
