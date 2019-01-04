@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { BalanceAction, BalanceActionType, OrderSettlement,OrderSide, OrderStatus, OrderType, Token, TokenCode, TransactionStatus } from "../types";
+import { BalanceActionType, OrderSettlement,OrderSide, OrderStatus, OrderType, Token, TokenCode, TransactionStatus } from "../types";
 
 enum V0BalanceActionType {
     Withdraw = "withdraw",
