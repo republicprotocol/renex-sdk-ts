@@ -15,7 +15,8 @@ export function migrateV0TraderOrder(orderString: string): TraderOrder {
     if (order.matchDetails) {
         const receivedToken = idToToken(order.matchDetails.receivedToken);
         const spentToken = idToToken(order.matchDetails.spentToken);
-        const fee = fromSmallestUnit(order.matchDetails.fee.toString(), tokenToDigits(receivedToken));
+        // The fee is using the spent token to calculate the original spent amount
+        const fee = fromSmallestUnit(order.matchDetails.fee.toString(), tokenToDigits(spentToken));
         const receivedVolume = fromSmallestUnit(order.matchDetails.receivedVolume.toString(), tokenToDigits(receivedToken));
         const spentVolume = fromSmallestUnit(order.matchDetails.spentVolume.toString(), tokenToDigits(spentToken));
         matchDetails = {
