@@ -58,6 +58,7 @@ export function migrateV0toV1(orderString: string): TraderOrder {
             volume: fromSmallestUnit(order.orderInputs.volume.toString(), tokenToDigits(idToToken(nonPriorityToken))),
             minVolume: fromSmallestUnit(order.orderInputs.minimumVolume.toString(), tokenToDigits(idToToken(nonPriorityToken))),
             type: OrderTypeMapper(order.orderInputs.type),
+            expiry: order.orderInputs.expiry,
         },
         transactionHash: order.transactionHash,
     };
