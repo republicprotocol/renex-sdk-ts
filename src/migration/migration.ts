@@ -3,7 +3,7 @@ import { MatchDetails, TraderOrder } from "../types";
 import { deserializeV0TraderOrder, idToToken, OrderSettlementMapper, OrderSideMapper, OrderStatusMapper, OrderTypeMapper, tokenToDigits, V0TraderOrder } from "./version0Types";
 
 // Migrate stored orders for backwards compatibility
-export function migrateV0toV1(orderString: string): TraderOrder {
+export function migrateV0TraderOrdertoV1(orderString: string): TraderOrder {
     let matchDetails: MatchDetails | undefined;
     const parsedOrder = JSON.parse(orderString);
     if (parsedOrder.version === 1) {

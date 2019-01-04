@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { migrateV0toV1 } from "../migration/migration";
+import { migrateV0TraderOrdertoV1 } from "../migration/migration";
 import { BalanceAction, TraderOrder } from "../types";
 
 export const serializeTraderOrder = (order: TraderOrder): string => {
@@ -12,7 +12,7 @@ export const deserializeTraderOrder = (orderString: string): TraderOrder => {
     const order: TraderOrder = JSON.parse(orderString);
     if (order.version === undefined) {
         try {
-            return migrateV0toV1(orderString);
+            return migrateV0TraderOrdertoV1(orderString);
         } catch (error) {
             // We probably errored because it's already the latest version
         }
