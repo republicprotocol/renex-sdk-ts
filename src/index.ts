@@ -20,7 +20,7 @@ import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, wit
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
-import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
+import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
@@ -73,7 +73,7 @@ export class RenExSDK {
         resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
         authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
-        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
+        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(this, tokens),
     };
 
     public utils = {
@@ -154,8 +154,8 @@ export class RenExSDK {
 
     public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
     public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
-    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
-    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
+    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => fetchOrderStatus(this, orderID);
+    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails | undefined> => matchDetails(this, orderID);
     public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
     public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 
