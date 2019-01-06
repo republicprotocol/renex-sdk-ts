@@ -19,6 +19,7 @@ export enum OrderStatus {
     CANCELED = "CANCELED",
     SETTLED = "SETTLED",
     SLASHED = "SLASHED",
+    EXPIRED = "EXPIRED",
 }
 
 export enum OrderSettlement {
@@ -89,6 +90,8 @@ export interface OrderInputsAll extends OrderInputs {
     // Change to non-optional
     minVolume: BigNumber;
     type: OrderType;
+    // This may have been set in the past but now defaults to zero
+    expiry: number;
 }
 
 export interface ComputedOrderDetails {
