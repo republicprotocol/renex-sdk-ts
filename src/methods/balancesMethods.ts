@@ -5,7 +5,7 @@ import RenExSDK from "../index";
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { fromSmallestUnit, tokenToID } from "../lib/tokens";
-import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
+import { BalanceActionType, BalanceDetails, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
 import { fetchBalanceActions, fetchTraderOrders } from "./storageMethods";
 
 type MaybeBigNumber = BigNumber | null;
@@ -75,23 +75,12 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
                 order.status === OrderStatus.OPEN ||
                 order.status === OrderStatus.CONFIRMED
             ) {
-                if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
-                    const token = order.computedOrderDetails.spendToken;
-                    const usedTokenBalance = usedFunds.get(token);
-                    if (usedTokenBalance) {
-                        usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
-                    } else {
-                        usedFunds.set(token, order.computedOrderDetails.spendVolume);
-                    }
+                const token = order.computedOrderDetails.spendToken;
+                const usedTokenBalance = usedFunds.get(token);
+                if (usedTokenBalance) {
+                    usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
                 } else {
-                    // Include atomic swap fees in usable balance calculation
-                    const token = order.computedOrderDetails.feeToken;
-                    const feeTokenBalance = usedFunds.get(token);
-                    if (feeTokenBalance) {
-                        usedFunds.set(token, feeTokenBalance.plus(order.computedOrderDetails.feeAmount));
-                    } else {
-                        usedFunds.set(token, order.computedOrderDetails.feeAmount);
-                    }
+                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
                 }
             }
         });
