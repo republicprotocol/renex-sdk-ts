@@ -117,6 +117,8 @@ export interface Order {
 // If TraderOrder is changed, then it's serialize / deserialize functions should
 // be updated as well.
 export interface TraderOrder extends Order {
+    // Some older versions of TraderOrder do not have version
+    version?: number;
     readonly computedOrderDetails: ComputedOrderDetails;
     readonly orderInputs: OrderInputsAll;
     readonly transactionHash: string;
@@ -182,6 +184,8 @@ export interface WithdrawTransactionOptions extends TransactionOptions {
 // If BalanceAction is changed, then it's serialize / deserialize functions
 // should be updated as well.
 export interface BalanceAction {
+    // Some older versions of BalanceAction do not have version
+    version?: number;
     action: BalanceActionType;
     amount: BigNumber;
     time: number;
