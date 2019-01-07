@@ -25,6 +25,7 @@ export interface NetworkData {
         REN: string;
         OMG: string;
         ZRX: string;
+        WBTC: string;
     };
 }
 

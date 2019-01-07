@@ -22,6 +22,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+import { unwrap, wrap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
@@ -74,6 +75,10 @@ export class RenExSDK {
         authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
         fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(this, tokens),
+        // tslint:disable-next-line:no-any
+        wrap: (amount: NumberInput, token: TokenCode): Promise<any> => wrap(this, amount, token),
+        // tslint:disable-next-line:no-any
+        unwrap: (amount: NumberInput, token: TokenCode): Promise<any> => unwrap(this, amount, token),
     };
 
     public utils = {
@@ -132,7 +137,8 @@ export class RenExSDK {
             .set(Token.TUSD, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
             .set(Token.REN, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
             .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
-            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
+            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }))
+            .set(Token.WBTC, Promise.resolve({ addr: this._networkData.tokens.WBTC, decimals: new BN(8), registered: true }));
 
         this._storage = this.setupStorageProvider();
 
@@ -179,6 +185,7 @@ export class RenExSDK {
         cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
+    public fetchWrappingFeePercent = (): Promise<BigNumber> => wrappingFees(this);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
     public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 

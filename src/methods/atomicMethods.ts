@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperStatus, findMatchingSwapReceipt, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapStatus } from "../lib/swapper";
+import { fetchSwapperStatus, findMatchingSwapReceipt, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -66,7 +66,7 @@ const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promi
             const tokenDetails = await getTokenDetails(sdk, token);
             if (balances[token]) {
                 const balance = balances[token].balance;
-                return fromSmallestUnit(new BigNumber(balance), tokenDetails);
+                return fromSmallestUnit(balance, tokenDetails);
             }
             return null;
         }));
@@ -150,9 +150,9 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const req: SwapBlob = {
         sendToken: spendToken,
         receiveToken,
-        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toString(),
-        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toString(),
-        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toString(),
+        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toFixed(),
+        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toFixed(),
         brokerFee,
         delay: true,
         delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
@@ -168,6 +168,11 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
 };
 
 export async function fetchAtomicOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
+    const swap = await fetchAtomicOrder(sdk, orderID);
+    return toOrderStatus(swap.status);
+}
+
+export async function fetchAtomicOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
     try {
         const swap = await findMatchingSwapReceipt((swapReceipt) => {
             try {
@@ -176,13 +181,13 @@ export async function fetchAtomicOrderStatus(sdk: RenExSDK, orderID: EncodedData
                 return false;
             }
         }, sdk._networkData.network);
-        return toOrderStatus(swap.status);
+        return swap;
     } catch (error) {
         throw new Error(`Couldn't find a swap with matching orderID: ${orderID.toBase64()}`);
     }
 }
 
-function toOrderStatus(status: SwapStatus): OrderStatus {
+export function toOrderStatus(status: SwapStatus): OrderStatus {
     switch (status) {
         case SwapStatus.INACTIVE:
         case SwapStatus.INITIATED:

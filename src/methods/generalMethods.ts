@@ -1,5 +1,4 @@
 import axios from "axios";
-import BigNumber from "bignumber.js";
 
 import { TransactionReceipt } from "web3/types";
 
@@ -14,7 +13,7 @@ import { getTokenDetails } from "./balancesMethods";
 export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
     const gasPrice = await getGasPrice(sdk);
     const tokenDetails = await getTokenDetails(sdk, token);
-    const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
+    const value = toSmallestUnit(valueBig, tokenDetails).toFixed();
     if (token === Token.ETH) {
         sdk.getWeb3().eth.sendTransaction({
             from: sdk.getAddress(),
