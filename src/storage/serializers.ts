@@ -17,7 +17,7 @@ export const deserializeTraderOrder = (orderString: string): TraderOrder => {
         try {
             return migrateV0TraderOrder(orderString);
         } catch (error) {
-            // We probably errored because it's already the latest version
+            console.error(error);
         }
     }
 
@@ -49,7 +49,7 @@ export const deserializeBalanceAction = (balanceActionString: string): BalanceAc
         try {
             return migrateV0BalanceAction(balanceActionString);
         } catch (error) {
-            // We probably errored because it's already the latest version
+            console.error(error);
         }
     }
     balanceAction.amount = new BigNumber(balanceAction.amount);
