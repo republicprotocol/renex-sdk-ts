@@ -10,6 +10,8 @@ import { getTokenDetails } from "./balancesMethods";
 const API = "https://swapperd-kyc-server.herokuapp.com";
 const MIN_ETH_BALANCE = 0.5;
 const WRAPPING_FEE_BIPS = 10;
+// The fee required to be in the server balance for initiation
+const serverInitiateFeeSatoshi = 10000;
 
 const ErrorCouldNotConnectSwapServer = "Could not connect to swap server";
 
@@ -47,7 +49,7 @@ function unwrapped(token: string): string {
  */
 async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, response: BalanceResponse, toToken: string): Promise<boolean> {
     // The fee required to be in the server for initiation
-    const initiateFee = new BigNumber(10000);
+    const initiateFee = new BigNumber(serverInitiateFeeSatoshi);
     const serverTokenBalance = BigNumber.max(0, new BigNumber(response[toToken].balance).minus(initiateFee));
     const serverEthBalance = new BigNumber(response.ETH.balance);
     let err;
