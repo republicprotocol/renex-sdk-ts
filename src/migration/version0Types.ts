@@ -181,6 +181,14 @@ export function idToToken(token: number): TokenCode {
         case 65538:
             return Token.OMG;
         default:
+            // tslint:disable-next-line: strict-type-predicates
+            if (typeof (token) === "string") {
+                if (!isNaN(token)) {
+                    idToToken(parseInt(token, 10));
+                } else {
+                    return token;
+                }
+            }
             throw new Error(`Invalid token ID: ${token}`);
     }
 }
