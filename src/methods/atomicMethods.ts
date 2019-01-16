@@ -4,7 +4,7 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperStatus, findMatchingSwapReceipt, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
+import { fetchSwapperStatus, findMatchingSwapReceipt, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus, getAtomicAddresses } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -73,15 +73,8 @@ const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promi
     });
 };
 
-export const atomicAddresses = (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
-    return getAtomicBalances({ network: sdk._networkData.network }).then(balances => {
-        return Promise.all(tokens.map(async token => {
-            if (balances[token]) {
-                return balances[token].address;
-            }
-            return "";
-        }));
-    });
+export const atomicAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
+    return getAtomicAddresses(tokens, { network: sdk._networkData.network });
 };
 
 const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {

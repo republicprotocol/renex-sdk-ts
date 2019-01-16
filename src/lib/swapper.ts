@@ -3,6 +3,7 @@ import Web3 from "web3";
 
 import { EncodedData } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
+import { TokenCode } from "types";
 
 const API = "http://localhost:7928";
 const SIGNATURE_PREFIX = "RenEx: swapperd: ";
@@ -162,6 +163,15 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
         }
     }
     throw new Error(ErrorUnableToFindMatchingSwap);
+}
+
+export async function getAtomicAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
+
+    const addresses = await Promise.all(tokens.map(async (token) => {
+        return (await axios.get(`${API}/addresses/${token}?network=${options.network}`)).data;
+    }));
+
+    return addresses;
 }
 
 export async function getAtomicBalances(options: { network: string }): Promise<BalancesResponse> {

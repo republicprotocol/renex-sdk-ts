@@ -9,13 +9,13 @@ import RenExSDK from "../index";
 
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
+import { /* ErrFailedBalanceCheck, ErrInsufficientBalance, */ ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
-import { AtomicBalanceDetails, BalanceDetails, MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
-import { atomicBalances, submitOrder } from "./atomicMethods";
+import { /* AtomicBalanceDetails, BalanceDetails, */ MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
+import { /* atomicBalances, */ submitOrder } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
-import { balances, getTokenDetails } from "./balancesMethods";
+import { /* balances, */ getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
 import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
@@ -114,31 +114,31 @@ export const openOrder = async (
     const feeToken = receiveToken;
     const feeAmount = quoteVolume.times(feePercent);
 
-    let balanceDetails: BalanceDetails | AtomicBalanceDetails | undefined;
-    let balance: BigNumber;
+    // let balanceDetails: BalanceDetails | AtomicBalanceDetails | undefined;
+    // let balance: BigNumber;
 
     const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
-    simpleConsole.log("Verifying trader balance");
-    try {
-        if (orderSettlement === OrderSettlement.RenEx) {
-            balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
-        } else {
-            balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
-        }
-        if (!balanceDetails || balanceDetails.free === null) {
-            simpleConsole.error(ErrFailedBalanceCheck);
-            throw new Error(ErrFailedBalanceCheck);
-        }
-        balance = balanceDetails.free;
-    } catch (err) {
-        simpleConsole.error(err.message || err);
-        throw err;
-    }
-    if (spendVolume.gt(balance)) {
-        simpleConsole.error(ErrInsufficientBalance);
-        throw new Error(ErrInsufficientBalance);
-    }
+    // simpleConsole.log("Verifying trader balance");
+    // try {
+    //     if (orderSettlement === OrderSettlement.RenEx) {
+    //         balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
+    //     } else {
+    //         balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
+    //     }
+    //     if (!balanceDetails || balanceDetails.free === null) {
+    //         simpleConsole.error(ErrFailedBalanceCheck);
+    //         throw new Error(ErrFailedBalanceCheck);
+    //     }
+    //     balance = balanceDetails.free;
+    // } catch (err) {
+    //     simpleConsole.error(err.message || err);
+    //     throw err;
+    // }
+    // if (spendVolume.gt(balance)) {
+    //     simpleConsole.error(ErrInsufficientBalance);
+    //     throw new Error(ErrInsufficientBalance);
+    // }
     if (orderInputs.price.lte(new BigNumber(0))) {
         simpleConsole.error("Invalid price");
         throw new Error("Invalid price");
