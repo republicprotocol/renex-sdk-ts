@@ -156,7 +156,6 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
             receiveTokenAddr: tokenAddress[1],
         }
     };
-    console.log(JSON.stringify(req));
     return submitSwap(req, sdk._networkData.network);
 };
 

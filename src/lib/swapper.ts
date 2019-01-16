@@ -128,7 +128,6 @@ export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerS
 }
 
 export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitSwapResponse> {
-    console.log(JSON.stringify(swap));
     const resp = await axios.post(`${API}/swaps?network=${network}`, swap).catch(err => {
         if (err.response) {
             return err.response;
