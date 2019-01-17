@@ -5,7 +5,7 @@ import RenExSDK from "../index";
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { fromSmallestUnit, tokenToID } from "../lib/tokens";
-import { BalanceActionType, BalanceDetails, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
+import { BalanceActionType, BalanceDetails, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus, OrderSettlement } from "../types";
 import { fetchBalanceActions, fetchTraderOrders } from "./storageMethods";
 
 type MaybeBigNumber = BigNumber | null;
@@ -71,9 +71,13 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
     const usedOrderBalancesPromise = fetchTraderOrders(sdk).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
-            if (order.status === OrderStatus.NOT_SUBMITTED ||
-                order.status === OrderStatus.OPEN ||
-                order.status === OrderStatus.CONFIRMED
+            if (
+                order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx &&
+                (
+                    order.status === OrderStatus.NOT_SUBMITTED ||
+                    order.status === OrderStatus.OPEN ||
+                    order.status === OrderStatus.CONFIRMED
+                )
             ) {
                 const token = order.computedOrderDetails.spendToken;
                 const usedTokenBalance = usedFunds.get(token);
