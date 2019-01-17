@@ -218,9 +218,12 @@ export const withdraw = async (
     try {
         const signature = await requestWithdrawalSignature(sdk._networkData.ingress, address, token);
 
+        console.log("In SDK:");
+        console.log(valueBN.toString());
+
         const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
-            sdk.getWeb3().utils.toHex(valueBN),
+            `0x${valueBN.toString("hex")}`,
             signature.toHex(),
             { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
         ));
