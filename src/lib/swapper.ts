@@ -50,14 +50,18 @@ export enum SwapStatus {
     INACTIVE = "inactive",
     INITIATED = "initiated",
     AUDITED = "audited",
+    AUDIT_PENDING = "audit_pending",
     AUDIT_FAILED = "audit_failed",
     REDEEMED = "redeemed",
+    AUDITED_SECRET = "audited_secret",
     REFUNDED = "refunded",
+    REFUND_FAILED = "refund_failed",
     CANCELLED = "cancelled",
     EXPIRED = "expired",
 }
 
 function toSwapStatus(num: number): SwapStatus {
+
     switch (num) {
         case 0:
             return SwapStatus.INACTIVE;
@@ -66,14 +70,20 @@ function toSwapStatus(num: number): SwapStatus {
         case 2:
             return SwapStatus.AUDITED;
         case 3:
-            return SwapStatus.AUDIT_FAILED;
+            return SwapStatus.AUDIT_PENDING;
         case 4:
-            return SwapStatus.REDEEMED;
+            return SwapStatus.AUDIT_FAILED;
         case 5:
-            return SwapStatus.REFUNDED;
+            return SwapStatus.REDEEMED;
         case 6:
-            return SwapStatus.CANCELLED;
+            return SwapStatus.AUDITED_SECRET;
         case 7:
+            return SwapStatus.REFUNDED;
+        case 8:
+            return SwapStatus.REFUND_FAILED;
+        case 9:
+            return SwapStatus.CANCELLED;
+        case 10:
             return SwapStatus.EXPIRED;
         default:
             throw new Error(`Invalid SwapStatus number: ${num}`);

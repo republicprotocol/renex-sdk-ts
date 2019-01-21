@@ -187,9 +187,12 @@ export function toOrderStatus(status: SwapStatus): OrderStatus {
         case SwapStatus.INACTIVE:
         case SwapStatus.INITIATED:
         case SwapStatus.AUDITED:
+        case SwapStatus.AUDIT_PENDING:
+        case SwapStatus.AUDITED_SECRET:
             return OrderStatus.CONFIRMED;
         case SwapStatus.AUDIT_FAILED:
         case SwapStatus.REFUNDED:
+        case SwapStatus.REFUND_FAILED:
             return OrderStatus.FAILED_TO_SETTLE;
         case SwapStatus.REDEEMED:
             return OrderStatus.SETTLED;
