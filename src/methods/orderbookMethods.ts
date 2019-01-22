@@ -29,7 +29,7 @@ const populateOrderDefaults = (
     marketDetail: MarketDetails,
 ): OrderInputsAll => {
     const price = new BigNumber(orderInputs.price);
-    const minVolume = marketDetail.base === Token.ETH ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, price);
+    const minVolume = calculateAbsoluteMinVolume(minEthTradeVolume, marketDetail.base, marketDetail.quote, price);
     return {
         symbol: orderInputs.symbol,
         side: orderInputs.side.toLowerCase() as OrderSide,
@@ -46,7 +46,13 @@ export const getMinEthTradeVolume = async (sdk: RenExSDK): Promise<BigNumber> =>
     return Promise.resolve(new BigNumber(MIN_ETH_TRADE_VOLUME));
 };
 
-const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, price: BigNumber) => {
+const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, baseToken: string, quoteToken: string, price: BigNumber) => {
+    if (quoteToken === Token.BTC) {
+        if (baseToken === Token.ETH) {
+            return minEthTradeVolume;
+        }
+        return normalizeVolume(minEthTradeVolume.dividedBy(price).multipliedBy(0.01), true);
+    }
     return normalizeVolume(minEthTradeVolume.dividedBy(price), true);
 };
 
@@ -151,7 +157,8 @@ export const openOrder = async (
         simpleConsole.error("Invalid minimum volume");
         throw new Error("Invalid minimum volume");
     }
-    const absoluteMinVolume = (baseToken === Token.ETH) ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, orderInputs.price);
+
+    const absoluteMinVolume = calculateAbsoluteMinVolume(minEthTradeVolume, baseToken, quoteToken, orderInputs.price);
     if (orderInputs.volume.lt(absoluteMinVolume)) {
         let errMsg = `Volume must be at least ${absoluteMinVolume} ${baseToken}`;
         if (baseToken !== Token.ETH) {

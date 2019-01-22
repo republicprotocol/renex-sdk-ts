@@ -15,7 +15,7 @@ import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
-import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
+import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens, getSwapperID } from "./methods/atomicMethods";
 import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
@@ -67,8 +67,9 @@ export class RenExSDK {
     public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
 
     // Atomic functions
-    public atom = {
+    public swapperd = {
         getStatus: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        getID: (): Promise<string> => getSwapperID(this),
         isConnected: (): boolean => atomConnected(this),
         refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
         resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
@@ -80,6 +81,8 @@ export class RenExSDK {
         // tslint:disable-next-line:no-any
         unwrap: (amount: NumberInput, token: TokenCode): Promise<any> => unwrap(this, amount, token),
     };
+
+    public atom = this.swapperd;
 
     public utils = {
         normalizePrice: (price: NumberInput, roundUp?: boolean): NumberInput => {

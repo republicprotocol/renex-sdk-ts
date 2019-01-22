@@ -16,6 +16,7 @@ import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
+import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { MarketPairs } from "./market";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
@@ -94,7 +95,7 @@ export class Order extends Record({
 }) { }
 
 export class AtomAuthorizationRequest extends Record({
-    atomAddress: "",
+    address: "",
     signature: "",
 }) { }
 
@@ -148,24 +149,59 @@ export async function authorizeSwapper(ingressURL: string, request: AtomAuthoriz
     throw new Error(`Could not authorize swapper. Status code: ${resp.status}`);
 }
 
-export async function checkAtomAuthorization(
-    ingressURL: string,
-    address: string,
-    expectedEthAddress: string,
-): Promise<boolean> {
-    return axios.get(`${ingressURL}/authorized/${address}`)
-        .then(resp => {
-            if (resp.status !== 200) {
-                throw new Error("Unexpected status code: " + resp.status);
-            }
-            const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
-            return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
-        })
-        .catch(err => {
-            console.error(err);
-            return false;
-        });
+
+export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
+    const req = await getAtomAuthorizationRequest(web3, atomAddress, address);
+    await authorizeSwapper(ingressURL, req);
 }
+
+async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
+    const prefix: string = web3.utils.toHex("RenEx: authorize: ");
+    const checkedAddress = new EncodedData(atomAddress, Encodings.HEX);
+    const hashForSigning: string = (prefix + checkedAddress.toHex(""));
+    console.log(hashForSigning);
+
+    let signature: EncodedData;
+    try {
+        // tslint:disable-next-line:no-any
+        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
+    } catch (error) {
+        if (error.message.match(/User denied message signature/)) {
+            return Promise.reject(new Error(ErrSignatureCanceledByUser));
+        }
+        return Promise.reject(new Error(ErrUnsignedTransaction));
+    }
+
+    const buff = signature.toBuffer();
+    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
+    // but for future compatibility, we stick to one format)
+    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
+    if (buff[64] === 27 || buff[64] === 28) {
+        buff[64] = buff[64] - 27;
+    }
+
+    return new AtomAuthorizationRequest({ address: checkedAddress.toHex(), signature: buff.toString("base64") });
+}
+
+
+// export async function checkAtomAuthorization(
+//     ingressURL: string,
+//     address: string,
+//     expectedEthAddress: string,
+// ): Promise<boolean> {
+//     return axios.get(`${ingressURL}/authorized/${address}`)
+//         .then(resp => {
+//             if (resp.status !== 200) {
+//                 throw new Error("Unexpected status code: " + resp.status);
+//             }
+//             const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
+//             return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
+//         })
+//         .catch(err => {
+//             console.error(err);
+//             return false;
+//         });
+// }
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const marketDetail = MarketPairs.get(orderInputs.symbol);
