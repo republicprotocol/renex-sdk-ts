@@ -24,6 +24,11 @@ describe("SDK methods", () => {
     let mainAccount: string;
 
     before(async () => {
+        console.log(process.env.MNEMONIC);
+        if (!MNEMONIC) {
+            throw new Error("MNEMONIC environment variable has not been set");
+        }
+
         // Initialize the provider and set our own nonce tracker
         provider = new HDWalletProvider(MNEMONIC, INFURA_URL, 0, 10);
         const nonceTracker = new NonceSubprovider();
@@ -45,6 +50,11 @@ describe("SDK methods", () => {
     });
 
     after(() => {
+        if (!MNEMONIC) {
+            // Already thrown in beforeAll.
+            return;
+        }
+
         provider.engine.stop();
     });
 
