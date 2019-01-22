@@ -1,7 +1,7 @@
 import axios from "axios";
 import Web3 from "web3";
 
-import { EncodedData } from "./encodedData";
+import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { TokenCode } from "types";
 
@@ -16,6 +16,7 @@ export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
     ConnectedUnlocked = "connected_unlocked",
     ConnectedLocked = "connected_locked",
+    NotAuthorized = "not_authorized",
 }
 
 interface InfoResponse {
@@ -34,14 +35,35 @@ export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
-export async function fetchSwapperStatus(network: string): Promise<SwapperConnectionStatus> {
+export const fetchSwapperID = async (network: string) => {
+    const id = (await axios.get(`${API}/id?network=${network}`)).data;
+    const publicKey = new EncodedData(id.publicKey, Encodings.BASE64);
+    return "0x" + (new Web3()).utils.sha3(publicKey.toHex()).slice(26, 66);
+    // return publicKey;
+}
+
+export async function fetchSwapperStatus(network: string, ingress: string): Promise<SwapperConnectionStatus> {
     try {
         const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
         if (response.bootloaded) {
+            const address = await fetchSwapperID(network);
+
+            try {
+                const kyc_status = (await axios.get(`${ingress}/kyc/${address}`));
+                console.log(kyc_status.status);
+            } catch (error) {
+                if (error.response && error.response.status === 401) {
+                    return SwapperConnectionStatus.NotAuthorized;
+                }
+            }
+
             return SwapperConnectionStatus.ConnectedUnlocked;
         }
         return SwapperConnectionStatus.ConnectedLocked;
     } catch (error) {
+        if (error.response && error.response.status === 401) {
+            return SwapperConnectionStatus.ConnectedLocked;
+        }
         return SwapperConnectionStatus.NotConnected;
     }
 }

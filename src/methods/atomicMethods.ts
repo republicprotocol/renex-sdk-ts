@@ -3,8 +3,9 @@ import BigNumber from "bignumber.js";
 import RenExSDK, { TokenCode } from "../index";
 
 import { EncodedData } from "../lib/encodedData";
+import { _authorizeAtom } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperStatus, findMatchingSwapReceipt, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus, getAtomicAddresses } from "../lib/swapper";
+import { fetchSwapperID, fetchSwapperStatus, findMatchingSwapReceipt, getAtomicAddresses, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -39,7 +40,7 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 };
 
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network);
+    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress);
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
             return AtomicConnectionStatus.NotConnected;
@@ -47,14 +48,23 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
             return AtomicConnectionStatus.ConnectedLocked;
         case SwapperConnectionStatus.ConnectedUnlocked:
             return AtomicConnectionStatus.ConnectedUnlocked;
+        case SwapperConnectionStatus.NotAuthorized:
+            return AtomicConnectionStatus.AtomNotAuthorized;
         default:
             throw new Error(`Unknown swapper status: ${swapperStatus}`);
     }
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
+    const address = await fetchSwapperID(sdk._networkData.network);
+    await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
     return refreshAtomConnectionStatus(sdk);
 };
+
+export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
+    return await fetchSwapperID(sdk._networkData.network);
+};
+
 
 /* Atomic balances */
 
