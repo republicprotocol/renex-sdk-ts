@@ -36,7 +36,7 @@ export interface BalancesResponse {
 }
 
 export const fetchSwapperAddress = async (network: string): Promise<string> => {
-    return (await axios.get(`${API}/id?type=eth&network=${network}`)).data;
+    return (await axios.get(`${API}/id/eth?network=${network}`)).data;
 };
 
 export async function fetchSwapperStatus(network: string, ingress: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> {
