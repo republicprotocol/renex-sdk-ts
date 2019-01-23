@@ -10,7 +10,6 @@ import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, WBTCOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
-const API = "https://swapperd-kyc-server.herokuapp.com";
 const MIN_ETH_BALANCE = 0.5;
 const WRAPPING_FEE_BIPS = 10;
 // The fee required to be in the server balance for initiation
@@ -101,7 +100,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
 
     let response: BalanceResponse;
     try {
-        response = (await axios.get(`${API}/balances`)).data;
+        response = (await axios.get(`${sdk._networkData.wbtcKYCServer}/balances`)).data;
     } catch (error) {
         console.error(error);
         throw new Error(ErrorCouldNotConnectSwapServer);
@@ -127,7 +126,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     };
     const swapResponse: SubmitImmediateResponse = await submitSwap(req, sdk._networkData.network) as SubmitImmediateResponse;
     try {
-        await axios.post(`${API}/swap`, swapResponse);
+        await axios.post(`${sdk._networkData.wbtcKYCServer}/swap`, swapResponse);
     } catch (error) {
         throw new Error(ErrorCouldNotConnectSwapServer);
     }
