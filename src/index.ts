@@ -76,10 +76,8 @@ export class RenExSDK {
         authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
         fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(this, tokens),
-        // tslint:disable-next-line:no-any
-        wrap: (amount: NumberInput, token: TokenCode): Promise<any> => wrap(this, amount, token),
-        // tslint:disable-next-line:no-any
-        unwrap: (amount: NumberInput, token: TokenCode): Promise<any> => unwrap(this, amount, token),
+        wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),
+        unwrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => unwrap(this, amount, token),
     };
 
     public atom = this.swapperd;
