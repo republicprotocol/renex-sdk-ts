@@ -1,9 +1,9 @@
 import axios from "axios";
 import Web3 from "web3";
 
+import { TokenCode } from "types";
 import { EncodedData, Encodings } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
-import { TokenCode } from "types";
 
 const API = "http://localhost:7928";
 const SIGNATURE_PREFIX = "RenEx: swapperd: ";
@@ -40,7 +40,7 @@ export const fetchSwapperID = async (network: string) => {
     const publicKey = new EncodedData(id.publicKey, Encodings.BASE64);
     return "0x" + (new Web3()).utils.sha3(publicKey.toHex()).slice(26, 66);
     // return publicKey;
-}
+};
 
 export async function fetchSwapperStatus(network: string, ingress: string): Promise<SwapperConnectionStatus> {
     try {
@@ -49,8 +49,8 @@ export async function fetchSwapperStatus(network: string, ingress: string): Prom
             const address = await fetchSwapperID(network);
 
             try {
-                const kyc_status = (await axios.get(`${ingress}/kyc/${address}`));
-                console.log(kyc_status.status);
+                const kycStatus = (await axios.get(`${ingress}/kyc/${address}`));
+                console.log(kycStatus.status);
             } catch (error) {
                 if (error.response && error.response.status === 401) {
                     return SwapperConnectionStatus.NotAuthorized;

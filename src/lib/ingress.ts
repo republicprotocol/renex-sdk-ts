@@ -2,7 +2,7 @@ import axios from "axios";
 
 // tsc complains about importing NodeRSA normally
 import * as NodeRSAType from "node-rsa";
-const NodeRSA = require("node-rsa") as { new(): NodeRSAType };
+const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
 import Web3 from "web3";
 
@@ -149,22 +149,19 @@ export async function authorizeSwapper(ingressURL: string, request: AtomAuthoriz
     throw new Error(`Could not authorize swapper. Status code: ${resp.status}`);
 }
 
-
 export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
     const req = await getAtomAuthorizationRequest(web3, atomAddress, address);
     await authorizeSwapper(ingressURL, req);
 }
 
 async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
-    const prefix: string = web3.utils.toHex("RenEx: authorize: ");
-    const checkedAddress = new EncodedData(atomAddress, Encodings.HEX);
-    const hashForSigning: string = (prefix + checkedAddress.toHex(""));
-    console.log(hashForSigning);
+    const checksumAddress = web3.utils.toChecksumAddress(atomAddress);
+    const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
 
     let signature: EncodedData;
     try {
         // tslint:disable-next-line:no-any
-        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
+        signature = new EncodedData(await (web3.eth.personal.sign as any)(dataForSigning, address));
     } catch (error) {
         if (error.message.match(/User denied message signature/)) {
             return Promise.reject(new Error(ErrSignatureCanceledByUser));
@@ -180,9 +177,8 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
         buff[64] = buff[64] - 27;
     }
 
-    return new AtomAuthorizationRequest({ address: checkedAddress.toHex(), signature: buff.toString("base64") });
+    return new AtomAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
 }
-
 
 // export async function checkAtomAuthorization(
 //     ingressURL: string,
@@ -483,7 +479,7 @@ async function getDarknodePublicKey(
 ): Promise<NodeRSAType | null> {
     const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
 
-    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
+    if (darknodeKeyHex as (string | null) === null || darknodeKeyHex.length === 0) {
         simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
         return null;
     }

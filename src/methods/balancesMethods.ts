@@ -5,7 +5,7 @@ import RenExSDK from "../index";
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { fromSmallestUnit, tokenToID } from "../lib/tokens";
-import { BalanceActionType, BalanceDetails, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus, OrderSettlement } from "../types";
+import { BalanceActionType, BalanceDetails, OrderSettlement, OrderStatus, Token, TokenCode, TokenDetails, TransactionStatus } from "../types";
 import { fetchBalanceActions, fetchTraderOrders } from "./storageMethods";
 
 type MaybeBigNumber = BigNumber | null;
