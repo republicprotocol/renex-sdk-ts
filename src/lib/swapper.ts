@@ -45,8 +45,7 @@ export async function fetchSwapperStatus(network: string, ingress: string, getSw
         if (response.bootloaded) {
             try {
                 const swapperID = getSwapperID();
-                const kycStatus = (await axios.get(`${ingress}/kyc/${swapperID}`));
-                console.log(kycStatus.status);
+                await axios.get(`${ingress}/kyc/${swapperID}`);
             } catch (error) {
                 if (error.response && error.response.status === 401) {
                     return SwapperConnectionStatus.NotAuthorized;

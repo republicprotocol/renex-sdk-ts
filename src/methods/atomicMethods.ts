@@ -23,7 +23,6 @@ export const currentAtomConnectionStatus = (sdk: RenExSDK): AtomicConnectionStat
 export const atomConnected = (sdk: RenExSDK): boolean => {
     const status = currentAtomConnectionStatus(sdk);
     return (
-        status === AtomicConnectionStatus.ConnectedLocked ||
         status === AtomicConnectionStatus.ConnectedUnlocked
     );
 };
