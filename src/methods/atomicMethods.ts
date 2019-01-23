@@ -5,7 +5,7 @@ import RenExSDK, { TokenCode } from "../index";
 import { EncodedData } from "../lib/encodedData";
 import { _authorizeAtom } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperID, fetchSwapperStatus, findMatchingSwapReceipt, getAtomicAddresses, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
+import { fetchSwapperPublicKey, fetchSwapperStatus, findMatchingSwapReceipt, getAtomicAddresses, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -40,7 +40,8 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 };
 
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress);
+    const swapperID = await getSwapperID(sdk);
+    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, swapperID);
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
             return AtomicConnectionStatus.NotConnected;
@@ -56,13 +57,16 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionS
 };
 
 export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const address = await fetchSwapperID(sdk._networkData.network);
+    const address = await getSwapperID(sdk);
     await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
     return refreshAtomConnectionStatus(sdk);
 };
 
 export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
-    return sdk.getWeb3().utils.toChecksumAddress(await fetchSwapperID(sdk._networkData.network));
+    const publicKey = await fetchSwapperPublicKey(sdk._networkData.network);
+    return sdk.getWeb3().utils.toChecksumAddress(
+        `0x${sdk.getWeb3().utils.sha3(publicKey.toHex()).slice(26, 66)}`
+    );
 };
 
 /* Atomic balances */
