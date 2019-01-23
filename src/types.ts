@@ -51,12 +51,15 @@ export enum Token {
 }
 
 export enum MarketPair {
-    ETH_BTC = "ETH/BTC",
-    DGX_ETH = "DGX/ETH",
-    TUSD_ETH = "TUSD/ETH",
-    REN_ETH = "REN/ETH",
-    ZRX_ETH = "ZRX/ETH",
-    OMG_ETH = "OMG/ETH",
+    BTC_WBTC = "BTC/WBTC",
+    BTC_ETH = "BTC/ETH",
+    BTC_REN = "BTC/REN",
+    BTC_TUSD = "BTC/TUSD",
+    ETH_DGX = "ETH/DGX",
+    ETH_TUSD = "ETH/TUSD",
+    ETH_REN = "ETH/REN",
+    ETH_ZRX = "ETH/ZRX",
+    ETH_OMG = "ETH/OMG",
 }
 
 export interface MarketDetails {
