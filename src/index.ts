@@ -15,7 +15,7 @@ import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
-import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens, getSwapperID } from "./methods/atomicMethods";
+import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, getSwapperID, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
@@ -127,11 +127,13 @@ export class RenExSDK {
         }
 
         // Show warning when the expected network ID is different from the provider network ID
-        this._web3.eth.net.getId().then(networkId => {
-            if (networkId !== this._networkData.ethNetworkId) {
-                console.warn(`Incorrect provider network! Your provider should be using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
-            }
-        });
+        this._web3.eth.net.getId()
+            .then(networkId => {
+                if (networkId !== this._networkData.ethNetworkId) {
+                    console.warn(`Incorrect provider network! Your provider should be using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
+                }
+            })
+            .catch(console.error);
 
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))

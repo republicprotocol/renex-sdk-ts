@@ -62,9 +62,8 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 };
 
 export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
-    return await fetchSwapperID(sdk._networkData.network);
+    return sdk.getWeb3().utils.toChecksumAddress(await fetchSwapperID(sdk._networkData.network));
 };
-
 
 /* Atomic balances */
 
