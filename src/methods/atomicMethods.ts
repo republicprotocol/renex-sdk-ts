@@ -5,7 +5,7 @@ import RenExSDK, { TokenCode } from "../index";
 import { EncodedData } from "../lib/encodedData";
 import { _authorizeAtom } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperPublicKey, fetchSwapperStatus, findMatchingSwapReceipt, getAtomicAddresses, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
+import { fetchSwapperAddress, fetchSwapperStatus, findMatchingSwapReceipt, getAtomicAddresses, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -40,8 +40,7 @@ export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<Atomic
 };
 
 const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    const swapperID = await getSwapperID(sdk);
-    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, swapperID);
+    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, () => getSwapperID(sdk));
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
             return AtomicConnectionStatus.NotConnected;
@@ -63,10 +62,7 @@ export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStat
 };
 
 export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
-    const publicKey = await fetchSwapperPublicKey(sdk._networkData.network);
-    return sdk.getWeb3().utils.toChecksumAddress(
-        `0x${sdk.getWeb3().utils.sha3(publicKey.toHex()).slice(26, 66)}`
-    );
+    return fetchSwapperAddress(sdk._networkData.network);
 };
 
 /* Atomic balances */
@@ -95,6 +91,7 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<B
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (
+                !order.swapServer &&
                 order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic &&
                 (
                     order.status === OrderStatus.NOT_SUBMITTED ||

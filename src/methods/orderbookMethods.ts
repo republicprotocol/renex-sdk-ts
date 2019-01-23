@@ -240,6 +240,7 @@ export const openOrder = async (
     }
 
     const traderOrder: TraderOrder = {
+        swapServer: undefined,
         version: LATEST_TRADER_ORDER_VERSION,
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
@@ -319,7 +320,7 @@ export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder
     await Promise.all(orders.map(async order => {
         if (order.status === OrderStatus.NOT_SUBMITTED ||
             order.status === OrderStatus.OPEN) {
-            const newStatus = await fetchOrderStatus(sdk, order.id);
+            const newStatus = await fetchOrderStatus(sdk, order.id, order);
             if (newStatus !== order.status) {
                 newStatuses.set(order.id, newStatus);
             }

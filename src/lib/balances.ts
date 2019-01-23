@@ -6,7 +6,7 @@ import { ErrNumericalPrecision } from "./errors";
 
 export const adjustDecimals = (value: BN | BigNumber, fromDecimals: number, toDecimals: number): BN => {
     if (BigNumber.isBigNumber(value) || value instanceof BigNumber) {
-        value = new BigNumber((value as BigNumber).toFixed());
+        value = new BigNumber(value.toFixed());
     } else {
         value = new BigNumber(value.toString());
     }

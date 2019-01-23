@@ -37,6 +37,7 @@ export function migrateV0TraderOrder(orderString: string): TraderOrder {
     const priorityToken = order.orderInputs.receiveToken > order.orderInputs.spendToken ? order.orderInputs.spendToken : order.orderInputs.receiveToken;
 
     const newOrder: TraderOrder = {
+        swapServer: undefined,
         version: LATEST_TRADER_ORDER_VERSION,
         id: order.id,
         trader: order.trader,
