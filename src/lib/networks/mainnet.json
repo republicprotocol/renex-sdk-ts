@@ -1,6 +1,8 @@
 {
     "network": "mainnet",
     "ingress": "https://renex-ingress-mainnet.herokuapp.com",
+    "infura": "https://mainnet.infura.io/v3",
+    "etherscan": "https://etherscan.io",
     "wbtcKYCServer": "https://swapperd-kyc-server.herokuapp.com",
     "ethNetwork": "main",
     "ethNetworkLabel": "Main",
