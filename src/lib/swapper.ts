@@ -2,7 +2,7 @@ import axios from "axios";
 import Web3 from "web3";
 
 import { TokenCode } from "types";
-import { EncodedData, Encodings } from "./encodedData";
+import { EncodedData } from "./encodedData";
 import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 
 const API = "http://localhost:7928";
@@ -35,17 +35,16 @@ export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
-export const fetchSwapperPublicKey = async (network: string): Promise<EncodedData> => {
-    const id = (await axios.get(`${API}/id?network=${network}`)).data;
-    const publicKey = new EncodedData(id.publicKey, Encodings.BASE64);
-    return publicKey;
+export const fetchSwapperAddress = async (network: string): Promise<string> => {
+    return (await axios.get(`${API}/id?type=eth&network=${network}`)).data;
 };
 
-export async function fetchSwapperStatus(network: string, ingress: string, swapperID: string): Promise<SwapperConnectionStatus> {
+export async function fetchSwapperStatus(network: string, ingress: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> {
     try {
         const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
         if (response.bootloaded) {
             try {
+                const swapperID = getSwapperID();
                 const kycStatus = (await axios.get(`${ingress}/kyc/${swapperID}`));
                 console.log(kycStatus.status);
             } catch (error) {
@@ -134,9 +133,10 @@ export interface SwapBlob extends SwapCore {
     brokerReceiveTokenAddr?: string;
 }
 
-export interface SubmitSwapResponse {
+export interface SubmitImmediateResponse {
     swap: SwapBlob;
     signature: string;
+    id: string;
 }
 
 interface InnerSwapReceipt extends SwapCore {
@@ -156,7 +156,7 @@ export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerS
     status: SwapStatus;
 }
 
-export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitSwapResponse> {
+export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitImmediateResponse> {
     const resp = await axios.post(`${API}/swaps?network=${network}`, swap).catch(err => {
         if (err.response) {
             return err.response;
@@ -170,7 +170,7 @@ export async function submitSwap(swap: SwapBlob, network: string): Promise<boole
         if (swap.delay !== undefined && swap.delay) {
             return true;
         }
-        return resp.data as SubmitSwapResponse;
+        return resp.data as SubmitImmediateResponse;
     }
     return false;
 }

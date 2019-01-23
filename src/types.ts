@@ -34,10 +34,11 @@ export enum OrderType {
     LIMIT_IOC = "limit_ioc",
 }
 
-export enum OrderSide {
-    BUY = "buy",
-    SELL = "sell",
-}
+export type OrderSide = "buy" | "sell";
+export const OrderSide = {
+    BUY: "buy" as OrderSide,
+    SELL: "sell" as OrderSide,
+};
 
 export enum Token {
     BTC = "BTC",
@@ -75,7 +76,7 @@ export type MarketCode = string;
 export interface OrderInputs {
     // Required fields
     symbol: MarketCode;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-    side: string;            // Buy receives base token, sell receives quote token
+    side: OrderSide;            // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
 
@@ -117,15 +118,27 @@ export interface Order {
     matchDetails?: MatchDetails;
 }
 
-// If TraderOrder is changed, then it's serialize / deserialize functions should
-// be updated as well.
-export interface TraderOrder extends Order {
+export interface WBTCOrder extends Order {
+    readonly version?: number;
+    readonly swapServer: true;
+    readonly orderInputs: OrderInputs;
+    readonly computedOrderDetails: ComputedOrderDetails;
+}
+
+export interface SwapOrder extends Order {
     // Some older versions of TraderOrder do not have version
-    version?: number;
+    readonly version?: number;
+
+    readonly swapServer: undefined;
+
     readonly computedOrderDetails: ComputedOrderDetails;
     readonly orderInputs: OrderInputsAll;
     readonly transactionHash: string;
 }
+
+// If TraderOrder is changed, then it's serialize / deserialize functions should
+// be updated as well.
+export type TraderOrder = WBTCOrder | SwapOrder;
 
 export interface OrderbookFilter {
     address?: string;

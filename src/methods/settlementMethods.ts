@@ -38,28 +38,35 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
     return defaultStatus;
 };
 
-export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
+export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?: TraderOrder): Promise<OrderStatus> => {
+    if (!order) {
+        order = await sdk._storage.getOrder(orderID64);
+    }
+
     // Convert orderID from base64
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
 
     let orderStatus: OrderStatus;
 
     let orderbookStatus;
-    try {
-        orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
-    } catch (err) {
-        console.error(`Unable to call orderState in status`);
-        throw err;
+    if (order && order.swapServer) {
+        orderbookStatus = OrderStatus.CONFIRMED;
+    } else {
+        try {
+            orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
+        } catch (err) {
+            console.error(`Unable to call orderState in status`);
+            throw err;
+        }
     }
-    if (orderbookStatus === OrderStatus.CONFIRMED) {
+    if ((order && order.swapServer) || orderbookStatus === OrderStatus.CONFIRMED) {
         orderStatus = await settlementStatus(sdk, orderID);
 
         // If the order is still settling, check how much time has passed. We
         // do this since we do not want the user's funds to be locked up
         // forever if a trader attempts to settle an order without funds they
         // actually possess.
-        const storedOrder = await sdk._storage.getOrder(orderID64);
-        if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx && orderStatus === OrderStatus.CONFIRMED) {
+        if (order && order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx && orderStatus === OrderStatus.CONFIRMED) {
             let currentBlockNumber = 0;
             try {
                 currentBlockNumber = await sdk.getWeb3().eth.getBlockNumber();
@@ -79,12 +86,10 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID): Promi
             }
         }
     } else if (orderbookStatus === OrderStatus.OPEN) {
-        // Check if order is expired
-        const storedOrder = await sdk._storage.getOrder(orderID64);
-        if (storedOrder &&
-            storedOrder.orderInputs.expiry !== 0 &&
+        if (order &&
+            order.orderInputs.expiry !== 0 &&
             // Note: Date.now() returns milliseconds
-            (storedOrder.orderInputs.expiry < (Date.now() / 1000))) {
+            (order.orderInputs.expiry < (Date.now() / 1000))) {
             orderStatus = OrderStatus.EXPIRED;
         } else {
             orderStatus = orderbookStatus;

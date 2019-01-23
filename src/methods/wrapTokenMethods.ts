@@ -1,10 +1,13 @@
 import axios from "axios";
 import BigNumber from "bignumber.js";
+import BN from "bn.js";
 
 import RenExSDK, { NumberInput, Token } from "../index";
 
-import { getAtomicBalances, submitSwap, SubmitSwapResponse, SwapBlob } from "../lib/swapper";
+import { getAtomicBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
+import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
+import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, WBTCOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
 const API = "https://swapperd-kyc-server.herokuapp.com";
@@ -83,7 +86,19 @@ async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, from
 }
 
 // tslint:disable-next-line:no-any
-async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, toToken: string): Promise<any> {
+async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePercent: BigNumber): Promise<any> {
+    const tokens = orderInputs.symbol.split("/");
+
+    let fromToken: string;
+    let toToken: string;
+    if (orderInputs.side === OrderSide.BUY) {
+        ([toToken, fromToken] = tokens);
+    } else if (orderInputs.side === OrderSide.SELL) {
+        ([fromToken, toToken] = tokens);
+    } else {
+        throw new Error(`Unknown order side: ${orderInputs.side}`);
+    }
+
     let response: BalanceResponse;
     try {
         response = (await axios.get(`${API}/balances`)).data;
@@ -92,7 +107,7 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         throw new Error(ErrorCouldNotConnectSwapServer);
     }
     const fromTokenDetails = await getTokenDetails(sdk, fromToken);
-    const amountBigNumber = toSmallestUnit(amount, fromTokenDetails);
+    const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails);
     await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken);
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
     const brokerFee = (await wrappingFees(sdk)).times(10000).toNumber();
@@ -110,25 +125,65 @@ async function convert(sdk: RenExSDK, amount: NumberInput, fromToken: string, to
         brokerSendTokenAddr: response[fromToken].address,
         brokerReceiveTokenAddr: response[toToken].address,
     };
-    const swapResponse: SubmitSwapResponse = await submitSwap(req, sdk._networkData.network) as SubmitSwapResponse;
+    const swapResponse: SubmitImmediateResponse = await submitSwap(req, sdk._networkData.network) as SubmitImmediateResponse;
+    let finalResponse;
     try {
-        const finalResponse = await axios.post(`${API}/swap`, swapResponse);
-        return finalResponse;
+        finalResponse = await axios.post(`${API}/swap`, swapResponse);
     } catch (error) {
         throw new Error(ErrorCouldNotConnectSwapServer);
     }
+
+    const swap: WBTCOrder = {
+        swapServer: true,
+        version: LATEST_TRADER_ORDER_VERSION,
+        orderInputs,
+        status: OrderStatus.CONFIRMED,
+        trader: sdk.getAddress(),
+        id: swapResponse.id,
+        computedOrderDetails: {
+            spendToken: fromToken,
+            receiveToken: toToken,
+            spendVolume: new BigNumber(orderInputs.volume),
+            receiveVolume: new BigNumber(orderInputs.volume),
+            date: Math.floor(new Date().getTime() / 1000),
+            feeAmount: new BigNumber(orderInputs.volume).times(conversionFeePercent),
+            feeToken: fromToken,
+            orderSettlement: OrderSettlement.RenExAtomic,
+            nonce: new BN(0),
+        },
+    };
+
+    sdk._storage.setOrder(swap).catch(console.error);
+
+    return finalResponse;
 }
 
 // tslint:disable-next-line:no-any
 export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<any> {
     const toToken = wrapped(fromToken);
-    return convert(sdk, amount, fromToken, toToken);
+
+    const orderDetails: OrderInputs = {
+        symbol: `${toToken}/${fromToken}`,      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+        side: OrderSide.BUY,
+        price: 1,
+        volume: amount,
+    };
+
+    return convert(sdk, orderDetails, await wrappingFees(sdk));
 }
 
 // tslint:disable-next-line:no-any
 export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<any> {
     const toToken = unwrapped(fromToken);
-    return convert(sdk, amount, fromToken, toToken);
+
+    const orderDetails: OrderInputs = {
+        symbol: `${fromToken}/${toToken}`,      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+        side: OrderSide.SELL,
+        price: 1,
+        volume: amount,
+    };
+
+    return convert(sdk, orderDetails, await wrappingFees(sdk));
 }
 
 export async function wrappingFees(sdk: RenExSDK): Promise<BigNumber> {

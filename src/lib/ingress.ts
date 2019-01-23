@@ -72,6 +72,8 @@ function orderParityMapper(orderSide: OrderSide) {
             return OrderParity.BUY;
         case OrderSide.SELL:
             return OrderParity.SELL;
+        default:
+            throw new Error(`Unknown order side: ${orderSide}`);
     }
 }
 

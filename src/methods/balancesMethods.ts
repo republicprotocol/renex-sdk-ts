@@ -72,6 +72,7 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (
+                !order.swapServer &&
                 order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx &&
                 (
                     order.status === OrderStatus.NOT_SUBMITTED ||
