@@ -86,7 +86,7 @@ async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, from
 }
 
 // tslint:disable-next-line:no-any
-async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePercent: BigNumber): Promise<any> {
+async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePercent: BigNumber): Promise<WBTCOrder> {
     const tokens = orderInputs.symbol.split("/");
 
     let fromToken: string;
@@ -126,9 +126,8 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
         brokerReceiveTokenAddr: response[toToken].address,
     };
     const swapResponse: SubmitImmediateResponse = await submitSwap(req, sdk._networkData.network) as SubmitImmediateResponse;
-    let finalResponse;
     try {
-        finalResponse = await axios.post(`${API}/swap`, swapResponse);
+        await axios.post(`${API}/swap`, swapResponse);
     } catch (error) {
         throw new Error(ErrorCouldNotConnectSwapServer);
     }
@@ -155,11 +154,11 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
 
     sdk._storage.setOrder(swap).catch(console.error);
 
-    return finalResponse;
+    return swap;
 }
 
 // tslint:disable-next-line:no-any
-export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<any> {
+export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<WBTCOrder> {
     const toToken = wrapped(fromToken);
 
     const orderDetails: OrderInputs = {
@@ -173,7 +172,7 @@ export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: string
 }
 
 // tslint:disable-next-line:no-any
-export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<any> {
+export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<WBTCOrder> {
     const toToken = unwrapped(fromToken);
 
     const orderDetails: OrderInputs = {
