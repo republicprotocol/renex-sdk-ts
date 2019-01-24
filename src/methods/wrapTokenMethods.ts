@@ -4,6 +4,7 @@ import BN from "bn.js";
 
 import RenExSDK, { NumberInput, Token } from "../index";
 
+import { errors, updateError } from "../errors";
 import { getAtomicBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
@@ -14,8 +15,6 @@ const MIN_ETH_BALANCE = 0.5;
 const WRAPPING_FEE_BIPS = 10;
 // The fee required to be in the server balance for initiation
 const serverInitiateFeeSatoshi = 10000;
-
-const ErrorCouldNotConnectSwapServer = "Could not connect to swap server";
 
 interface BalanceResponse {
     [token: string]: {
@@ -102,8 +101,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     try {
         response = (await axios.get(`${sdk._networkData.wbtcKYCServer}/balances`)).data;
     } catch (error) {
-        console.error(error);
-        throw new Error(ErrorCouldNotConnectSwapServer);
+        throw updateError(errors.CouldNotConnectSwapServer, error);
     }
     const fromTokenDetails = await getTokenDetails(sdk, fromToken);
     const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails);
@@ -128,7 +126,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     try {
         await axios.post(`${sdk._networkData.wbtcKYCServer}/swap`, swapResponse);
     } catch (error) {
-        throw new Error(ErrorCouldNotConnectSwapServer);
+        throw updateError(errors.CouldNotConnectSwapServer, error);
     }
 
     const swap: WBTCOrder = {

@@ -47,7 +47,7 @@ const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<Big
 const nondepositedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
     // Loop through all tokens, returning null for any that throw an error
     return Promise.all(tokens.map((token: TokenCode) => nondepositedBalance(sdk, token).catch((error) => {
-        console.error(`Failed to get non deposited balance for ${token}: ${error}`);
+        console.error(`Failed to get non deposited balance for ${token}: ${error.message || error}`);
         return null;
     })));
 };

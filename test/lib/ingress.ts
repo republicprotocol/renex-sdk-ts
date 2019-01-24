@@ -13,7 +13,7 @@
 // import { NetworkData } from "@Library/network";
 // import { MockSignature64, MockWallet } from "@Library/wallets/mockWallet";
 // import { Wallet, WalletDetail } from "@Library/wallets/wallet";
-// import { DarknodeRegistryContractType } from "types";
+// import { DarknodeRegistryContractType } from "../types";
 // import { TransactionObject } from "web3/types";
 
 // // Define window.crypto.getRandomValues() for use within test suite.

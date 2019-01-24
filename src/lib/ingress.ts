@@ -13,10 +13,10 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
+import { errors, responseError, updateError } from "../errors";
 import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
-import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 import { MarketPairs } from "./market";
 import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
 import { Record } from "./record";
@@ -141,14 +141,21 @@ export function randomNonce(randomBN: () => BN): BN {
 }
 
 export async function authorizeSwapper(ingressURL: string, request: AtomAuthorizationRequest): Promise<boolean> {
-    const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
-    if (resp.status === 201) {
-        return true;
+    try {
+        const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
+        if (resp.status === 201) {
+            return true;
+        }
+        throw responseError(errors.CouldNotAuthorizeSwapper, resp);
+    } catch (error) {
+        if (error && error.reponse) {
+            if (error.response.status === 401) {
+                throw updateError(`Could not authorize swapper. Address is not KYC'd. ${error.message || error}`, error);
+            }
+            throw updateError(`Could not authorize swapper. ${error.message || error}`, error);
+        }
+        throw error;
     }
-    if (resp.status === 401) {
-        throw new Error("Could not authorize swapper. Reason: address is not KYC'd");
-    }
-    throw new Error(`Could not authorize swapper. Status code: ${resp.status}`);
 }
 
 export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
@@ -166,9 +173,9 @@ async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, addr
         signature = new EncodedData(await (web3.eth.personal.sign as any)(dataForSigning, address));
     } catch (error) {
         if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrSignatureCanceledByUser));
+            return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
         }
-        return Promise.reject(new Error(ErrUnsignedTransaction));
+        return Promise.reject(updateError(`${errors.UnsignedTransaction}: ${error.message || error}`, error));
     }
 
     const buff = signature.toBuffer();
@@ -240,13 +247,15 @@ export async function submitOrderFragments(
     try {
         const resp = await axios.post(`${ingressURL}/orders`, request.toJS());
         if (resp.status !== 201) {
-            throw new Error(`Unexpected status code returned by Ingress (STATUS ${resp.status})`);
+            throw responseError("Unexpected status code returned by Ingress", resp);
         }
         return new EncodedData(resp.data.signature, Encodings.BASE64);
     } catch (error) {
         if (error.response) {
             if (error.response.status === 401) {
-                throw new Error("KYC verification failed in Ingress");
+                throw updateError("KYC verification failed in Ingress", error);
+                error.message = "KYC verification failed in Ingress";
+                throw error;
             } else {
                 throw new Error(`Ingress returned status ${error.response.status} with reason: ${error.response.data}`);
             }
