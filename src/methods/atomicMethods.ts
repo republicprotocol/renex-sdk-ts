@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
+import { errors, updateError } from "errors";
 import { EncodedData } from "../lib/encodedData";
 import { _authorizeAtom } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
@@ -187,7 +188,7 @@ export async function fetchAtomicOrder(sdk: RenExSDK, orderID: EncodedData): Pro
         }, sdk._networkData.network);
         return swap;
     } catch (error) {
-        throw new Error(`Couldn't find a swap with matching orderID: ${orderID.toBase64()}`);
+        throw updateError(`${errors.CouldNotFindSwap}: ${orderID.toBase64()}`, error);
     }
 }
 

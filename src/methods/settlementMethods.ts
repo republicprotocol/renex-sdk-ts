@@ -22,8 +22,11 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: Trad
             if (!atomConnected(sdk)) {
                 return defaultStatus;
             }
-            const status = await fetchAtomicOrderStatus(sdk, orderID);
-            return status;
+            try {
+                return await fetchAtomicOrderStatus(sdk, orderID);
+            } catch {
+                return defaultStatus;
+            }
         }
         const match = await matchDetails(sdk, orderID.toBase64());
         if (match !== undefined) {
@@ -48,7 +51,11 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
 
     if (order && order.swapServer) {
+        try {
         return fetchAtomicOrderStatus(sdk, orderID);
+        } catch {
+            return OrderStatus.NOT_SUBMITTED;
+        }
     }
 
     let orderStatus: OrderStatus;
@@ -149,7 +156,12 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
         receivedToken = idToToken(new BN((details.orderIsBuy) ? details.secondaryToken : details.priorityToken).toNumber());
         receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
     } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
-        const swap = await fetchAtomicOrder(sdk, orderID);
+        let swap;
+        try {
+            swap = await fetchAtomicOrder(sdk, orderID);
+        } catch (error) {
+            return undefined;
+        }
         if (toOrderStatus(swap.status) !== OrderStatus.SETTLED) {
             return undefined;
         }
