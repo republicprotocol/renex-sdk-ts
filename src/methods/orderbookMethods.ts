@@ -7,9 +7,9 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK from "../index";
 
+import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { /* ErrFailedBalanceCheck, ErrInsufficientBalance, */ ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { /* AtomicBalanceDetails, BalanceDetails, */ MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
@@ -133,8 +133,8 @@ export const openOrder = async (
     //         balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
     //     }
     //     if (!balanceDetails || balanceDetails.free === null) {
-    //         simpleConsole.error(ErrFailedBalanceCheck);
-    //         throw new Error(ErrFailedBalanceCheck);
+    //         simpleConsole.error(errors.FailedBalanceCheck);
+    //         throw new Error(errors.FailedBalanceCheck);
     //     }
     //     balance = balanceDetails.free;
     // } catch (err) {
@@ -142,20 +142,20 @@ export const openOrder = async (
     //     throw err;
     // }
     // if (spendVolume.gt(balance)) {
-    //     simpleConsole.error(ErrInsufficientBalance);
-    //     throw new Error(ErrInsufficientBalance);
+    //     simpleConsole.error(errors.InsufficientBalance);
+    //     throw new Error(errors.InsufficientBalance);
     // }
     if (orderInputs.price.lte(new BigNumber(0))) {
-        simpleConsole.error("Invalid price");
-        throw new Error("Invalid price");
+        simpleConsole.error(errors.InvalidPrice);
+        throw new Error(errors.InvalidPrice);
     }
     if (orderInputs.volume.lte(new BigNumber(0))) {
-        simpleConsole.error("Invalid volume");
-        throw new Error("Invalid volume");
+        simpleConsole.error(errors.InvalidVolume);
+        throw new Error(errors.InvalidVolume);
     }
     if (orderInputs.minVolume.lt(new BigNumber(0))) {
-        simpleConsole.error("Invalid minimum volume");
-        throw new Error("Invalid minimum volume");
+        simpleConsole.error(errors.InvalidMinimumVolume);
+        throw new Error(errors.InvalidMinimumVolume);
     }
 
     const absoluteMinVolume = calculateAbsoluteMinVolume(minEthTradeVolume, baseToken, quoteToken, orderInputs.price);
@@ -190,9 +190,9 @@ export const openOrder = async (
         simpleConsole.log("Submitting order to Atomic Swapper");
         try {
             await submitOrder(sdk, orderID, orderInputs);
-        } catch (err) {
-            simpleConsole.error(err.message || err);
-            throw new Error(`Error sending order to Atomic Swapper: ${err}`);
+        } catch (error) {
+            simpleConsole.error(error.message || error);
+            throw updateError(`Error sending order to Atomic Swapper: ${error.message || error}`, error);
         }
     }
 
@@ -288,7 +288,7 @@ export const getOrders = async (
 ): Promise<Order[]> => {
     const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
     if (filter.status && !filterableStatuses.includes(filter.status)) {
-        throw new Error(ErrUnsupportedFilterStatus);
+        throw new Error(errors.UnsupportedFilterStatus);
     }
 
     let orders = await ingress.getOrders(sdk.getWeb3(), sdk._contracts.orderbook, filter.start, filter.limit);

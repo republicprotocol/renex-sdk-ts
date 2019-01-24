@@ -2,6 +2,7 @@ import expandTilde from "expand-tilde";
 import storage from "node-persist";
 import path from "path";
 
+import { errors } from "../errors";
 import { BalanceAction, OrderID, TraderOrder } from "../types";
 import { StorageProvider } from "./interface";
 import { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./serializers";
@@ -128,7 +129,7 @@ export class FileSystemStorage implements StorageProvider {
         if (storagePath.trim()[0] === path.sep) {
             return path.resolve(storagePath);
         }
-        throw new Error("Storage path must start with either: '~/', './', or '/'");
+        throw new Error(errors.InvalidStoragePath);
     }
 
 }

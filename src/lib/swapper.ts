@@ -1,16 +1,12 @@
 import axios from "axios";
 import Web3 from "web3";
 
-import { TokenCode } from "types";
+import { errors, responseError, updateError } from "../errors";
+import { TokenCode } from "../types";
 import { EncodedData } from "./encodedData";
-import { ErrSignatureCanceledByUser, ErrUnsignedTransaction } from "./errors";
 
 const API = "http://localhost:7928";
 const SIGNATURE_PREFIX = "RenEx: swapperd: ";
-
-const ErrorUnableToRetrieveStatus = "Unable to retrieve order status";
-const ErrorUnableToRetrieveSwaps = "Unable to retrieve swaps";
-const ErrorUnableToFindMatchingSwap = "Unable to find matching swap";
 
 export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
@@ -154,22 +150,21 @@ export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerS
 }
 
 export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitImmediateResponse> {
-    const resp = await axios.post(`${API}/swaps?network=${network}`, swap).catch(err => {
-        if (err.response) {
-            return err.response;
-        }
-        throw err;
-    });
+    let resp;
+    resp = await axios.post(`${API}/swaps?network=${network}`, swap);
+
     if (resp.status === 403) {
-        throw new Error("User rejected the swap");
+        throw responseError(errors.UserRejectedSwap, resp);
     }
-    if (resp.status === 201) {
-        if (swap.delay !== undefined && swap.delay) {
-            return true;
-        }
-        return resp.data as SubmitImmediateResponse;
+
+    if (resp.status !== 201) {
+        throw responseError(errors.UnableToSubmitSwap, resp);
     }
-    return false;
+
+    if (swap.delay !== undefined && swap.delay) {
+        return true;
+    }
+    return resp.data as SubmitImmediateResponse;
 }
 
 export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => boolean, network: string): Promise<SwapReceipt> {
@@ -177,8 +172,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
     try {
         response = (await axios.get(`${API}/swaps?network=${network}`)).data;
     } catch (error) {
-        console.error(error);
-        throw new Error(ErrorUnableToRetrieveSwaps);
+        throw updateError(errors.UnableToRetrieveSwaps, error);
     }
 
     for (const innerSwap of response.swaps) {
@@ -187,7 +181,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
             return swap;
         }
     }
-    throw new Error(ErrorUnableToFindMatchingSwap);
+    throw new Error(errors.UnableToFindMatchingSwap);
 }
 
 export async function getAtomicAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
@@ -205,8 +199,7 @@ export async function getAtomicBalances(options: { network: string }): Promise<B
     try {
         response = (await axios.get(`${API}/balances?network=${options.network}`)).data;
     } catch (error) {
-        console.error(error);
-        throw new Error(ErrorUnableToRetrieveStatus);
+        throw updateError(`${errors.UnableToRetrieveStatus}: ${error.message || error}`, error);
     }
 
     return response;
@@ -220,9 +213,9 @@ async function signMessage(web3: Web3, address: string, message: string): Promis
         signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
     } catch (error) {
         if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(new Error(ErrSignatureCanceledByUser));
+            return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
         }
-        return Promise.reject(new Error(ErrUnsignedTransaction));
+        return Promise.reject(updateError(errors.UnsignedTransaction, error));
     }
 
     const buff = signature.toBuffer();

@@ -9,6 +9,7 @@ import { Provider } from "web3/providers";
 import LocalStorage from "./storage/localStorage";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
+import { errors, updateError } from "./errors";
 import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
 import { EncodedData, Encodings } from "./lib/encodedData";
@@ -39,6 +40,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 
 // Export all types
 export * from "./types";
+export { errors } from "./errors";
 export { StorageProvider } from "./storage/interface";
 export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./storage/serializers";
 
@@ -48,6 +50,7 @@ export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceActio
  * @class RenExSDK
  */
 export class RenExSDK {
+    public errors = errors;
 
     public _networkData: NetworkData;
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
@@ -240,7 +243,7 @@ export class RenExSDK {
                         return this.getConfig().storageProvider as StorageProvider;
                     }
                 } catch (error) {
-                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}. ${error}`);
+                    throw updateError(`Unsupported storage option: ${this.getConfig().storageProvider}: ${error.message || error}`, error);
                 }
         }
     }

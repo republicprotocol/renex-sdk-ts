@@ -13,6 +13,7 @@
 
 import * as bs58 from "bs58";
 
+import { errors } from "../errors";
 import { Record } from "./record";
 
 export enum Encodings {
@@ -68,12 +69,12 @@ const parse = (param: string | Buffer | typeof DefaultEncodedData, encoding?: En
     }
 
     if (param.encoding === Encodings.BUFFER && !(param.value instanceof Buffer)) {
-        throw new Error("invalid buffer");
+        throw new Error(errors.InvalidBuffer);
     }
 
     if (param.encoding === Encodings.HEX) {
         if (typeof param.value !== "string") {
-            throw new Error("invalid hex");
+            throw new Error(errors.InvalidHex);
         }
 
         if (param.value.slice(0, 2) === "0x") {
@@ -88,7 +89,7 @@ const parse = (param: string | Buffer | typeof DefaultEncodedData, encoding?: En
         }
 
         if (!param.value.match("^[A-Fa-f0-9]+$")) {
-            throw new Error("invalid hex");
+            throw new Error(errors.InvalidHex);
         }
     }
 
@@ -120,7 +121,7 @@ export class EncodedData extends Record(DefaultEncodedData) {
             case Encodings.BUFFER:
                 return prefix + (this.value as Buffer).toString("hex");
             default:
-                throw new Error("Unable to convert to hexadecimal representation");
+                throw new Error(errors.UnableToConvertToHexadecimalRepresentation);
         }
     }
 
@@ -133,7 +134,7 @@ export class EncodedData extends Record(DefaultEncodedData) {
             case Encodings.BUFFER:
                 return (this.value as Buffer).toString("base64");
             default:
-                throw new Error("Unable to convert to base64 representation");
+                throw new Error(errors.UnableToConvertToBase64Representation);
         }
     }
 
@@ -151,7 +152,7 @@ export class EncodedData extends Record(DefaultEncodedData) {
             case Encodings.BUFFER:
                 return this.value as Buffer;
             default:
-                throw new Error("Unable to convert to buffer");
+                throw new Error(errors.UnableToConvertToBuffer);
         }
     }
 
