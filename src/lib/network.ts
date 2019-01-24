@@ -6,6 +6,7 @@ export interface NetworkData {
     ingress: string;
     infura: string;
     etherscan: string;
+    wbtcKYCServer: string;
     ethNetwork: string;
     ethNetworkLabel: string;
     ethNetworkId: number;
@@ -25,6 +26,7 @@ export interface NetworkData {
         REN: string;
         OMG: string;
         ZRX: string;
+        WBTC: string;
     };
 }
 

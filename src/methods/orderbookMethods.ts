@@ -7,17 +7,17 @@ import * as ingress from "../lib/ingress";
 
 import RenExSDK from "../index";
 
-import { submitOrderToAtom } from "../lib/atomic";
+import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { ErrFailedBalanceCheck, ErrInsufficientBalance, ErrUnsupportedFilterStatus } from "../lib/errors";
 import { MarketPairs } from "../lib/market";
-import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
-import { atomicBalances } from "./atomicMethods";
+import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
+import { /* AtomicBalanceDetails, BalanceDetails, */ MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
+import { /* atomicBalances, */ submitOrder } from "./atomicMethods";
 import { onTxHash } from "./balanceActionMethods";
-import { balances, getTokenDetails } from "./balancesMethods";
+import { /* balances, */ getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
-import { darknodeFees, status } from "./settlementMethods";
+import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
 // TODO: Read these from the contract
@@ -29,7 +29,7 @@ const populateOrderDefaults = (
     marketDetail: MarketDetails,
 ): OrderInputsAll => {
     const price = new BigNumber(orderInputs.price);
-    const minVolume = marketDetail.base === Token.ETH ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, price);
+    const minVolume = calculateAbsoluteMinVolume(minEthTradeVolume, marketDetail.base, marketDetail.quote, price);
     return {
         symbol: orderInputs.symbol,
         side: orderInputs.side.toLowerCase() as OrderSide,
@@ -37,6 +37,7 @@ const populateOrderDefaults = (
         volume: new BigNumber(orderInputs.volume),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : minVolume,
+        expiry: 0,
         type: orderInputs.type !== undefined ? orderInputs.type : OrderType.LIMIT,
     };
 };
@@ -45,7 +46,13 @@ export const getMinEthTradeVolume = async (sdk: RenExSDK): Promise<BigNumber> =>
     return Promise.resolve(new BigNumber(MIN_ETH_TRADE_VOLUME));
 };
 
-const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, price: BigNumber) => {
+const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, baseToken: string, quoteToken: string, price: BigNumber) => {
+    if (quoteToken === Token.BTC) {
+        if (baseToken === Token.ETH) {
+            return minEthTradeVolume;
+        }
+        return normalizeVolume(minEthTradeVolume.dividedBy(price).multipliedBy(0.01), true);
+    }
     return normalizeVolume(minEthTradeVolume.dividedBy(price), true);
 };
 
@@ -110,56 +117,48 @@ export const openOrder = async (
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
     const feePercent = await darknodeFees(sdk);
-    let feeToken = receiveToken;
-    let feeAmount = quoteVolume.times(feePercent);
-    if (orderSettlement === OrderSettlement.RenExAtomic && baseToken === Token.ETH) {
-        feeToken = Token.ETH;
-        feeAmount = orderInputs.volume.times(feePercent);
-    }
+    const feeToken = receiveToken;
+    const feeAmount = quoteVolume.times(feePercent);
 
-    const retrievedBalances = await balances(sdk, [spendToken, feeToken]);
-    let balance = new BigNumber(0);
+    // let balanceDetails: BalanceDetails | AtomicBalanceDetails | undefined;
+    // let balance: BigNumber;
 
     const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
 
-    simpleConsole.log("Verifying trader balance");
-    if (orderSettlement === OrderSettlement.RenEx) {
-        const spendTokenBalance = retrievedBalances.get(spendToken);
-        if (spendTokenBalance) {
-            if (spendTokenBalance.free === null) {
-                simpleConsole.error(ErrFailedBalanceCheck);
-                throw new Error(ErrFailedBalanceCheck);
-            }
-            balance = spendTokenBalance.free;
-        }
-    } else {
-        try {
-            const atomicBalance = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
-            if (atomicBalance) {
-                balance = atomicBalance.free;
-            }
-        } catch (err) {
-            simpleConsole.error(err.message || err);
-            throw err;
-        }
-    }
-    if (spendVolume.gt(balance)) {
-        simpleConsole.error(ErrInsufficientBalance);
-        throw new Error(ErrInsufficientBalance);
-    }
+    // simpleConsole.log("Verifying trader balance");
+    // try {
+    //     if (orderSettlement === OrderSettlement.RenEx) {
+    //         balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
+    //     } else {
+    //         balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
+    //     }
+    //     if (!balanceDetails || balanceDetails.free === null) {
+    //         simpleConsole.error(errors.FailedBalanceCheck);
+    //         throw new Error(errors.FailedBalanceCheck);
+    //     }
+    //     balance = balanceDetails.free;
+    // } catch (err) {
+    //     simpleConsole.error(err.message || err);
+    //     throw err;
+    // }
+    // if (spendVolume.gt(balance)) {
+    //     simpleConsole.error(errors.InsufficientBalance);
+    //     throw new Error(errors.InsufficientBalance);
+    // }
     if (orderInputs.price.lte(new BigNumber(0))) {
-        simpleConsole.error("Invalid price");
-        throw new Error("Invalid price");
+        simpleConsole.error(errors.InvalidPrice);
+        throw new Error(errors.InvalidPrice);
     }
     if (orderInputs.volume.lte(new BigNumber(0))) {
-        simpleConsole.error("Invalid volume");
-        throw new Error("Invalid volume");
+        simpleConsole.error(errors.InvalidVolume);
+        throw new Error(errors.InvalidVolume);
     }
     if (orderInputs.minVolume.lt(new BigNumber(0))) {
-        simpleConsole.error("Invalid minimum volume");
-        throw new Error("Invalid minimum volume");
+        simpleConsole.error(errors.InvalidMinimumVolume);
+        throw new Error(errors.InvalidMinimumVolume);
     }
-    const absoluteMinVolume = (baseToken === Token.ETH) ? minEthTradeVolume : calculateAbsoluteMinVolume(minEthTradeVolume, orderInputs.price);
+
+    const absoluteMinVolume = calculateAbsoluteMinVolume(minEthTradeVolume, baseToken, quoteToken, orderInputs.price);
     if (orderInputs.volume.lt(absoluteMinVolume)) {
         let errMsg = `Volume must be at least ${absoluteMinVolume} ${baseToken}`;
         if (baseToken !== Token.ETH) {
@@ -182,17 +181,6 @@ export const openOrder = async (
         throw new Error(errMsg);
     }
 
-    if (orderSettlement === OrderSettlement.RenExAtomic) {
-        const usableFeeTokenBalance = retrievedBalances.get(feeToken);
-        if (usableFeeTokenBalance && usableFeeTokenBalance.free !== null && feeAmount.gt(usableFeeTokenBalance.free)) {
-            simpleConsole.error("Insufficient balance for fees");
-            throw new Error("Insufficient balance for fees");
-        } else if (usableFeeTokenBalance && usableFeeTokenBalance.free === null) {
-            simpleConsole.error(ErrFailedBalanceCheck);
-            throw new Error(ErrFailedBalanceCheck);
-        }
-    }
-
     const nonce = ingress.randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex"));
     let ingressOrder = ingress.createOrder(orderInputs, nonce);
     const orderID = ingress.getOrderID(sdk.getWeb3(), ingressOrder);
@@ -201,10 +189,10 @@ export const openOrder = async (
     if (orderSettlement === OrderSettlement.RenExAtomic) {
         simpleConsole.log("Submitting order to Atomic Swapper");
         try {
-            await submitOrderToAtom(orderID);
-        } catch (err) {
-            simpleConsole.error(err.message || err);
-            throw new Error("Error sending order to Atomic Swapper");
+            await submitOrder(sdk, orderID, orderInputs);
+        } catch (error) {
+            simpleConsole.error(error.message || error);
+            throw updateError(`Error sending order to Atomic Swapper: ${error.message || error}`, error);
         }
     }
 
@@ -246,11 +234,14 @@ export const openOrder = async (
     simpleConsole.log("Order submitted.");
 
     if (awaitConfirmation) {
+        simpleConsole.log("Waiting for order confirmation...");
         await promiEvent;
         simpleConsole.log("Order confirmed.");
     }
 
-    const traderOrder = {
+    const traderOrder: TraderOrder = {
+        swapServer: undefined,
+        version: LATEST_TRADER_ORDER_VERSION,
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.getAddress(),
@@ -297,7 +288,7 @@ export const getOrders = async (
 ): Promise<Order[]> => {
     const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
     if (filter.status && !filterableStatuses.includes(filter.status)) {
-        throw new Error(ErrUnsupportedFilterStatus);
+        throw new Error(errors.UnsupportedFilterStatus);
     }
 
     let orders = await ingress.getOrders(sdk.getWeb3(), sdk._contracts.orderbook, filter.start, filter.limit);
@@ -329,7 +320,7 @@ export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder
     await Promise.all(orders.map(async order => {
         if (order.status === OrderStatus.NOT_SUBMITTED ||
             order.status === OrderStatus.OPEN) {
-            const newStatus = await status(sdk, order.id);
+            const newStatus = await fetchOrderStatus(sdk, order.id, order);
             if (newStatus !== order.status) {
                 newStatuses.set(order.id, newStatus);
             }
@@ -352,9 +343,9 @@ export const defaultTransactionOptions = async (sdk: RenExSDK, options?: Transac
     let gasPrice;
     let simpleConsole = NullConsole;
     if (options) {
-        awaitConfirmation = options.awaitConfirmation || awaitConfirmation;
-        gasPrice = options.gasPrice || await getGasPrice(sdk);
-        simpleConsole = options.simpleConsole || simpleConsole;
+        awaitConfirmation = options.awaitConfirmation !== undefined ? options.awaitConfirmation : awaitConfirmation;
+        gasPrice = options.gasPrice !== undefined ? options.gasPrice : await getGasPrice(sdk);
+        simpleConsole = options.simpleConsole !== undefined ? options.simpleConsole : simpleConsole;
     }
     return {
         awaitConfirmation,

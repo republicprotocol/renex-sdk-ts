@@ -47,7 +47,7 @@ const nondepositedBalance = async (sdk: RenExSDK, token: TokenCode): Promise<Big
 const nondepositedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
     // Loop through all tokens, returning null for any that throw an error
     return Promise.all(tokens.map((token: TokenCode) => nondepositedBalance(sdk, token).catch((error) => {
-        console.error(`Failed to get non deposited balance for ${token}: ${error}`);
+        console.error(`Failed to get non deposited balance for ${token}: ${error.message || error}`);
         return null;
     })));
 };
@@ -71,27 +71,21 @@ const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNu
     const usedOrderBalancesPromise = fetchTraderOrders(sdk).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
-            if (order.status === OrderStatus.NOT_SUBMITTED ||
-                order.status === OrderStatus.OPEN ||
-                order.status === OrderStatus.CONFIRMED
+            if (
+                !order.swapServer &&
+                order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx &&
+                (
+                    order.status === OrderStatus.NOT_SUBMITTED ||
+                    order.status === OrderStatus.OPEN ||
+                    order.status === OrderStatus.CONFIRMED
+                )
             ) {
-                if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
-                    const token = order.computedOrderDetails.spendToken;
-                    const usedTokenBalance = usedFunds.get(token);
-                    if (usedTokenBalance) {
-                        usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
-                    } else {
-                        usedFunds.set(token, order.computedOrderDetails.spendVolume);
-                    }
+                const token = order.computedOrderDetails.spendToken;
+                const usedTokenBalance = usedFunds.get(token);
+                if (usedTokenBalance) {
+                    usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
                 } else {
-                    // Include atomic swap fees in usable balance calculation
-                    const token = order.computedOrderDetails.feeToken;
-                    const feeTokenBalance = usedFunds.get(token);
-                    if (feeTokenBalance) {
-                        usedFunds.set(token, feeTokenBalance.plus(order.computedOrderDetails.feeAmount));
-                    } else {
-                        usedFunds.set(token, order.computedOrderDetails.feeAmount);
-                    }
+                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
                 }
             }
         });

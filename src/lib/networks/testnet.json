@@ -1,26 +1,26 @@
 {
     "network": "testnet",
     "ingress": "https://renex-ingress-testnet.herokuapp.com",
-    "infura": "https://kovan.infura.io",
+    "infura": "https://kovan.infura.io/v3",
     "etherscan": "https://kovan.etherscan.io",
+    "wbtcKYCServer": "https://swapperd-kyc-server-testnet.herokuapp.com",
     "ethNetwork": "kovan",
     "ethNetworkLabel": "Kovan",
     "ethNetworkId": 42,
-    "contracts": [
-        {
-            "darknodeRegistry": "0x75Fa8349fc9C7C640A4e9F1A1496fBB95D2Dc3d5",
-            "orderbook": "0xA9b453FC64b4766Aab8a867801d0a4eA7b1474E0",
-            "renExTokens": "0x481b39E2000a117CBA417473DC1E7cdAf4EAd98F",
-            "renExBalances": "0xb0E21B869D6f741a8A8F5075BA59E496593B881A",
-            "renExSettlement": "0x65A699E555cf93e4e115FfC2DE2F41d5A21DF3Fb",
-            "wyre": "0xB14fA2276D8bD26713A6D98871b2d63Da9eefE6f"
-        }
-    ],
+    "contracts": [{
+        "darknodeRegistry": "0x75Fa8349fc9C7C640A4e9F1A1496fBB95D2Dc3d5",
+        "orderbook": "0xA9b453FC64b4766Aab8a867801d0a4eA7b1474E0",
+        "renExTokens": "0x481b39E2000a117CBA417473DC1E7cdAf4EAd98F",
+        "renExBalances": "0xb0E21B869D6f741a8A8F5075BA59E496593B881A",
+        "renExSettlement": "0x8EB372d0bEE7635B9DC355f2cF19E28F3BBECA53",
+        "wyre": "0xB14fA2276D8bD26713A6D98871b2d63Da9eefE6f"
+    }],
     "tokens": {
         "TUSD": "0x525389752ffe6487d33EF53FBcD4E5D3AD7937a0",
         "DGX": "0x932F4580B261e9781A6c3c102133C8fDd4503DFc",
         "REN": "0x2CD647668494c1B15743AB283A0f980d90a87394",
         "OMG": "0x66497ba75dD127b46316d806c077B06395918064",
-        "ZRX": "0x6EB628dCeFA95802899aD3A9EE0C7650Ac63d543"
+        "ZRX": "0x6EB628dCeFA95802899aD3A9EE0C7650Ac63d543",
+        "WBTC": "0xa1d3eecb76285b4435550e4d963b8042a8bffbf0"
     }
 }

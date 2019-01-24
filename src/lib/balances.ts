@@ -1,12 +1,12 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { ErrNumericalPrecision } from "./errors";
+import { errors } from "../errors";
 // import { Token, TokenDetails } from "./market";
 
 export const adjustDecimals = (value: BN | BigNumber, fromDecimals: number, toDecimals: number): BN => {
     if (BigNumber.isBigNumber(value) || value instanceof BigNumber) {
-        value = new BigNumber((value as BigNumber).toFixed());
+        value = new BigNumber(value.toFixed());
     } else {
         value = new BigNumber(value.toString());
     }
@@ -18,7 +18,7 @@ export const adjustDecimals = (value: BN | BigNumber, fromDecimals: number, toDe
         if (!v.integerValue(BigNumber.ROUND_FLOOR).eq(v)) {
             // We have a floating point number which can't be converted to BN.
             // This usually happens when the value passed in is too small.
-            throw new Error(`${ErrNumericalPrecision}: converting ${value} from ${fromDecimals} to ${toDecimals} decimals`);
+            throw new Error(`${errors.NumericalPrecision}: converting ${value} from ${fromDecimals} to ${toDecimals} decimals`);
         }
         return new BN(v.toFixed());
     }

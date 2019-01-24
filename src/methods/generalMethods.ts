@@ -1,5 +1,4 @@
 import axios from "axios";
-import BigNumber from "bignumber.js";
 
 import { TransactionReceipt } from "web3/types";
 
@@ -7,6 +6,7 @@ import RenExSDK, { NumberInput, TransactionStatus } from "../index";
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
+import { errors, responseError } from "../errors";
 import { toSmallestUnit } from "../lib/tokens";
 import { Token, TokenCode } from "../types";
 import { getTokenDetails } from "./balancesMethods";
@@ -14,7 +14,7 @@ import { getTokenDetails } from "./balancesMethods";
 export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
     const gasPrice = await getGasPrice(sdk);
     const tokenDetails = await getTokenDetails(sdk, token);
-    const value = toSmallestUnit(new BigNumber(valueBig), tokenDetails).toString();
+    const value = toSmallestUnit(valueBig, tokenDetails).toFixed();
     if (token === Token.ETH) {
         sdk.getWeb3().eth.sendTransaction({
             from: sdk.getAddress(),
@@ -40,13 +40,13 @@ export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> =>
             const gasPrice = resp.data.fast * Math.pow(10, 8);
             return gasPrice > maxGasPrice ? maxGasPrice : gasPrice;
         }
-        throw new Error("cannot retrieve gas price from ethgasstation");
+        throw responseError(errors.EthGasStationError, resp);
     } catch (error) {
         // TODO: Add error logging
         try {
             return await sdk.getWeb3().eth.getGasPrice() * 1.1;
         } catch (error) {
-            // TODO: Add error logging
+            console.error(error);
             return undefined;
         }
     }

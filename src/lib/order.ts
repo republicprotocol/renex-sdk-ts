@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
+import { errors } from "../errors";
 import { OrderStatus } from "../index";
-import { ErrUnknownOrderStatus } from "./errors";
 import { Record } from "./record";
 
 export class CoExp extends Record({
@@ -80,7 +80,7 @@ export function volumeFloatToCoExp(volume: BigNumber): CoExp {
  * A separate call to the RenExSettlement contract is needed to determine the order status
  * during settlement.
  *
- * @throws {ErrUnknownOrderStatus} Will throw when the state is neither 0, 1, or 2.
+ * @throws {errors.UnknownOrderStatus} Will throw when the state is neither 0, 1, or 2.
  * @param {number} state The state of the order returned from the Orderbook.
  * @returns {OrderStatus} The order status.
  */
@@ -95,7 +95,7 @@ export function orderbookStateToOrderStatus(state: number): OrderStatus {
         case 3:
             return OrderStatus.CANCELED;
         default:
-            throw new Error(`${ErrUnknownOrderStatus}: ${state}`);
+            throw new Error(`${errors.UnknownOrderStatus}: ${state}`);
     }
 }
 
@@ -108,7 +108,7 @@ export function orderbookStateToOrderStatus(state: number): OrderStatus {
  * Status 2 means the order has been settled.
  * Status 3 means the order has been slashed.
  *
- * @throws {ErrUnknownOrderStatus} Will throw when the state is neither 0, 1, 2, or 3.
+ * @throws {errors.UnknownOrderStatus} Will throw when the state is neither 0, 1, 2, or 3.
  * @param {number} status The status of the order returned from the RenExSettlement contract.
  * @returns {OrderStatus} The order status.
  */
@@ -123,6 +123,6 @@ export function settlementStatusToOrderStatus(status: number): OrderStatus {
         case 3:
             return OrderStatus.SLASHED;
         default:
-            throw new Error(`${ErrUnknownOrderStatus}: ${status}`);
+            throw new Error(`${errors.UnknownOrderStatus}: ${status}`);
     }
 }

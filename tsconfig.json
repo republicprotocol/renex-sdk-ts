@@ -22,7 +22,8 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         "suppressImplicitAnyIndexErrors": true,
-        "strictPropertyInitialization": true
+        "strictPropertyInitialization": true,
+        "noUnusedLocals": true
     },
     "include": [
         "src/**/*",

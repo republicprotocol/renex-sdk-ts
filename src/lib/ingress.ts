@@ -2,7 +2,7 @@ import axios from "axios";
 
 // tsc complains about importing NodeRSA normally
 import * as NodeRSAType from "node-rsa";
-const NodeRSA = require("node-rsa") as { new(): NodeRSAType };
+const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
 import Web3 from "web3";
 
@@ -13,6 +13,7 @@ import * as shamir from "./shamir";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
+import { errors, responseError, updateError } from "../errors";
 import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
@@ -28,7 +29,7 @@ const NULL = "0x0000000000000000000000000000000000000000";
 
 export enum OrderSettlement {
     RenEx = 1,
-    RenExAtomic = 2,
+    RenExAtomic = 3,
 }
 
 function orderSettlementMapper(settlement: RenExOrderSettlement) {
@@ -71,6 +72,8 @@ function orderParityMapper(orderSide: OrderSide) {
             return OrderParity.BUY;
         case OrderSide.SELL:
             return OrderParity.SELL;
+        default:
+            throw new Error(`Unknown order side: ${orderSide}`);
     }
 }
 
@@ -94,7 +97,7 @@ export class Order extends Record({
 }) { }
 
 export class AtomAuthorizationRequest extends Record({
-    atomAddress: "",
+    address: "",
     signature: "",
 }) { }
 
@@ -138,34 +141,72 @@ export function randomNonce(randomBN: () => BN): BN {
 }
 
 export async function authorizeSwapper(ingressURL: string, request: AtomAuthorizationRequest): Promise<boolean> {
-    const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
-    if (resp.status === 201) {
-        return true;
+    try {
+        const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
+        if (resp.status === 201) {
+            return true;
+        }
+        throw responseError(errors.CouldNotAuthorizeSwapper, resp);
+    } catch (error) {
+        if (error && error.response) {
+            if (error.response.status === 401) {
+                throw updateError(`Could not authorize swapper. Address is not KYC'd. ${error.message || error}`, error);
+            }
+            throw updateError(`Could not authorize swapper. ${error.message || error}`, error);
+        }
+        throw error;
     }
-    if (resp.status === 401) {
-        throw new Error("Could not authorize swapper. Reason: address is not KYC'd");
-    }
-    throw new Error(`Could not authorize swapper. Status code: ${resp.status}`);
 }
 
-export async function checkAtomAuthorization(
-    ingressURL: string,
-    address: string,
-    expectedEthAddress: string,
-): Promise<boolean> {
-    return axios.get(`${ingressURL}/authorized/${address}`)
-        .then(resp => {
-            if (resp.status !== 200) {
-                throw new Error("Unexpected status code: " + resp.status);
-            }
-            const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
-            return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
-        })
-        .catch(err => {
-            console.error(err);
-            return false;
-        });
+export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
+    const req = await getAtomAuthorizationRequest(web3, atomAddress, address);
+    await authorizeSwapper(ingressURL, req);
 }
+
+async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
+    const checksumAddress = web3.utils.toChecksumAddress(atomAddress);
+    const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
+
+    let signature: EncodedData;
+    try {
+        // tslint:disable-next-line:no-any
+        signature = new EncodedData(await (web3.eth.personal.sign as any)(dataForSigning, address));
+    } catch (error) {
+        if (error.message.match(/User denied message signature/)) {
+            return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
+        }
+        return Promise.reject(updateError(`${errors.UnsignedTransaction}: ${error.message || error}`, error));
+    }
+
+    const buff = signature.toBuffer();
+    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
+    // but for future compatibility, we stick to one format)
+    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
+    if (buff[64] === 27 || buff[64] === 28) {
+        buff[64] = buff[64] - 27;
+    }
+
+    return new AtomAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
+}
+
+// export async function checkAtomAuthorization(
+//     ingressURL: string,
+//     address: string,
+//     expectedEthAddress: string,
+// ): Promise<boolean> {
+//     return axios.get(`${ingressURL}/authorized/${address}`)
+//         .then(resp => {
+//             if (resp.status !== 200) {
+//                 throw new Error("Unexpected status code: " + resp.status);
+//             }
+//             const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
+//             return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
+//         })
+//         .catch(err => {
+//             console.error(err);
+//             return false;
+//         });
+// }
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const marketDetail = MarketPairs.get(orderInputs.symbol);
@@ -206,13 +247,15 @@ export async function submitOrderFragments(
     try {
         const resp = await axios.post(`${ingressURL}/orders`, request.toJS());
         if (resp.status !== 201) {
-            throw new Error(`Unexpected status code returned by Ingress (STATUS ${resp.status})`);
+            throw responseError("Unexpected status code returned by Ingress", resp);
         }
         return new EncodedData(resp.data.signature, Encodings.BASE64);
     } catch (error) {
         if (error.response) {
             if (error.response.status === 401) {
-                throw new Error("KYC verification failed in Ingress");
+                throw updateError("KYC verification failed in Ingress", error);
+                error.message = "KYC verification failed in Ingress";
+                throw error;
             } else {
                 throw new Error(`Ingress returned status ${error.response.status} with reason: ${error.response.data}`);
             }
@@ -361,7 +404,9 @@ export async function buildOrderMapping(
                 try {
                     darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
                 } catch (error) {
-                    Promise.reject(error);
+                    // We don't want everything to crash if even one darknode is malicious
+                    // Log the error but keep going
+                    console.error(error);
                 }
 
                 const [
@@ -445,7 +490,7 @@ async function getDarknodePublicKey(
 ): Promise<NodeRSAType | null> {
     const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
 
-    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
+    if (darknodeKeyHex as (string | null) === null || darknodeKeyHex.length === 0) {
         simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
         return null;
     }

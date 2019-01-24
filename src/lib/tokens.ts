@@ -2,14 +2,26 @@ import RenExSDK from "../index";
 
 import { BigNumber } from "bignumber.js";
 import BN from "bn.js";
-import { Token, TokenCode, TokenDetails } from "../types";
+import { NumberInput, Token, TokenCode, TokenDetails } from "../types";
 
-export function toSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
-    return amount.times(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+export function toSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
+    let decimals: number;
+    if (typeof tokenDetails === "number") {
+        decimals = tokenDetails;
+    } else {
+        decimals = tokenDetails.decimals;
+    }
+    return new BigNumber(amount).times(new BigNumber(10).exponentiatedBy(decimals));
 }
 
-export function fromSmallestUnit(amount: BigNumber, tokenDetails: TokenDetails): BigNumber {
-    return amount.div(new BigNumber(10).exponentiatedBy(tokenDetails.decimals));
+export function fromSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
+    let decimals: number;
+    if (typeof tokenDetails === "number") {
+        decimals = tokenDetails;
+    } else {
+        decimals = tokenDetails.decimals;
+    }
+    return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
 }
 
 export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
@@ -32,6 +44,8 @@ export function tokenToID(token: TokenCode): number {
             return 65537;
         case Token.OMG:
             return 65538;
+        case Token.WBTC:
+            return 65539;
     }
     throw new Error(`Invalid token: ${token}`);
 }
@@ -52,6 +66,8 @@ export function idToToken(token: number): TokenCode {
             return Token.ZRX;
         case 65538:
             return Token.OMG;
+        case 65539:
+            return Token.WBTC;
     }
     throw new Error(`Invalid token ID: ${token}`);
 }

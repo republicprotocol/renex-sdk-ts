@@ -19,6 +19,7 @@ export enum OrderStatus {
     CANCELED = "CANCELED",
     SETTLED = "SETTLED",
     SLASHED = "SLASHED",
+    EXPIRED = "EXPIRED",
 }
 
 export enum OrderSettlement {
@@ -33,10 +34,11 @@ export enum OrderType {
     LIMIT_IOC = "limit_ioc",
 }
 
-export enum OrderSide {
-    BUY = "buy",
-    SELL = "sell",
-}
+export type OrderSide = "buy" | "sell";
+export const OrderSide = {
+    BUY: "buy" as OrderSide,
+    SELL: "sell" as OrderSide,
+};
 
 export enum Token {
     BTC = "BTC",
@@ -46,10 +48,14 @@ export enum Token {
     REN = "REN",
     ZRX = "ZRX",
     OMG = "OMG",
+    WBTC = "WBTC",
 }
 
 export enum MarketPair {
+    WBTC_BTC = "WBTC/BTC",
     ETH_BTC = "ETH/BTC",
+    REN_BTC = "REN/BTC",
+    TUSD_BTC = "TUSD/BTC",
     DGX_ETH = "DGX/ETH",
     TUSD_ETH = "TUSD/ETH",
     REN_ETH = "REN/ETH",
@@ -70,7 +76,7 @@ export type MarketCode = string;
 export interface OrderInputs {
     // Required fields
     symbol: MarketCode;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-    side: string;            // Buy receives base token, sell receives quote token
+    side: OrderSide;            // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
 
@@ -89,6 +95,8 @@ export interface OrderInputsAll extends OrderInputs {
     // Change to non-optional
     minVolume: BigNumber;
     type: OrderType;
+    // This may have been set in the past but now defaults to zero
+    expiry: number;
 }
 
 export interface ComputedOrderDetails {
@@ -110,13 +118,27 @@ export interface Order {
     matchDetails?: MatchDetails;
 }
 
-// If TraderOrder is changed, then it's serialize / deserialize functions should
-// be updated as well.
-export interface TraderOrder extends Order {
+export interface WBTCOrder extends Order {
+    readonly version?: number;
+    readonly swapServer: true;
+    readonly orderInputs: OrderInputs;
+    readonly computedOrderDetails: ComputedOrderDetails;
+}
+
+export interface SwapOrder extends Order {
+    // Some older versions of TraderOrder do not have version
+    readonly version?: number;
+
+    readonly swapServer: undefined;
+
     readonly computedOrderDetails: ComputedOrderDetails;
     readonly orderInputs: OrderInputsAll;
     readonly transactionHash: string;
 }
+
+// If TraderOrder is changed, then it's serialize / deserialize functions should
+// be updated as well.
+export type TraderOrder = WBTCOrder | SwapOrder;
 
 export interface OrderbookFilter {
     address?: string;
@@ -149,8 +171,8 @@ export interface BalanceDetails {
 }
 
 export interface AtomicBalanceDetails {
-    free: BigNumber;
-    used: BigNumber;
+    free: BigNumber | null;
+    used: BigNumber | null;
 }
 
 export enum BalanceActionType {
@@ -178,6 +200,8 @@ export interface WithdrawTransactionOptions extends TransactionOptions {
 // If BalanceAction is changed, then it's serialize / deserialize functions
 // should be updated as well.
 export interface BalanceAction {
+    // Some older versions of BalanceAction do not have version
+    version?: number;
     action: BalanceActionType;
     amount: BigNumber;
     time: number;

@@ -8,9 +8,10 @@ import { BalanceAction, BalanceActionType, NumberInput, Token, TokenCode, TokenD
 
 import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
-import { ErrCanceledByUser, ErrFailedBalanceCheck, ErrInsufficientBalance, ErrInsufficientFunds, ErrUnimplemented } from "../lib/errors";
+import { errors, updateError } from "../errors";
 import { requestWithdrawalSignature } from "../lib/ingress";
 import { toSmallestUnit } from "../lib/tokens";
+import { LATEST_BALANCE_ACTION_VERSION } from "../storage/serializers";
 import { balances, getTokenDetails } from "./balancesMethods";
 import { getTransactionStatus } from "./generalMethods";
 import { defaultTransactionOptions } from "./orderbookMethods";
@@ -71,9 +72,9 @@ export const deposit = async (
     // Check that we can deposit that amount
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
     if (tokenBalance && tokenBalance.nondeposited === null) {
-        throw new Error(ErrFailedBalanceCheck);
+        throw new Error(errors.FailedBalanceCheck);
     } else if (tokenBalance && tokenBalance.nondeposited !== null && value.gt(tokenBalance.nondeposited)) {
-        throw new Error(ErrInsufficientBalance);
+        throw new Error(errors.InsufficientBalance);
     }
 
     const address = sdk.getAddress();
@@ -83,6 +84,7 @@ export const deposit = async (
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
+        version: LATEST_BALANCE_ACTION_VERSION,
         action: BalanceActionType.Deposit,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
@@ -165,10 +167,10 @@ export const deposit = async (
         }
 
         if (error.message.match("Insufficient funds")) {
-            throw new Error(ErrInsufficientFunds);
+            throw updateError(errors.InsufficientFunds, error);
         }
         if (error.message.match("User denied transaction signature")) {
-            throw new Error(ErrCanceledByUser);
+            throw updateError(errors.CanceledByUser, error);
         }
         throw error;
     }
@@ -184,15 +186,15 @@ export const withdraw = async (
 
     // Trustless withdrawals are not implemented yet
     if (options && options.withoutIngressSignature === true) {
-        throw new Error(ErrUnimplemented);
+        throw new Error(errors.Unimplemented);
     }
 
     // Check the balance before withdrawal attempt
     const tokenBalance = await balances(sdk, [token]).then(b => b.get(token));
     if (tokenBalance && tokenBalance.free === null) {
-        throw new Error(ErrFailedBalanceCheck);
+        throw new Error(errors.FailedBalanceCheck);
     } else if (tokenBalance && tokenBalance.free !== null && value.gt(tokenBalance.free)) {
-        throw new Error(ErrInsufficientBalance);
+        throw new Error(errors.InsufficientBalance);
     }
 
     const address = sdk.getAddress();
@@ -202,6 +204,7 @@ export const withdraw = async (
     const valueBN = new BN(toSmallestUnit(value, tokenDetails).toFixed());
 
     const balanceAction: BalanceAction = {
+        version: LATEST_BALANCE_ACTION_VERSION,
         action: BalanceActionType.Withdraw,
         amount: value,
         time: Math.floor(new Date().getTime() / 1000),
@@ -217,7 +220,7 @@ export const withdraw = async (
 
         const { txHash, promiEvent } = await onTxHash(sdk._contracts.renExBalances.withdraw(
             tokenDetails.address,
-            sdk.getWeb3().utils.toHex(valueBN),
+            `0x${valueBN.toString("hex")}`,
             signature.toHex(),
             { from: address, gasPrice, /* nonce: balanceAction.nonce */ },
         ));
@@ -251,10 +254,10 @@ export const withdraw = async (
         }
 
         if (error.message.match("Insufficient funds")) {
-            throw new Error(ErrInsufficientFunds);
+            throw updateError(errors.InsufficientFunds, error);
         }
         if (error.message.match("User denied transaction signature")) {
-            throw new Error(ErrCanceledByUser);
+            throw updateError(errors.CanceledByUser, error);
         }
         throw error;
     }

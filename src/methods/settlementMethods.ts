@@ -3,76 +3,83 @@ import BN from "bn.js";
 
 import RenExSDK from "../index";
 
-import { getOrderStatus } from "../lib/atomic";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { orderbookStateToOrderStatus, settlementStatusToOrderStatus } from "../lib/order";
-import { idToToken } from "../lib/tokens";
+import { orderbookStateToOrderStatus } from "../lib/order";
+import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
-import { atomConnected } from "./atomicMethods";
+import { atomConnected, fetchAtomicOrder, fetchAtomicOrderStatus, toOrderStatus } from "./atomicMethods";
+import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
 
 // This function is called if the Orderbook returns Confirmed
-const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
-
+const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: TraderOrder): Promise<OrderStatus> => {
+    let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
     try {
-        await matchDetails(sdk, orderID.toBase64());
-    } catch (error) {
-        return OrderStatus.CONFIRMED;
-    }
-
-    // Retrieve order from storage to see if order is an Atomic Swap
-    const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
-
-    // If not atomic, return settled
-    if (!storedOrder || storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
-        return OrderStatus.SETTLED;
-    }
-
-    const storedStatus = !storedOrder.status ? OrderStatus.CONFIRMED : storedOrder.status;
-
-    // If RenEx Swapper is not connected, return previous status
-    if (!atomConnected(sdk)) {
-        return storedStatus;
-    }
-
-    // Ask RenEx Swapper for status
-    try {
-        let orderStatus = await getOrderStatus(orderID);
-
-        // The Swapper may not have the most recent status
-        if (orderStatus === OrderStatus.OPEN || orderStatus === OrderStatus.NOT_SUBMITTED) {
-            orderStatus = OrderStatus.CONFIRMED;
+        defaultStatus = order.status !== OrderStatus.OPEN ? order.status : defaultStatus;
+        // If order is an atomic order, ask Swapper for status
+        if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
+            // If the Swapper is disconnected we won't know the swap status
+            if (!atomConnected(sdk)) {
+                return defaultStatus;
+            }
+            try {
+                return await fetchAtomicOrderStatus(sdk, orderID);
+            } catch (error) {
+                return defaultStatus;
+            }
         }
-
-        return orderStatus;
+        const match = await matchDetails(sdk, orderID.toBase64());
+        if (match !== undefined) {
+            return OrderStatus.SETTLED;
+        }
     } catch (error) {
-        // Return previous status;
-        return storedStatus;
+        return defaultStatus;
     }
+    return defaultStatus;
 };
 
-export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderStatus> => {
+export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?: TraderOrder): Promise<OrderStatus> => {
+    if (!order) {
+        try {
+            order = await sdk._storage.getOrder(orderID64);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     // Convert orderID from base64
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
+
+    if (order && order.swapServer) {
+        try {
+            return await fetchAtomicOrderStatus(sdk, orderID);
+        } catch (error) {
+            return OrderStatus.NOT_SUBMITTED;
+        }
+    }
 
     let orderStatus: OrderStatus;
 
     let orderbookStatus;
-    try {
-        orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
-    } catch (err) {
-        console.error(`Unable to call orderState in status`);
-        throw err;
+    if (order && order.swapServer) {
+        orderbookStatus = OrderStatus.CONFIRMED;
+    } else {
+        try {
+            orderbookStatus = orderbookStateToOrderStatus(new BN(await sdk._contracts.orderbook.orderState(orderID.toHex())).toNumber());
+        } catch (err) {
+            console.error(`Unable to call orderState in status`);
+            throw err;
+        }
     }
-    if (orderbookStatus === OrderStatus.CONFIRMED) {
-        orderStatus = await settlementStatus(sdk, orderID);
+
+    if (order && orderbookStatus === OrderStatus.CONFIRMED) {
+        orderStatus = await settlementStatus(sdk, orderID, order);
 
         // If the order is still settling, check how much time has passed. We
         // do this since we do not want the user's funds to be locked up
         // forever if a trader attempts to settle an order without funds they
         // actually possess.
-        const storedOrder = await sdk._storage.getOrder(orderID64);
-        if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx && orderStatus === OrderStatus.CONFIRMED) {
+        if (order && order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx && orderStatus === OrderStatus.CONFIRMED) {
             let currentBlockNumber = 0;
             try {
                 currentBlockNumber = await sdk.getWeb3().eth.getBlockNumber();
@@ -91,17 +98,24 @@ export const status = async (sdk: RenExSDK, orderID64: OrderID): Promise<OrderSt
                 }
             }
         }
+    } else if (orderbookStatus === OrderStatus.OPEN) {
+        if (order &&
+            order.orderInputs.expiry !== 0 &&
+            // Note: Date.now() returns milliseconds
+            (order.orderInputs.expiry < (Date.now() / 1000))) {
+            orderStatus = OrderStatus.EXPIRED;
+        } else {
+            orderStatus = orderbookStatus;
+        }
     } else {
         orderStatus = orderbookStatus;
     }
 
     // Update local storage (without awaiting)
-    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder | undefined) => {
-        if (storedOrder) {
-            storedOrder.status = orderStatus;
-            await sdk._storage.setOrder(storedOrder);
-        }
-    }).catch(console.error);
+    if (order) {
+        order.status = orderStatus;
+        await sdk._storage.setOrder(order);
+    }
 
     return orderStatus;
 };
@@ -115,7 +129,7 @@ export const darknodeFees = async (sdk: RenExSDK): Promise<BigNumber> => {
     return numerator.dividedBy(denominator);
 };
 
-export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails> => {
+export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<MatchDetails | undefined> => {
 
     // Check if we already have the match details
     const storedOrder = await sdk._storage.getOrder(orderID64);
@@ -125,54 +139,53 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
 
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
     const details = await sdk._contracts.renExSettlement.getMatchDetails(orderID.toHex());
-
     const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
 
-    if (!details.settled) {
-        throw new Error("Not settled");
+    let fee: string;
+    let spentToken: string;
+    let spentVolume: string;
+    let receivedToken: string;
+    let receivedVolume: string;
+    if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
+        if (!details.settled) {
+            return undefined;
+        }
+        fee = (details.orderIsBuy) ? details.priorityFee : details.secondaryFee;
+        spentToken = idToToken(new BN((details.orderIsBuy) ? details.priorityToken : details.secondaryToken).toNumber());
+        spentVolume = (details.orderIsBuy) ? details.priorityVolume : details.secondaryVolume;
+        receivedToken = idToToken(new BN((details.orderIsBuy) ? details.secondaryToken : details.priorityToken).toNumber());
+        receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
+    } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
+        let swap;
+        try {
+            swap = await fetchAtomicOrder(sdk, orderID);
+        } catch (error) {
+            return undefined;
+        }
+        if (toOrderStatus(swap.status) !== OrderStatus.SETTLED) {
+            return undefined;
+        }
+        fee = swap.sendCost[swap.sendToken];
+        spentToken = swap.sendToken;
+        spentVolume = new BigNumber(swap.sendAmount).toFixed();
+        receivedToken = swap.receiveToken;
+        receivedVolume = new BigNumber(swap.receiveAmount).minus(swap.receiveCost[swap.receiveToken]).toFixed();
+    } else {
+        return undefined;
     }
 
-    const orderMatchDetails: MatchDetails = (details.orderIsBuy) ?
-        {
-            orderID: orderID64,
-            matchedID: matchedID.toBase64(),
+    const spentTokenDetails = await getTokenDetails(sdk, spentToken);
+    const receivedTokenDetails = await getTokenDetails(sdk, receivedToken);
 
-            receivedToken: idToToken(new BN(details.secondaryToken).toNumber()),
-            receivedVolume: new BigNumber(details.secondaryVolume),
-
-            fee: new BigNumber(details.priorityFee),
-            spentToken: idToToken(new BN(details.priorityToken).toNumber()),
-            spentVolume: new BigNumber(details.priorityVolume),
-        } :
-        {
-            orderID: orderID64,
-            matchedID: matchedID.toBase64(),
-
-            receivedToken: idToToken(new BN(details.priorityToken).toNumber()),
-            receivedVolume: new BigNumber(details.priorityVolume),
-
-            fee: new BigNumber(details.secondaryFee),
-            spentToken: idToToken(new BN(details.secondaryToken).toNumber()),
-            spentVolume: new BigNumber(details.secondaryVolume),
-        };
-
-    // If the order is an Atomic Swap, add fees and volumes since fees are
-    // separate
-    if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
-        const [receivedVolume, spentVolume] = (details.orderIsBuy) ?
-            [
-                new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),
-                new BigNumber(details.priorityVolume).plus(new BigNumber(details.priorityFee)),
-            ] : [
-                new BigNumber(details.priorityVolume).plus(new BigNumber(details.priorityFee)),
-                new BigNumber(details.secondaryVolume).plus(new BigNumber(details.secondaryFee)),
-            ];
-        orderMatchDetails.receivedVolume = receivedVolume;
-        orderMatchDetails.spentVolume = spentVolume;
-
-        // TODO: Calculate fees
-        orderMatchDetails.fee = new BigNumber(0);
-    }
+    const orderMatchDetails: MatchDetails = {
+        orderID: orderID64,
+        matchedID: matchedID.toBase64(),
+        receivedToken,
+        receivedVolume: fromSmallestUnit(receivedVolume, receivedTokenDetails),
+        fee: fromSmallestUnit(fee, spentTokenDetails),
+        spentToken,
+        spentVolume: fromSmallestUnit(spentVolume, spentTokenDetails),
+    };
 
     // Update local storage (without awaiting)
     sdk._storage.getOrder(orderID64).then(async (reStoredOrder: TraderOrder | undefined) => {

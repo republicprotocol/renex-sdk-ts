@@ -9,23 +9,25 @@ import { Provider } from "web3/providers";
 import LocalStorage from "./storage/localStorage";
 
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
+import { errors, updateError } from "./errors";
 import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
-import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
+import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, getSwapperID, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
-import { darknodeFees, matchDetails, status } from "./methods/settlementMethods";
+import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+import { unwrap, wrap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SimpleConsole, Token, TokenCode, TokenDetails, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WithdrawTransactionOptions } from "./types";
+import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, Token, TokenCode, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WBTCOrder, WithdrawTransactionOptions } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -38,6 +40,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 
 // Export all types
 export * from "./types";
+export { errors } from "./errors";
 export { StorageProvider } from "./storage/interface";
 export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./storage/serializers";
 
@@ -47,6 +50,7 @@ export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceActio
  * @class RenExSDK
  */
 export class RenExSDK {
+    public errors = errors;
 
     public _networkData: NetworkData;
     public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
@@ -66,15 +70,20 @@ export class RenExSDK {
     public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
 
     // Atomic functions
-    public atom = {
+    public swapperd = {
         getStatus: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        getID: (): Promise<string> => getSwapperID(this),
         isConnected: (): boolean => atomConnected(this),
         refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
         resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
         authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
-        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(tokens),
+        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(this, tokens),
+        wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),
+        unwrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => unwrap(this, amount, token),
     };
+
+    public atom = this.swapperd;
 
     public utils = {
         normalizePrice: (price: NumberInput, roundUp?: boolean): NumberInput => {
@@ -119,11 +128,13 @@ export class RenExSDK {
         }
 
         // Show warning when the expected network ID is different from the provider network ID
-        this._web3.eth.net.getId().then(networkId => {
-            if (networkId !== this._networkData.ethNetworkId) {
-                console.warn(`Your provider is not using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
-            }
-        });
+        this._web3.eth.net.getId()
+            .then(networkId => {
+                if (networkId !== this._networkData.ethNetworkId) {
+                    console.warn(`Incorrect provider network! Your provider should be using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
+                }
+            })
+            .catch(console.error);
 
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
@@ -132,7 +143,8 @@ export class RenExSDK {
             .set(Token.TUSD, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
             .set(Token.REN, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
             .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
-            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }));
+            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }))
+            .set(Token.WBTC, Promise.resolve({ addr: this._networkData.tokens.WBTC, decimals: new BN(8), registered: true }));
 
         this._storage = this.setupStorageProvider();
 
@@ -154,8 +166,8 @@ export class RenExSDK {
 
     public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
     public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
-    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => status(this, orderID);
-    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails> => matchDetails(this, orderID);
+    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => fetchOrderStatus(this, orderID);
+    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails | undefined> => matchDetails(this, orderID);
     public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
     public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 
@@ -179,6 +191,7 @@ export class RenExSDK {
         cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
+    public fetchWrappingFeePercent = (): Promise<BigNumber> => wrappingFees(this);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
     public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
@@ -230,7 +243,7 @@ export class RenExSDK {
                         return this.getConfig().storageProvider as StorageProvider;
                     }
                 } catch (error) {
-                    throw new Error(`Unsupported storage option: ${this.getConfig().storageProvider}. ${error}`);
+                    throw updateError(`Unsupported storage option: ${this.getConfig().storageProvider}: ${error.message || error}`, error);
                 }
         }
     }
