@@ -148,7 +148,7 @@ export async function authorizeSwapper(ingressURL: string, request: AtomAuthoriz
         }
         throw responseError(errors.CouldNotAuthorizeSwapper, resp);
     } catch (error) {
-        if (error && error.reponse) {
+        if (error && error.response) {
             if (error.response.status === 401) {
                 throw updateError(`Could not authorize swapper. Address is not KYC'd. ${error.message || error}`, error);
             }
