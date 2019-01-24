@@ -12,21 +12,18 @@ import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
 
 // This function is called if the Orderbook returns Confirmed
-const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
+const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: TraderOrder): Promise<OrderStatus> => {
     let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
     try {
-        const storedOrder = await sdk._storage.getOrder(orderID.toBase64());
-        if (storedOrder) {
-            defaultStatus = storedOrder.status !== OrderStatus.OPEN ? storedOrder.status : defaultStatus;
-            // If order is an atomic order, ask Swapper for status
-            if (storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
-                // If the Swapper is disconnected we won't know the swap status
-                if (!atomConnected(sdk)) {
-                    return defaultStatus;
-                }
-                const status = await fetchAtomicOrderStatus(sdk, orderID);
-                return status;
+        defaultStatus = order.status !== OrderStatus.OPEN ? order.status : defaultStatus;
+        // If order is an atomic order, ask Swapper for status
+        if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
+            // If the Swapper is disconnected we won't know the swap status
+            if (!atomConnected(sdk)) {
+                return defaultStatus;
             }
+            const status = await fetchAtomicOrderStatus(sdk, orderID);
+            return status;
         }
         const match = await matchDetails(sdk, orderID.toBase64());
         if (match !== undefined) {
@@ -40,11 +37,19 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<Or
 
 export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?: TraderOrder): Promise<OrderStatus> => {
     if (!order) {
-        order = await sdk._storage.getOrder(orderID64);
+        try {
+            order = await sdk._storage.getOrder(orderID64);
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     // Convert orderID from base64
     const orderID = new EncodedData(orderID64, Encodings.BASE64);
+
+    if (order && order.swapServer) {
+        return fetchAtomicOrderStatus(sdk, orderID);
+    }
 
     let orderStatus: OrderStatus;
 
@@ -59,8 +64,9 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
             throw err;
         }
     }
-    if ((order && order.swapServer) || orderbookStatus === OrderStatus.CONFIRMED) {
-        orderStatus = await settlementStatus(sdk, orderID);
+
+    if (order && orderbookStatus === OrderStatus.CONFIRMED) {
+        orderStatus = await settlementStatus(sdk, orderID, order);
 
         // If the order is still settling, check how much time has passed. We
         // do this since we do not want the user's funds to be locked up
@@ -99,12 +105,10 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
     }
 
     // Update local storage (without awaiting)
-    sdk._storage.getOrder(orderID64).then(async (storedOrder: TraderOrder | undefined) => {
-        if (storedOrder) {
-            storedOrder.status = orderStatus;
-            await sdk._storage.setOrder(storedOrder);
-        }
-    }).catch(console.error);
+    if (order) {
+        order.status = orderStatus;
+        await sdk._storage.setOrder(order);
+    }
 
     return orderStatus;
 };
