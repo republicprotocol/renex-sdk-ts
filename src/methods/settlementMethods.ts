@@ -52,7 +52,7 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
 
     if (order && order.swapServer) {
         try {
-        return fetchAtomicOrderStatus(sdk, orderID);
+            return fetchAtomicOrderStatus(sdk, orderID);
         } catch {
             return OrderStatus.NOT_SUBMITTED;
         }
