@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 
 import RenExSDK, { TokenCode } from "../index";
 
-import { errors, updateError } from "errors";
+import { errors, updateError } from "../errors";
 import { EncodedData } from "../lib/encodedData";
 import { _authorizeAtom } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
