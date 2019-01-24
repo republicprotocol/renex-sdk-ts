@@ -24,7 +24,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: Trad
             }
             try {
                 return await fetchAtomicOrderStatus(sdk, orderID);
-            } catch {
+            } catch (error) {
                 return defaultStatus;
             }
         }
@@ -52,8 +52,8 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
 
     if (order && order.swapServer) {
         try {
-            return fetchAtomicOrderStatus(sdk, orderID);
-        } catch {
+            return await fetchAtomicOrderStatus(sdk, orderID);
+        } catch (error) {
             return OrderStatus.NOT_SUBMITTED;
         }
     }
