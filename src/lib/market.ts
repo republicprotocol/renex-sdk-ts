@@ -6,8 +6,8 @@ import { MarketCode, MarketDetails, MarketPair, OrderSettlement, Token } from ".
 export const MarketPairs: OrderedMap<MarketCode, MarketDetails> = OrderedMap<MarketCode, MarketDetails>()
     // BTC pairs
     .set(MarketPair.ETH_BTC, { symbol: MarketPair.ETH_BTC, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.BTC, base: Token.ETH })
-    .set(MarketPair.REN_BTC, { symbol: MarketPair.REN_BTC, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.BTC, base: Token.ETH })
-    .set(MarketPair.TUSD_BTC, { symbol: MarketPair.TUSD_BTC, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.BTC, base: Token.ETH })
+    .set(MarketPair.REN_BTC, { symbol: MarketPair.REN_BTC, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.BTC, base: Token.REN })
+    .set(MarketPair.TUSD_BTC, { symbol: MarketPair.TUSD_BTC, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.BTC, base: Token.TUSD })
     // ETH pairs
     .set(MarketPair.DGX_ETH, { symbol: MarketPair.DGX_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.DGX })
     .set(MarketPair.TUSD_ETH, { symbol: MarketPair.TUSD_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.TUSD })
