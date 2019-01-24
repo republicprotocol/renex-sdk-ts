@@ -11,7 +11,7 @@ import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, WBTCOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
-const MIN_ETH_BALANCE = 0.5;
+const MIN_ETH_BALANCE = 0.005;
 const WRAPPING_FEE_BIPS = 10;
 // The fee required to be in the server balance for initiation
 const serverInitiateFeeSatoshi = 10000;
