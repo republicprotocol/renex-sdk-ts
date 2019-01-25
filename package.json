@@ -1,6 +1,6 @@
 {
   "name": "@renex/renex",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "The official RenEx Software Development Kit in typescript.",
   "repository": {
     "type": "git",
