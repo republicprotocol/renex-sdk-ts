@@ -180,11 +180,15 @@ export async function fetchAtomicOrderStatus(sdk: RenExSDK, orderID: EncodedData
 export async function fetchAtomicOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
     try {
         const swap = await findMatchingSwapReceipt((swapReceipt) => {
-            try {
-                return swapReceipt.delay !== undefined && swapReceipt.delayInfo.message.orderID === orderID.toBase64();
-            } catch (error) {
-                return false;
+            if (swapReceipt.id === orderID.toBase64()) {
+                return true;
+            } else if (
+                swapReceipt.delayInfo && swapReceipt.delayInfo.message &&
+                swapReceipt.delayInfo.message.orderID === orderID.toBase64()
+            ) {
+                return true;
             }
+            return false;
         }, sdk._networkData.network);
         return swap;
     } catch (error) {
