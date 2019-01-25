@@ -93,7 +93,7 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
                 } catch (error) {
                     console.error(error);
                 }
-                if (blockNumber > 0 && currentBlockNumber - blockNumber > 300) {
+                if (blockNumber > 0 && currentBlockNumber - blockNumber > 20000) {
                     orderStatus = OrderStatus.FAILED_TO_SETTLE;
                 }
             }
