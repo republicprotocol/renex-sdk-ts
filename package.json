@@ -33,7 +33,7 @@
     "prepare": "# npm run lint && npm run build:dev",
     "test": "./node_modules/ts-mocha/bin/ts-mocha --timeout 180000 --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts",
     "clean": "rm -rf dist",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package && npm run build:prod"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
