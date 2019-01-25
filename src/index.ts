@@ -17,7 +17,7 @@ import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
 import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, getSwapperID, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
-import { deposit, updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
+import { updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
@@ -177,9 +177,6 @@ export class RenExSDK {
     public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
 
     // Transaction Methods
-    public deposit = (value: NumberInput, token: TokenCode, options?: TransactionOptions):
-        Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        deposit(this, value, token, options)
     public withdraw = (value: NumberInput, token: TokenCode, options?: WithdrawTransactionOptions):
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
         withdraw(this, value, token, options)
