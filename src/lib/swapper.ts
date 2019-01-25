@@ -177,8 +177,12 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
 
     for (const innerSwap of response.swaps) {
         const swap: SwapReceipt = fixSwapType(innerSwap);
-        if (check(swap)) {
-            return swap;
+        try {
+            if (check(swap)) {
+                return swap;
+            }
+        } catch {
+            // Ignore error
         }
     }
     throw new Error(errors.UnableToFindMatchingSwap);
