@@ -26,7 +26,7 @@
     "build:dev": "cross-env NODE_ENV=development webpack --mode development --display-error-details --progress --color",
     "build:prod": "npm run clean && cross-env NODE_ENV=production webpack --mode production --progress --color",
     "prepare": "# npm run lint && npm run build:dev",
-    "test": "MNEMONIC=\"***REMOVED***\" ./node_modules/ts-mocha/bin/ts-mocha --timeout 180000 --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts",
+    "test": "./node_modules/ts-mocha/bin/ts-mocha --timeout 180000 --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts",
     "clean": "rm -rf dist",
     "postinstall": "patch-package"
   },
