@@ -7,6 +7,9 @@ import NonceSubprovider from "web3-provider-engine/subproviders/nonce-tracker";
 import RenExSDK, { BalanceDetails, NetworkData, NumberInput, OrderStatus, TokenCode, TransactionStatus } from "../src/index";
 import { networks } from "../src/lib/network";
 
+import dotenv from "dotenv";
+dotenv.load();
+
 const MNEMONIC = process.env.MNEMONIC;
 const NETWORK: NetworkData = networks.testnet;
 const INFURA_URL = `${NETWORK.infura}/${process.env.INFURA_KEY}`;
@@ -24,7 +27,6 @@ describe("SDK methods", () => {
     let mainAccount: string;
 
     before(async () => {
-        console.log(process.env.MNEMONIC);
         if (!MNEMONIC) {
             throw new Error("MNEMONIC environment variable has not been set");
         }
@@ -65,7 +67,6 @@ describe("SDK methods", () => {
     it("should fetch balances", async () => {
         const balances = await sdk.fetchBalances(["ETH", "REN"]);
         const ethBalances = await expectPositiveBalance(balances, "ETH");
-        console.log(`${sdk.getAddress()} ETH Balance: ${JSON.stringify(ethBalances)}`);
         await expectPositiveBalance(balances, "REN");
     });
 
@@ -85,35 +86,35 @@ describe("SDK methods", () => {
         atomicTokens.includes("BTC").should.be.true;
     });
 
-    describe("SDK deposit methods", async () => {
-        it("should successfully deposit ETH", async () => {
-            await expectTokenDeposit(sdk, "ETH", 1.1);
-        });
+    // describe("SDK deposit methods", async () => {
+    //     it("should successfully deposit ETH", async () => {
+    //         await expectTokenDeposit(sdk, "ETH", 1.1);
+    //     });
 
-        it("should successfully deposit REN", async () => {
-            await expectTokenDeposit(sdk, "REN", 50000);
-        });
-    });
+    //     it("should successfully deposit REN", async () => {
+    //         await expectTokenDeposit(sdk, "REN", 50000);
+    //     });
+    // });
 
-    describe("SDK withdraw methods", async () => {
-        it("should successfully withdraw ETH", async () => {
-            await expectTokenWithdraw(sdk, "ETH", 1.1);
-        });
+    // describe("SDK withdraw methods", async () => {
+    //     it("should successfully withdraw ETH", async () => {
+    //         await expectTokenWithdraw(sdk, "ETH", 1.1);
+    //     });
 
-        it("should successfully withdraw REN", async () => {
-            await expectTokenWithdraw(sdk, "REN", 50000);
-        });
-    });
+    //     it("should successfully withdraw REN", async () => {
+    //         await expectTokenWithdraw(sdk, "REN", 50000);
+    //     });
+    // });
 
     describe("SDK order methods", async () => {
         let orderID;
-        before(async () => {
-            await expectTokenDeposit(sdk, "ETH", 1.1);
-        });
+        // before(async () => {
+        //     await expectTokenDeposit(sdk, "ETH", 1.1);
+        // });
 
-        after(async () => {
-            await expectTokenWithdraw(sdk, "ETH", 1.1);
-        });
+        // after(async () => {
+        //     await expectTokenWithdraw(sdk, "ETH", 1.1);
+        // });
 
         it("should successfully open an order", async () => {
             orderID = await expectOpenOrder(sdk);
@@ -134,7 +135,7 @@ async function awaitPromiseResponse(prom: () => Promise<any>, expected: any): Pr
         if (ret === expected) {
             return;
         }
-        sleep(1000);
+        await sleep(1000);
     }
 }
 
@@ -164,31 +165,31 @@ async function expectOpenOrder(sdk: RenExSDK): Promise<string> {
     return orderID;
 }
 
-async function expectTokenDeposit(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
-    const initialBalance = await expectFetchTokenBalance(sdk, token);
-    const depositResponse = await sdk.deposit(amount, token);
-    await awaitPromiseResponse(() => {
-        return sdk.fetchBalanceActionStatus(depositResponse.balanceAction.txHash);
-    }, TransactionStatus.Done);
-    const finalBalance = await expectFetchTokenBalance(sdk, token);
-    finalBalance.free.should.deep.eq(initialBalance.free.plus(amount));
-}
+// async function expectTokenDeposit(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
+//     const initialBalance = await expectFetchTokenBalance(sdk, token);
+//     const depositResponse = await sdk.deposit(amount, token);
+//     await awaitPromiseResponse(() => {
+//         return sdk.fetchBalanceActionStatus(depositResponse.balanceAction.txHash);
+//     }, TransactionStatus.Done);
+//     const finalBalance = await expectFetchTokenBalance(sdk, token);
+//     finalBalance.free.should.deep.eq(initialBalance.free.plus(amount));
+// }
 
-async function expectTokenWithdraw(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
-    const initialBalance = await expectFetchTokenBalance(sdk, token);
-    const withdrawResponse = await sdk.withdraw(amount, token);
-    await awaitPromiseResponse(() => {
-        return sdk.fetchBalanceActionStatus(withdrawResponse.balanceAction.txHash);
-    }, TransactionStatus.Done);
-    const finalBalance = await expectFetchTokenBalance(sdk, token);
-    finalBalance.free.should.deep.eq(initialBalance.free.minus(amount));
-}
+// async function expectTokenWithdraw(sdk: RenExSDK, token: TokenCode, amount: NumberInput): Promise<void> {
+//     const initialBalance = await expectFetchTokenBalance(sdk, token);
+//     const withdrawResponse = await sdk.withdraw(amount, token);
+//     await awaitPromiseResponse(() => {
+//         return sdk.fetchBalanceActionStatus(withdrawResponse.balanceAction.txHash);
+//     }, TransactionStatus.Done);
+//     const finalBalance = await expectFetchTokenBalance(sdk, token);
+//     finalBalance.free.should.deep.eq(initialBalance.free.minus(amount));
+// }
 
-async function expectFetchTokenBalance(sdk: RenExSDK, token: TokenCode): Promise<BalanceDetails> {
-    const balances = await sdk.fetchBalances([token]).then(bal => bal.get(token));
-    expect(balances).to.not.be.undefined;
-    return balances as BalanceDetails;
-}
+// async function expectFetchTokenBalance(sdk: RenExSDK, token: TokenCode): Promise<BalanceDetails> {
+//     const balances = await sdk.fetchBalances([token]).then(bal => bal.get(token));
+//     expect(balances).to.not.be.undefined;
+//     return balances;
+// }
 
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));

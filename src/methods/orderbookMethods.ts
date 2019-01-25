@@ -109,6 +109,10 @@ export const openOrder = async (
 
     const orderSettlement = marketDetail.orderSettlement;
 
+    if (orderSettlement === OrderSettlement.RenEx) {
+        throw new Error(`RenEx order settlement no longer supported.`);
+    }
+
     const quoteVolume = orderInputs.volume.times(orderInputs.price);
 
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
