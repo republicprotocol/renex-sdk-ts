@@ -61,7 +61,6 @@
     "dotenv": "^6.2.0",
     "mocha": "^5.2.0",
     "npm-check-updates": "^2.15.0",
-    "patch-package": "^5.1.2",
     "truffle-contract": "4.0.2",
     "truffle-hdwallet-provider": "1.0.2",
     "ts-loader": "^5.3.3",
@@ -93,6 +92,7 @@
     "localforage": "1.7.3",
     "node-persist": "^3.0.3",
     "node-rsa": "1.0.2",
+    "patch-package": "^5.1.2",
     "web3": "1.0.0-beta.37"
   }
 }
