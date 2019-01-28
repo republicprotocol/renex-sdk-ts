@@ -12,5 +12,5 @@ script:
   - npm run lint
   - npm run lint:extra || true
   - npm pack
-  - mkdir tmp; cd tmp; npm init --yes
-  - npm install ../renex-*.tgz
+  - mkdir tmp; cd tmp; npx npm init --yes
+  - npx npm install ../renex-*.tgz
