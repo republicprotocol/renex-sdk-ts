@@ -11,3 +11,5 @@ script:
   - npm run build:dev
   - npm run lint
   - npm run lint:extra || true
+  - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+  - npm install "republicprotocol/renex-sdk-ts#$BRANCH"
