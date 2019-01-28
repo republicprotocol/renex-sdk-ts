@@ -14,3 +14,4 @@ script:
   - npm pack
   - mkdir tmp; cd tmp; npx npm init --yes
   - npx npm install ../renex-*.tgz
+  - cp ../test/travis.js ./ && npx node travis.js
