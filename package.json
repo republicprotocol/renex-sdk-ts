@@ -93,6 +93,9 @@
     "localforage": "1.7.3",
     "node-persist": "^3.0.3",
     "node-rsa": "1.0.2",
+    "truffle-blockchain-utils": "0.0.7",
+    "truffle-contract-schema": "^3.0.1",
+    "truffle-error": "0.0.3",
     "web3": "1.0.0-beta.37"
   }
 }
