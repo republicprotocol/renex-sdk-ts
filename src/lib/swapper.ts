@@ -181,7 +181,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
             if (check(swap)) {
                 return swap;
             }
-        } catch {
+        } catch (error) {
             // Ignore error
         }
     }
