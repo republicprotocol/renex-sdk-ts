@@ -1,0 +1,17 @@
+dist: trusty
+sudo: required
+group: beta
+language: node_js
+node_js:
+  - "8"
+cache:
+  directories:
+    - node_modules
+script:
+  - npm run build:dev
+  - npm run lint
+  - npm run lint:extra || true
+  - npm pack
+  - mkdir tmp; cd tmp; npx npm init --yes
+  - npx npm install ../renex-*.tgz
+  - cp ../test/import.js ./ && npx node import.js
