@@ -1,6 +1,6 @@
 const contract = require("./truffle-contract");
 
-import { Provider } from "web3/providers";
+import { provider } from "web3-providers";
 
 // Bindings
 import { DarknodeRegistryArtifact } from "./bindings/darknode_registry";
@@ -22,8 +22,8 @@ import WyreJSON from "./ABIs/Wyre.json";
 
 export const ETH_CODE = 1;
 
-export const withProvider = <T extends { setProvider(provider: Provider): void; }>(provider: Provider, artifact: T): T => {
-    artifact.setProvider(provider);
+export const withProvider = <T extends { setProvider(web3Provider: provider): void; }>(web3Provider: provider, artifact: T): T => {
+    artifact.setProvider(web3Provider);
     return artifact;
 };
 

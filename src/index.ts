@@ -2,9 +2,8 @@ import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
 import BN from "bn.js";
-import PromiEvent from "web3/promiEvent";
-
-import { Provider } from "web3/providers";
+import { PromiEvent } from "web3-core";
+import { provider } from "web3-providers";
 
 import LocalStorage from "./storage/localStorage";
 
@@ -109,11 +108,11 @@ export class RenExSDK {
 
     /**
      * Creates an instance of RenExSDK.
-     * @param {Provider} provider
+     * @param {provider} web3Provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, options?: Options) {
-        this._web3 = new Web3(provider);
+    constructor(web3Provider: provider, options?: Options) {
+        this._web3 = new Web3(web3Provider);
         this._config = generateConfig(options);
 
         switch (this.getConfig().network) {
@@ -190,7 +189,7 @@ export class RenExSDK {
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchWrappingFeePercent = (): Promise<BigNumber> => wrappingFees(this);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
-    public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
+    public fetchGasPrice = (): Promise<string | undefined> => getGasPrice(this);
 
     // Storage functions
     public fetchTraderOrders = (options = { refresh: true }): Promise<TraderOrder[]> => fetchTraderOrders(this, options);
@@ -209,8 +208,8 @@ export class RenExSDK {
         this._storage = this.setupStorageProvider();
     }
 
-    public updateProvider = (provider: Provider): void => {
-        this._web3 = new Web3(provider);
+    public updateProvider = (web3Provider: provider): void => {
+        this._web3 = new Web3(web3Provider);
 
         // Update contract providers
         this._contracts = {

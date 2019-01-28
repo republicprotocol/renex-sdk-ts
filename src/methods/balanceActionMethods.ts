@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
 import BN from "bn.js";
-import PromiEvent from "web3/promiEvent";
+import { PromiEvent } from "web3-core";
 
 import RenExSDK from "../index";
 import { BalanceAction, BalanceActionType, NumberInput, TokenCode, Transaction, TransactionStatus, WithdrawTransactionOptions } from "../types";

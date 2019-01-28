@@ -1,7 +1,21 @@
-patch-package
+diff --git a/node_modules/truffle-contract/lib/contract/constructorMethods.js b/node_modules/truffle-contract/lib/contract/constructorMethods.js
+index 524913d..c7e634a 100644
 --- a/node_modules/truffle-contract/lib/contract/constructorMethods.js
 +++ b/node_modules/truffle-contract/lib/contract/constructorMethods.js
-@@ -170,13 +170,17 @@ module.exports = Contract => {
+@@ -14,7 +14,11 @@ module.exports = Contract => {
+         );
+       }
+ 
+-      this.web3.setProvider(provider);
++      if (!this.web3) {
++        this.web3 = new Web3(provider);
++      } else {
++        this.web3.setProvider(provider);
++      }
+       this.currentProvider = provider;
+     },
+ 
+@@ -170,13 +174,17 @@ module.exports = Contract => {
          constructor.web3.eth
            .getBlock("latest")
            .then(function(block) {
@@ -20,7 +34,7 @@ patch-package
                  });
                }
              }
-@@ -189,7 +193,7 @@ module.exports = Contract => {
+@@ -189,7 +197,7 @@ module.exports = Contract => {
                    constructor.setNetwork(network_id);
                    return accept({
                      id: constructor.network_id,
@@ -29,7 +43,7 @@ patch-package
                    });
                  }
  
-@@ -217,7 +221,7 @@ module.exports = Contract => {
+@@ -217,7 +225,7 @@ module.exports = Contract => {
                        constructor.setNetwork(uris[i]);
                        return accept({
                          id: constructor.network_id,
@@ -38,7 +52,7 @@ patch-package
                        });
                      }
                    }
-@@ -226,7 +230,7 @@ module.exports = Contract => {
+@@ -226,7 +234,7 @@ module.exports = Contract => {
                    constructor.setNetwork(network_id);
                    return accept({
                      id: constructor.network_id,
@@ -47,10 +61,50 @@ patch-package
                    });
                  });
                })
+@@ -326,7 +334,7 @@ module.exports = Contract => {
+ 
+       bootstrap(temp);
+ 
+-      temp.web3 = new Web3();
++      // temp.web3 = new Web3();
+       temp.class_defaults = temp.prototype.defaults || {};
+ 
+       if (network_id) {
+diff --git a/node_modules/truffle-contract/lib/contract/properties.js b/node_modules/truffle-contract/lib/contract/properties.js
+index 986be2e..7827c41 100644
+--- a/node_modules/truffle-contract/lib/contract/properties.js
++++ b/node_modules/truffle-contract/lib/contract/properties.js
+@@ -1,5 +1,5 @@
+ const utils = require("../utils");
+-const Web3 = require("web3");
++const web3Utils = require("web3-utils");
+ 
+ module.exports = {
+   contract_name: {
+@@ -200,9 +200,6 @@ module.exports = {
+     return this.network.links || {};
+   },
+   events: function() {
+-    // helper web3; not used for provider
+-    var web3 = new Web3();
+-
+     var events;
+ 
+     if (this._json.networks[this.network_id] == null) {
+@@ -232,7 +229,7 @@ module.exports = {
+ 
+         signature += ")";
+ 
+-        var topic = web3.utils.keccak256(signature);
++        var topic = web3Utils.keccak256(signature);
+ 
+         events[topic] = item;
+       }
+diff --git a/node_modules/truffle-contract/lib/handlers.js b/node_modules/truffle-contract/lib/handlers.js
+index e4dd906..79830dd 100644
 --- a/node_modules/truffle-contract/lib/handlers.js
 +++ b/node_modules/truffle-contract/lib/handlers.js
-@@ -100,7 +100,12 @@ var handlers = {
-     } catch (error) {
+@@ -101,6 +101,11 @@ var handlers = {
        return context.promiEvent.reject(error);
      }
  
@@ -62,6 +116,8 @@ patch-package
      // Emit receipt
      context.promiEvent.eventEmitter.emit("receipt", receipt);
  
+diff --git a/node_modules/truffle-contract/lib/override.js b/node_modules/truffle-contract/lib/override.js
+index 3727d88..98ccc34 100644
 --- a/node_modules/truffle-contract/lib/override.js
 +++ b/node_modules/truffle-contract/lib/override.js
 @@ -48,21 +48,27 @@ var override = {
@@ -98,6 +154,8 @@ patch-package
        }
  
        return context.promiEvent.reject(web3Error);
+diff --git a/node_modules/truffle-contract/lib/reason.js b/node_modules/truffle-contract/lib/reason.js
+index 3df7035..45ff51b 100644
 --- a/node_modules/truffle-contract/lib/reason.js
 +++ b/node_modules/truffle-contract/lib/reason.js
 @@ -44,7 +44,7 @@ const reason = {
@@ -109,3 +167,29 @@ patch-package
          const reasonString = reason._extract(response, web3);
          resolve(reasonString);
        });
+diff --git a/node_modules/truffle-contract/lib/utils.js b/node_modules/truffle-contract/lib/utils.js
+index cc523ff..69c8ee1 100644
+--- a/node_modules/truffle-contract/lib/utils.js
++++ b/node_modules/truffle-contract/lib/utils.js
+@@ -1,11 +1,9 @@
+ const debug = require("debug")("contract:utils"); // eslint-disable-line no-unused-vars
+-var Web3 = require("web3");
++var web3Utils = require("web3-utils");
+ var ethers = require("ethers");
+ var abi = require("web3-eth-abi");
+ var reformat = require("./reformat");
+ 
+-var web3 = new Web3();
+-
+ var Utils = {
+   is_object: function(val) {
+     return typeof val === "object" && !Array.isArray(val);
+@@ -14,7 +12,7 @@ var Utils = {
+   is_big_number: function(val) {
+     if (typeof val !== "object") return false;
+ 
+-    return web3.utils.isBN(val) || web3.utils.isBigNumber(val);
++    return web3Utils.isBN(val) || web3Utils.isBigNumber(val);
+   },
+ 
+   is_tx_params: function(val) {

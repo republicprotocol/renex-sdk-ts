@@ -1,6 +1,7 @@
 import axios from "axios";
 
-import { TransactionReceipt } from "web3/types";
+import { BigNumber } from "bignumber.js";
+import { TransactionReceipt } from "web3-core";
 
 import RenExSDK, { NumberInput, TransactionStatus } from "../index";
 
@@ -20,7 +21,7 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, va
             from: sdk.getAddress(),
             to: addr,
             value,
-            gasPrice
+            gasPrice: (gasPrice || 0).toString(),
         });
     } else {
         let tokenContract: ERC20Contract | undefined = sdk._contracts.erc20.get(token);
@@ -32,19 +33,19 @@ export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, va
     }
 };
 
-export const getGasPrice = async (sdk: RenExSDK): Promise<number | undefined> => {
+export const getGasPrice = async (sdk: RenExSDK): Promise<string | undefined> => {
     const maxGasPrice = 60000000000;
     try {
         const resp = await axios.get("https://ethgasstation.info/json/ethgasAPI.json");
         if (resp.data.fast) {
             const gasPrice = resp.data.fast * Math.pow(10, 8);
-            return gasPrice > maxGasPrice ? maxGasPrice : gasPrice;
+            return (gasPrice > maxGasPrice ? maxGasPrice : gasPrice).toString();
         }
         throw responseError(errors.EthGasStationError, resp);
     } catch (error) {
         // TODO: Add error logging
         try {
-            return await sdk.getWeb3().eth.getGasPrice() * 1.1;
+            return new BigNumber(await sdk.getWeb3().eth.getGasPrice()).times(1.1).decimalPlaces(0).toString();
         } catch (error) {
             console.error(error);
             return undefined;
@@ -112,8 +113,9 @@ export const getTransactionStatus = async (sdk: RenExSDK, txHash: string): Promi
     }
 
     // Status type is string, but actually returns back as a boolean
-    // tslint:disable-next-line:no-any
-    const receiptStatus: any = receipt.status;
+    // tslint:disable-next-line
+    const receiptStatus = (receipt as any).status;
+    console.log(`Transaction status is ${JSON.stringify(receiptStatus)}`);
     if (receiptStatus === "0" || receiptStatus === 0 || receiptStatus === false) {
         return TransactionStatus.Failed;
     } else {

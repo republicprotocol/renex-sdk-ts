@@ -189,7 +189,7 @@ export enum TransactionStatus {
 
 export interface TransactionOptions {
     awaitConfirmation?: boolean;
-    gasPrice?: number | undefined;
+    gasPrice?: string | undefined;
     simpleConsole?: SimpleConsole;
 }
 

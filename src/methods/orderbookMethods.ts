@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 
 import BN from "bn.js";
-import PromiEvent from "web3/promiEvent";
+import { PromiEvent } from "web3-core";
 
 import * as ingress from "../lib/ingress";
 
@@ -340,11 +340,11 @@ export const getOrderBlockNumber = async (sdk: RenExSDK, orderID: string): Promi
 
 export const defaultTransactionOptions = async (sdk: RenExSDK, options?: TransactionOptions): Promise<{
     awaitConfirmation: boolean;
-    gasPrice: number | undefined;
+    gasPrice: string | undefined;
     simpleConsole: SimpleConsole;
 }> => {
     let awaitConfirmation = true;
-    let gasPrice;
+    let gasPrice: string | undefined;
     let simpleConsole = NullConsole;
     if (options) {
         awaitConfirmation = options.awaitConfirmation !== undefined ? options.awaitConfirmation : awaitConfirmation;
