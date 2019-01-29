@@ -1,6 +1,5 @@
 dist: trusty
 sudo: required
-group: beta
 language: node_js
 node_js:
 - '8'
@@ -8,13 +7,21 @@ cache:
   directories:
   - node_modules
 script:
+# Build and lint
 - npm run build:dev
 - npm run lint
 - npm run lint:extra || true
+
+# Test installing package
 - npm pack
-- mkdir tmp; cd tmp; npx npm init --yes
+- mkdir tmp
+- cd tmp
+- npx npm init --yes
 - npx npm install ../renex-*.tgz
-- cp ../test/import.js ./ && npx node import.js
+- cp ../test/import.js ./
+- npx node import.js
+- cd ../
+
 deploy:
   provider: npm
   email: npmren.noah@mailhero.io
