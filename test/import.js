@@ -6,6 +6,13 @@ const {
 // @ts-ignore
 } = require("@renex/renex");
 
+const Web3 = require("web3");
+
 if (typeof RenExSDK !== "function") {
     throw new Error("Unable to import SDK");
 }
+
+const web3 = new Web3("https://mainnet.infura.io");
+const sdk = new RenExSDK(web3);
+
+console.log(typeof sdk);
