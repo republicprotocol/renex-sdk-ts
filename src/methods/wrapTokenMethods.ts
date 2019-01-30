@@ -12,7 +12,11 @@ import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, WBTCOrder } from 
 import { getTokenDetails } from "./balancesMethods";
 
 const MIN_ETH_BALANCE = 0.005;
-const WRAPPING_FEE_BIPS = 10;
+
+// These must match the fees in the wrapping server
+const WRAPPING_FEE_BIPS = 0;
+const UNWRAPPING_FEE_BIPS = 20;
+
 // The fee required to be in the server balance for initiation
 const serverInitiateFeeSatoshi = 10000;
 
@@ -187,9 +191,13 @@ export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: stri
         volume: amount,
     };
 
-    return convert(sdk, orderDetails, await wrappingFees(sdk));
+    return convert(sdk, orderDetails, await unwrappingFees(sdk));
 }
 
 export async function wrappingFees(sdk: RenExSDK): Promise<BigNumber> {
     return Promise.resolve(new BigNumber(WRAPPING_FEE_BIPS).dividedBy(10000));
+}
+
+export async function unwrappingFees(sdk: RenExSDK): Promise<BigNumber> {
+    return Promise.resolve(new BigNumber(UNWRAPPING_FEE_BIPS).dividedBy(10000));
 }
