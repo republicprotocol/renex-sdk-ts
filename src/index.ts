@@ -22,8 +22,8 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
-import { authorizeSwapperd, currentSwapperdConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperdConnectionStatus, resetSwapperdConnection, supportedAtomicTokens, swapperdAddresses, swapperdBalances, swapperdConnected } from "./methods/swapperdMethods";
-import { unwrap, unwrappingFees, wrap, wrappingFees } from "./methods/wrapTokenMethods";
+import { authorizeSwapperd, currentSwapperdConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperdConnectionStatus, resetSwapperdConnection, supportedSwapperdTokens, swapperdAddresses, swapperdBalances, swapperdConnected } from "./methods/swapperdMethods";
+import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
@@ -54,6 +54,7 @@ export class RenExSDK {
 
     public _networkData: NetworkData;
     public _swapperdConnectionStatus: SwapperdConnectionStatus = SwapperdConnectionStatus.NotConnected;
+    public _wrappingFees: WrapFeesMap = {};
 
     public _storage: StorageProvider;
     public _contracts: {
@@ -81,6 +82,7 @@ export class RenExSDK {
         fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => swapperdAddresses(this, tokens),
         wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),
         unwrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => unwrap(this, amount, token),
+        getWrappingFees: (token: TokenCode): Promise<WrapFees> => getWrappingFees(this, token),
     };
 
     public atom = this.swapperd;
@@ -174,7 +176,7 @@ export class RenExSDK {
     // public fetchAtomicMarkets = ()
     public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
     public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
-    public fetchSupportedSwapperdTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
+    public fetchSupportedSwapperdTokens = (): Promise<TokenCode[]> => supportedSwapperdTokens(this);
     // tslint:disable-next-line: member-ordering
     public fetchSupportedAtomicTokens = this.fetchSupportedSwapperdTokens;
 
@@ -190,8 +192,8 @@ export class RenExSDK {
         cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
-    public fetchWrappingFeePercent = (): Promise<BigNumber> => wrappingFees(this);
-    public fetchUnwrappingFeePercent = (): Promise<BigNumber> => unwrappingFees(this);
+    public fetchWrappingFeePercent = (token: TokenCode): Promise<BigNumber> => wrappingFees(this, token);
+    public fetchUnwrappingFeePercent = (token: TokenCode): Promise<BigNumber> => unwrappingFees(this, token);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
     public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 

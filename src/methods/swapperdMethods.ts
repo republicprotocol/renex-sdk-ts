@@ -13,7 +13,7 @@ import { getTokenDetails } from "./balancesMethods";
 import { darknodeFees } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
-/* Atomic Connection */
+/* Swapperd Connection */
 
 type MaybeBigNumber = BigNumber | null;
 
@@ -34,11 +34,11 @@ export const resetSwapperdConnection = async (sdk: RenExSDK): Promise<SwapperdCo
 };
 
 export const refreshSwapperdConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
-    sdk._swapperdConnectionStatus = await getAtomConnectionStatus(sdk);
+    sdk._swapperdConnectionStatus = await getSwapperdConnectionStatus(sdk);
     return sdk._swapperdConnectionStatus;
 };
 
-const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
+const getSwapperdConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
     const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, () => getSwapperID(sdk));
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
@@ -48,7 +48,7 @@ const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectio
         case SwapperConnectionStatus.ConnectedUnlocked:
             return SwapperdConnectionStatus.ConnectedUnlocked;
         case SwapperConnectionStatus.NotAuthorized:
-            return SwapperdConnectionStatus.AtomNotAuthorized;
+            return SwapperdConnectionStatus.SwapperdNotAuthorized;
         default:
             throw new Error(`Unknown swapper status: ${swapperStatus}`);
     }
@@ -68,9 +68,9 @@ export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
     return fetchSwapperVersion(sdk._networkData.network);
 };
 
-/* Atomic balances */
+/* Swapperd balances */
 
-export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.WBTC, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG];
+export const supportedSwapperdTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.WBTC, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG];
 
 const retrieveSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
     return getSwapperdBalances({ network: sdk._networkData.network }).then(balances => {
@@ -89,7 +89,7 @@ export const swapperdAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Pro
     return getSwapperdAddresses(tokens, { network: sdk._networkData.network });
 };
 
-const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
+const usedSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return fetchTraderOrders(sdk).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
@@ -116,7 +116,7 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<B
 };
 
 export const swapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, SwapperdBalanceDetails>> => {
-    return Promise.all([retrieveSwapperdBalances(sdk, tokens), usedAtomicBalances(sdk, tokens)]).then(([
+    return Promise.all([retrieveSwapperdBalances(sdk, tokens), usedSwapperdBalances(sdk, tokens)]).then(([
         startingBalance,
         usedBalance,
     ]) => {
@@ -175,12 +175,12 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     return submitSwap(req, sdk._networkData.network);
 };
 
-export async function fetchAtomicOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
-    const swap = await fetchAtomicOrder(sdk, orderID);
+export async function fetchSwapperdOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
+    const swap = await fetchSwapperdOrder(sdk, orderID);
     return toOrderStatus(swap.status);
 }
 
-export async function fetchAtomicOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
+export async function fetchSwapperdOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
     try {
         const swap = await findMatchingSwapReceipt((swapReceipt) => {
             if (swapReceipt.id === orderID.toBase64()) {

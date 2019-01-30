@@ -240,7 +240,7 @@ export enum SwapperdConnectionStatus {
     ChangedSwapper = "changed_swapper",
     NotConnected = "not_connected",
     NotAuthorized = "not_authorized",
-    AtomNotAuthorized = "swapperd_not_authorized",
+    SwapperdNotAuthorized = "swapperd_not_authorized",
     ConnectedUnlocked = "connected_unlocked",
     ConnectedLocked = "connected_locked",
 }
