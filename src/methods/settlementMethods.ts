@@ -54,7 +54,7 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
         try {
             return await fetchAtomicOrderStatus(sdk, orderID);
         } catch (error) {
-            return OrderStatus.NOT_SUBMITTED;
+            return OrderStatus.CONFIRMED;
         }
     }
 

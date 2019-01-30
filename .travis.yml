@@ -17,8 +17,8 @@ script:
 - cd tmp
 - npx npm init --yes
 - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-- npx npm install "republicprotocol/renex-sdk-ts#$BRANCH"
 - cp ../test/import.js ./
+- if [ "$BRANCH" == "master" ]; then npx npm install "republicprotocol/renex-sdk-ts#$BRANCH"; else cd .. && npm pack && cd tmp && npx npm install ../renex-*.tgz; fi
 - npx node import.js
 - cd ../
 
@@ -29,4 +29,5 @@ deploy:
     secure: H+9xgqQ4X0loGNJaymL580s/x5mrd6WDcCg/n0tfSbOgh9XAYUxtLG9utqEdjYaNrWxkzx1e++LitMtYEtqlJUTkdg2z3Cwqgxi3gxqMLlsK26FxJIZFWp5HRE+wb37IYfAecEL3XwVXd1i51+54ibPWl8qegMhnrF5+RWIB5190KOfyMN9tCXFR5zAyE29AqF23B6xFZ5I4hk5uZlTrTM56DHBVCWrQxyeqCx0db5G13OMntUEtTD2R9KDkHXasGw7CYhkxR/VmZWF/v+XYNmvOeLsHkVMk5Nyl46cQImFFcEYOOjB3BuD/Znqori/+6QESGGCu0/6UKHSmCofnrSnZFtUx0HF0W5wThP/VTtmJcrN1KTF1gBS+vf4e/l5O8yjMhhb6Q4jcnhB1VTTydrNRIp47t9laWB8GVuo0cbN7YmOpVgu5HIdjT+iyXDlMKSZMRKBoxDHrAbAvzgTN4PoHNhaevVFlb1fgytAIETNfVJs4x+jfULkVdDPFlrKQNfJG4jihP0l9b3fppqNISjI+VU4v3njRzhyS2meDf3kdfUmvxISXPuiwfzGjIPlFVNKCPCIp26qUB/qSr31ycREU9cuzk7m7LY4PtVT3H1X/+rsiu9z2qAnBKyDk+x5C8khhlSKctehdcjybOpClyjX4QXh9oCf6w0I9AlG6d0E=
   on:
     tags: true
+    branch: master
     repo: republicprotocol/renex-sdk-ts
