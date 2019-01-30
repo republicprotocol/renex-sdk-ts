@@ -158,13 +158,13 @@ export async function authorizeSwapper(ingressURL: string, request: AtomAuthoriz
     }
 }
 
-export async function _authorizeAtom(web3: Web3, ingressURL: string, atomAddress: string, address: string): Promise<void> {
-    const req = await getAtomAuthorizationRequest(web3, atomAddress, address);
+export async function _authorizeSwapperd(web3: Web3, ingressURL: string, swapperdAddress: string, address: string): Promise<void> {
+    const req = await getAtomAuthorizationRequest(web3, swapperdAddress, address);
     await authorizeSwapper(ingressURL, req);
 }
 
-async function getAtomAuthorizationRequest(web3: Web3, atomAddress: string, address: string): Promise<AtomAuthorizationRequest> {
-    const checksumAddress = web3.utils.toChecksumAddress(atomAddress);
+async function getAtomAuthorizationRequest(web3: Web3, swapperdAddress: string, address: string): Promise<AtomAuthorizationRequest> {
+    const checksumAddress = web3.utils.toChecksumAddress(swapperdAddress);
     const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
 
     let signature: EncodedData;

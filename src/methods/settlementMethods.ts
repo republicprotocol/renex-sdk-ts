@@ -7,9 +7,9 @@ import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
 import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
-import { atomConnected, fetchAtomicOrder, fetchAtomicOrderStatus, toOrderStatus } from "./atomicMethods";
 import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
+import { fetchAtomicOrder, fetchAtomicOrderStatus, swapperdConnected, toOrderStatus } from "./swapperdMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: TraderOrder): Promise<OrderStatus> => {
@@ -19,7 +19,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: Trad
         // If order is an atomic order, ask Swapper for status
         if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
             // If the Swapper is disconnected we won't know the swap status
-            if (!atomConnected(sdk)) {
+            if (!swapperdConnected(sdk)) {
                 return defaultStatus;
             }
             try {

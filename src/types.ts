@@ -170,7 +170,7 @@ export interface BalanceDetails {
     nondeposited: BigNumber | null;
 }
 
-export interface AtomicBalanceDetails {
+export interface SwapperdBalanceDetails {
     free: BigNumber | null;
     used: BigNumber | null;
 }
@@ -235,12 +235,12 @@ export const NullConsole: SimpleConsole = {
     log: (message) => null,
 };
 
-export enum AtomicConnectionStatus {
+export enum SwapperdConnectionStatus {
     InvalidSwapper = "invalid_swapper",
     ChangedSwapper = "changed_swapper",
     NotConnected = "not_connected",
     NotAuthorized = "not_authorized",
-    AtomNotAuthorized = "atom_not_authorized",
+    AtomNotAuthorized = "swapperd_not_authorized",
     ConnectedUnlocked = "connected_unlocked",
     ConnectedLocked = "connected_locked",
 }

@@ -31,6 +31,10 @@ export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
+export const fetchSwapperVersion = async (network: string): Promise<string> => {
+    return (await axios.get(`${API}/version`)).data;
+};
+
 export const fetchSwapperAddress = async (network: string): Promise<string> => {
     return (await axios.get(`${API}/id/eth?network=${network}`)).data;
 };
@@ -188,7 +192,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
     throw new Error(errors.UnableToFindMatchingSwap);
 }
 
-export async function getAtomicAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
+export async function getSwapperdAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
 
     const addresses = await Promise.all(tokens.map(async (token) => {
         return (await axios.get(`${API}/addresses/${token}?network=${options.network}`)).data;
@@ -197,7 +201,7 @@ export async function getAtomicAddresses(tokens: TokenCode[], options: { network
     return addresses;
 }
 
-export async function getAtomicBalances(options: { network: string }): Promise<BalancesResponse> {
+export async function getSwapperdBalances(options: { network: string }): Promise<BalancesResponse> {
 
     let response: BalancesResponse;
     try {

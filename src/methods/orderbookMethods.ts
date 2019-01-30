@@ -12,13 +12,13 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
-import { /* AtomicBalanceDetails, BalanceDetails, */ MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
-import { /* atomicBalances, */ submitOrder } from "./atomicMethods";
+import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
 import { onTxHash } from "./balanceActionMethods";
-import { /* balances, */ getTokenDetails } from "./balancesMethods";
+import { getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
 import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
+import { submitOrder } from "./swapperdMethods";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
@@ -124,7 +124,7 @@ export const openOrder = async (
     const feeToken = receiveToken;
     const feeAmount = quoteVolume.times(feePercent);
 
-    // let balanceDetails: BalanceDetails | AtomicBalanceDetails | undefined;
+    // let balanceDetails: BalanceDetails | SwapperdBalanceDetails | undefined;
     // let balance: BigNumber;
 
     const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
@@ -134,7 +134,7 @@ export const openOrder = async (
     //     if (orderSettlement === OrderSettlement.RenEx) {
     //         balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
     //     } else {
-    //         balanceDetails = await atomicBalances(sdk, [spendToken]).then(b => b.get(spendToken));
+    //         balanceDetails = await swapperdBalances(sdk, [spendToken]).then(b => b.get(spendToken));
     //     }
     //     if (!balanceDetails || balanceDetails.free === null) {
     //         simpleConsole.error(errors.FailedBalanceCheck);

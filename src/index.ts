@@ -16,18 +16,18 @@ import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { supportedTokens } from "./lib/tokens";
-import { atomConnected, atomicAddresses, atomicBalances, authorizeAtom, currentAtomConnectionStatus, getSwapperID, refreshAtomConnectionStatus, resetAtomConnection, supportedAtomicTokens } from "./methods/atomicMethods";
 import { updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+import { authorizeSwapperd, currentSwapperdConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperdConnectionStatus, resetSwapperdConnection, supportedAtomicTokens, swapperdAddresses, swapperdBalances, swapperdConnected } from "./methods/swapperdMethods";
 import { unwrap, unwrappingFees, wrap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { AtomicBalanceDetails, AtomicConnectionStatus, BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, Token, TokenCode, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WBTCOrder, WithdrawTransactionOptions } from "./types";
+import { BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SwapperdBalanceDetails, SwapperdConnectionStatus, Token, TokenCode, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WBTCOrder, WithdrawTransactionOptions } from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -53,8 +53,7 @@ export class RenExSDK {
     public errors = errors;
 
     public _networkData: NetworkData;
-    public _atomConnectionStatus: AtomicConnectionStatus = AtomicConnectionStatus.NotConnected;
-    public _atomConnectedAddress: string = "";
+    public _swapperdConnectionStatus: SwapperdConnectionStatus = SwapperdConnectionStatus.NotConnected;
 
     public _storage: StorageProvider;
     public _contracts: {
@@ -71,14 +70,15 @@ export class RenExSDK {
 
     // Atomic functions
     public swapperd = {
-        getStatus: (): AtomicConnectionStatus => currentAtomConnectionStatus(this),
+        getStatus: (): SwapperdConnectionStatus => currentSwapperdConnectionStatus(this),
         getID: (): Promise<string> => getSwapperID(this),
-        isConnected: (): boolean => atomConnected(this),
-        refreshStatus: (): Promise<AtomicConnectionStatus> => refreshAtomConnectionStatus(this),
-        resetStatus: (): Promise<AtomicConnectionStatus> => resetAtomConnection(this),
-        authorize: (): Promise<AtomicConnectionStatus> => authorizeAtom(this),
-        fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => atomicBalances(this, tokens),
-        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => atomicAddresses(this, tokens),
+        getVersion: (): Promise<string> => getSwapperVersion(this),
+        isConnected: (): boolean => swapperdConnected(this),
+        refreshStatus: (): Promise<SwapperdConnectionStatus> => refreshSwapperdConnectionStatus(this),
+        resetStatus: (): Promise<SwapperdConnectionStatus> => resetSwapperdConnection(this),
+        authorize: (): Promise<SwapperdConnectionStatus> => authorizeSwapperd(this),
+        fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, SwapperdBalanceDetails>> => swapperdBalances(this, tokens),
+        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => swapperdAddresses(this, tokens),
         wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),
         unwrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => unwrap(this, amount, token),
     };
@@ -174,7 +174,9 @@ export class RenExSDK {
     // public fetchAtomicMarkets = ()
     public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
     public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
-    public fetchSupportedAtomicTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
+    public fetchSupportedSwapperdTokens = (): Promise<TokenCode[]> => supportedAtomicTokens(this);
+    // tslint:disable-next-line: member-ordering
+    public fetchSupportedAtomicTokens = this.fetchSupportedSwapperdTokens;
 
     // Transaction Methods
     public withdraw = (value: NumberInput, token: TokenCode, options?: WithdrawTransactionOptions):
