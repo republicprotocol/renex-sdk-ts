@@ -4,11 +4,11 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { errors, updateError } from "../errors";
 import { EncodedData } from "../lib/encodedData";
-import { _authorizeAtom } from "../lib/ingress";
+import { _authorizeSwapperd } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperAddress, fetchSwapperStatus, findMatchingSwapReceipt, getAtomicAddresses, getAtomicBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
+import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperdAddresses, getSwapperdBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
-import { AtomicBalanceDetails, AtomicConnectionStatus, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, Token } from "../types";
+import { OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, SwapperdBalanceDetails, SwapperdConnectionStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { darknodeFees } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
@@ -17,60 +17,63 @@ import { fetchTraderOrders } from "./storageMethods";
 
 type MaybeBigNumber = BigNumber | null;
 
-export const currentAtomConnectionStatus = (sdk: RenExSDK): AtomicConnectionStatus => {
-    return sdk._atomConnectionStatus;
+export const currentSwapperdConnectionStatus = (sdk: RenExSDK): SwapperdConnectionStatus => {
+    return sdk._swapperdConnectionStatus;
 };
 
-export const atomConnected = (sdk: RenExSDK): boolean => {
-    const status = currentAtomConnectionStatus(sdk);
+export const swapperdConnected = (sdk: RenExSDK): boolean => {
+    const status = currentSwapperdConnectionStatus(sdk);
     return (
-        status === AtomicConnectionStatus.ConnectedUnlocked
+        status === SwapperdConnectionStatus.ConnectedUnlocked
     );
 };
 
-export const resetAtomConnection = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    sdk._atomConnectedAddress = "";
-    sdk._atomConnectionStatus = AtomicConnectionStatus.NotConnected;
-    return refreshAtomConnectionStatus(sdk);
+export const resetSwapperdConnection = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
+    sdk._swapperdConnectionStatus = SwapperdConnectionStatus.NotConnected;
+    return refreshSwapperdConnectionStatus(sdk);
 };
 
-export const refreshAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
-    sdk._atomConnectionStatus = await getAtomConnectionStatus(sdk);
-    return sdk._atomConnectionStatus;
+export const refreshSwapperdConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
+    sdk._swapperdConnectionStatus = await getAtomConnectionStatus(sdk);
+    return sdk._swapperdConnectionStatus;
 };
 
-const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
+const getAtomConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
     const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, () => getSwapperID(sdk));
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
-            return AtomicConnectionStatus.NotConnected;
+            return SwapperdConnectionStatus.NotConnected;
         case SwapperConnectionStatus.ConnectedLocked:
-            return AtomicConnectionStatus.ConnectedLocked;
+            return SwapperdConnectionStatus.ConnectedLocked;
         case SwapperConnectionStatus.ConnectedUnlocked:
-            return AtomicConnectionStatus.ConnectedUnlocked;
+            return SwapperdConnectionStatus.ConnectedUnlocked;
         case SwapperConnectionStatus.NotAuthorized:
-            return AtomicConnectionStatus.AtomNotAuthorized;
+            return SwapperdConnectionStatus.AtomNotAuthorized;
         default:
             throw new Error(`Unknown swapper status: ${swapperStatus}`);
     }
 };
 
-export const authorizeAtom = async (sdk: RenExSDK): Promise<AtomicConnectionStatus> => {
+export const authorizeSwapperd = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
     const address = await getSwapperID(sdk);
-    await _authorizeAtom(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
-    return refreshAtomConnectionStatus(sdk);
+    await _authorizeSwapperd(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
+    return refreshSwapperdConnectionStatus(sdk);
 };
 
 export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
     return fetchSwapperAddress(sdk._networkData.network);
 };
 
+export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
+    return fetchSwapperVersion(sdk._networkData.network);
+};
+
 /* Atomic balances */
 
 export const supportedAtomicTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.WBTC, Token.DGX, Token.TUSD, Token.REN, Token.ZRX, Token.OMG];
 
-const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
-    return getAtomicBalances({ network: sdk._networkData.network }).then(balances => {
+const retrieveSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
+    return getSwapperdBalances({ network: sdk._networkData.network }).then(balances => {
         return Promise.all(tokens.map(async token => {
             const tokenDetails = await getTokenDetails(sdk, token);
             if (balances[token]) {
@@ -82,8 +85,8 @@ const retrieveAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promi
     });
 };
 
-export const atomicAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
-    return getAtomicAddresses(tokens, { network: sdk._networkData.network });
+export const swapperdAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
+    return getSwapperdAddresses(tokens, { network: sdk._networkData.network });
 };
 
 const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
@@ -112,23 +115,23 @@ const usedAtomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<B
     });
 };
 
-export const atomicBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, AtomicBalanceDetails>> => {
-    return Promise.all([retrieveAtomicBalances(sdk, tokens), usedAtomicBalances(sdk, tokens)]).then(([
+export const swapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, SwapperdBalanceDetails>> => {
+    return Promise.all([retrieveSwapperdBalances(sdk, tokens), usedAtomicBalances(sdk, tokens)]).then(([
         startingBalance,
         usedBalance,
     ]) => {
-        let atomicBalance = new Map<TokenCode, AtomicBalanceDetails>();
+        let swapperdBalance = new Map<TokenCode, SwapperdBalanceDetails>();
         tokens.forEach((token, index) => {
             let free: MaybeBigNumber = null;
             if (startingBalance[index] !== null) {
                 free = BigNumber.max(new BigNumber(0), (startingBalance[index] as BigNumber).minus(usedBalance[index]));
             }
-            atomicBalance = atomicBalance.set(token, {
+            swapperdBalance = swapperdBalance.set(token, {
                 used: usedBalance[index],
                 free,
             });
         });
-        return atomicBalance;
+        return swapperdBalance;
     });
 };
 
@@ -149,7 +152,7 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
     const spendTokenDetails = await getTokenDetails(sdk, spendToken);
     const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
-    const tokenAddress = await atomicAddresses(sdk, [spendToken, receiveToken]);
+    const tokenAddress = await swapperdAddresses(sdk, [spendToken, receiveToken]);
     // Convert the fee fraction to bips by multiplying by 10000
     const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 

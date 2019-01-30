@@ -80,7 +80,7 @@ describe("SDK methods", () => {
     });
 
     it("should fetch supported atomic tokens", async () => {
-        const atomicTokens = await sdk.fetchSupportedAtomicTokens();
+        const atomicTokens = await sdk.fetchSupportedSwapperdTokens();
         atomicTokens.should.not.be.empty;
         atomicTokens.includes("ETH").should.be.true;
         atomicTokens.includes("BTC").should.be.true;

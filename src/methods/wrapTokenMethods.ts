@@ -5,12 +5,13 @@ import BN from "bn.js";
 import RenExSDK, { NumberInput, Token } from "../index";
 
 import { errors, updateError } from "../errors";
-import { getAtomicBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
+import { getSwapperdBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, WBTCOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
+// Required ETH balance for fees
 const MIN_ETH_BALANCE = 0.005;
 
 // These must match the fees in the wrapping server
@@ -52,14 +53,14 @@ function unwrapped(token: string): string {
  * @param {BigNumber} amount in the smallest possible token unit
  * @param {string} fromToken
  */
-async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, response: BalanceResponse, toToken: string): Promise<boolean> {
+async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, response: BalanceResponse, toToken: string, amountString: string): Promise<boolean> {
     // The fee required to be in the server for initiation
     const initiateFee = new BigNumber(serverInitiateFeeSatoshi);
     const serverTokenBalance = BigNumber.max(0, new BigNumber(response[toToken].balance).minus(initiateFee));
     const serverEthBalance = new BigNumber(response.ETH.balance);
     let err;
     if (serverTokenBalance.lt(amount)) {
-        err = `Swap server has insufficient ${toToken} balance the swap.`;
+        err = `Swap server has insufficient balance to swap ${amountString} ${toToken}`;
         const error = new Error(err);
         // tslint:disable-next-line: no-any
         (error as any).serverTokenBalance = serverTokenBalance;
@@ -68,7 +69,7 @@ async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, re
         throw error;
     }
     if (serverEthBalance.lt(sdk.getWeb3().utils.toWei(MIN_ETH_BALANCE.toString()))) {
-        err = "Swap server has insufficient Ethereum balance for the swap.";
+        err = `Swap server has insufficient Ethereum balance for transfer fees`;
         const error = new Error(err);
         // tslint:disable-next-line: no-any
         (error as any).serverTokenBalance = serverTokenBalance;
@@ -87,7 +88,7 @@ async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, re
  * @param {string} fromToken the token to be wrapped or unwrapped
  */
 async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, fromToken: string): Promise<boolean> {
-    const balances = await getAtomicBalances({ network: sdk._networkData.network });
+    const balances = await getSwapperdBalances({ network: sdk._networkData.network });
     const fromTokenBalance = new BigNumber(balances[fromToken].balance);
     if (fromTokenBalance.lt(amount)) {
         throw new Error(`User has insufficient ${fromToken} balance in Swapper`);
@@ -117,7 +118,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     }
     const fromTokenDetails = await getTokenDetails(sdk, fromToken);
     const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails);
-    await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken);
+    await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken, orderInputs.volume.toString());
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
     const brokerFee = (await wrappingFees(sdk)).times(10000).toNumber();
 

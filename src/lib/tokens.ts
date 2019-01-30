@@ -1,6 +1,6 @@
 import RenExSDK from "../index";
 
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import BN from "bn.js";
 import { NumberInput, Token, TokenCode, TokenDetails } from "../types";
 
