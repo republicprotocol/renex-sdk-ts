@@ -155,14 +155,18 @@ export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerS
 
 export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitImmediateResponse> {
     let resp;
-    resp = await axios.post(`${API}/swaps?network=${network}`, swap);
 
-    if (resp.status === 403) {
-        throw responseError(errors.UserRejectedSwap, resp);
-    }
+    try {
+        resp = await axios.post(`${API}/swaps?network=${network}`, swap);
+    } catch (error) {
+        if (error.response && error.response.status === 403) {
+            throw responseError(errors.UserRejectedSwap, error.response);
+        }
 
-    if (resp.status !== 201) {
-        throw responseError(errors.UnableToSubmitSwap, resp);
+        if (error.response && error.response.status !== 201) {
+            throw responseError(errors.UnableToSubmitSwap, error.response);
+        }
+        throw error;
     }
 
     if (swap.delay !== undefined && swap.delay) {
