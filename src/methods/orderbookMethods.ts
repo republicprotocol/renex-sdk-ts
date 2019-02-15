@@ -191,12 +191,12 @@ export const openOrder = async (
     ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
-        simpleConsole.log("Submitting order to Atomic Swapper");
+        simpleConsole.log("Submitting order to SwapperD");
         try {
             await submitOrder(sdk, orderID, orderInputs);
         } catch (error) {
             simpleConsole.error(error.message || error);
-            throw updateError(`Error sending order to Atomic Swapper: ${error.message || error}`, error);
+            throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
         }
     }
 

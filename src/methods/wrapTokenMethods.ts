@@ -8,23 +8,30 @@ import { errors, updateError } from "../errors";
 import { getSwapperdBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
-import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, WBTCOrder } from "../types";
+import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, TokenCode, WBTCOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
 // Required ETH balance for fees
 const MIN_ETH_BALANCE = 0.005;
 
-// These must match the fees in the wrapping server
-const WRAPPING_FEE_BIPS = 0;
-const UNWRAPPING_FEE_BIPS = 20;
-
 // The fee required to be in the server balance for initiation
 const serverInitiateFeeSatoshi = 10000;
 
+export interface WrapFees {
+    wrapFees: number; // in BIPS
+    unwrapFees: number; // in BIPS
+}
+
+export interface WrapFeesMap {
+    [token: string]: WrapFees;
+}
+
+type FeesResponse = WrapFeesMap;
+
 interface BalanceResponse {
     [token: string]: {
-        address: string,
-        balance: string,
+        address: string;
+        balance: string;
     };
 }
 
@@ -44,6 +51,27 @@ function unwrapped(token: string): string {
         default:
             throw new Error(`No unwrapped version of token: ${token}`);
     }
+}
+
+export async function getWrappingFees(sdk: RenExSDK, token: string): Promise<WrapFees> {
+    if (sdk._wrappingFees[token]) {
+        return sdk._wrappingFees[token];
+    }
+
+    let response: FeesResponse;
+    try {
+        response = (await axios.get(`${sdk._networkData.wbtcKYCServer}/fees`)).data;
+    } catch (error) {
+        throw updateError(errors.CouldNotConnectSwapServer, error);
+    }
+
+    if (!response[token]) {
+        throw new Error(`${token} not listed by Swap server while fetching fees`);
+    }
+
+    sdk._wrappingFees[token] = response[token];
+
+    return response[token];
 }
 
 /**
@@ -120,7 +148,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails);
     await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken, orderInputs.volume.toString());
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
-    const brokerFee = (await wrappingFees(sdk)).times(10000).toNumber();
+    const brokerFee = conversionFeePercent.times(10000).toNumber();
 
     const req: SwapBlob = {
         sendTo: response[fromToken].address,
@@ -137,7 +165,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     };
     const swapResponse: SubmitImmediateResponse = await submitSwap(req, sdk._networkData.network) as SubmitImmediateResponse;
     try {
-        await axios.post(`${sdk._networkData.wbtcKYCServer}/swap`, swapResponse);
+        await axios.post(`${sdk._networkData.wbtcKYCServer}/swaps`, swapResponse);
     } catch (error) {
         throw updateError(errors.CouldNotConnectSwapServer, error);
     }
@@ -178,11 +206,11 @@ export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: string
         volume: amount,
     };
 
-    return convert(sdk, orderDetails, await wrappingFees(sdk));
+    return convert(sdk, orderDetails, await wrappingFees(sdk, toToken));
 }
 
 // tslint:disable-next-line:no-any
-export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: string): Promise<WBTCOrder> {
+export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: TokenCode): Promise<WBTCOrder> {
     const toToken = unwrapped(fromToken);
 
     const orderDetails: OrderInputs = {
@@ -192,13 +220,15 @@ export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: stri
         volume: amount,
     };
 
-    return convert(sdk, orderDetails, await unwrappingFees(sdk));
+    return convert(sdk, orderDetails, await unwrappingFees(sdk, fromToken));
 }
 
-export async function wrappingFees(sdk: RenExSDK): Promise<BigNumber> {
-    return Promise.resolve(new BigNumber(WRAPPING_FEE_BIPS).dividedBy(10000));
+export async function wrappingFees(sdk: RenExSDK, token: TokenCode): Promise<BigNumber> {
+    const wrapFees = await getWrappingFees(sdk, token);
+    return Promise.resolve(new BigNumber(wrapFees.wrapFees).dividedBy(10000));
 }
 
-export async function unwrappingFees(sdk: RenExSDK): Promise<BigNumber> {
-    return Promise.resolve(new BigNumber(UNWRAPPING_FEE_BIPS).dividedBy(10000));
+export async function unwrappingFees(sdk: RenExSDK, token: TokenCode): Promise<BigNumber> {
+    const wrapFees = await getWrappingFees(sdk, token);
+    return Promise.resolve(new BigNumber(wrapFees.unwrapFees).dividedBy(10000));
 }

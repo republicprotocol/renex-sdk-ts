@@ -9,7 +9,7 @@ import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
-import { fetchAtomicOrder, fetchAtomicOrderStatus, swapperdConnected, toOrderStatus } from "./swapperdMethods";
+import { fetchSwapperdOrder, fetchSwapperdOrderStatus, swapperdConnected, toOrderStatus } from "./swapperdMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: TraderOrder): Promise<OrderStatus> => {
@@ -23,7 +23,7 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: Trad
                 return defaultStatus;
             }
             try {
-                return await fetchAtomicOrderStatus(sdk, orderID);
+                return await fetchSwapperdOrderStatus(sdk, orderID);
             } catch (error) {
                 return defaultStatus;
             }
@@ -52,7 +52,7 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
 
     if (order && order.swapServer) {
         try {
-            return await fetchAtomicOrderStatus(sdk, orderID);
+            return await fetchSwapperdOrderStatus(sdk, orderID);
         } catch (error) {
             return OrderStatus.CONFIRMED;
         }
@@ -158,7 +158,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
         let swap;
         try {
-            swap = await fetchAtomicOrder(sdk, orderID);
+            swap = await fetchSwapperdOrder(sdk, orderID);
         } catch (error) {
             return undefined;
         }

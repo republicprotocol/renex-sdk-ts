@@ -96,7 +96,7 @@ export class Order extends Record({
     nonce: new BN(0),
 }) { }
 
-export class AtomAuthorizationRequest extends Record({
+export class SwapperdAuthorizationRequest extends Record({
     address: "",
     signature: "",
 }) { }
@@ -140,7 +140,7 @@ export function randomNonce(randomBN: () => BN): BN {
     return nonce;
 }
 
-export async function authorizeSwapper(ingressURL: string, request: AtomAuthorizationRequest): Promise<boolean> {
+export async function authorizeSwapper(ingressURL: string, request: SwapperdAuthorizationRequest): Promise<boolean> {
     try {
         const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
         if (resp.status === 201) {
@@ -159,11 +159,11 @@ export async function authorizeSwapper(ingressURL: string, request: AtomAuthoriz
 }
 
 export async function _authorizeSwapperd(web3: Web3, ingressURL: string, swapperdAddress: string, address: string): Promise<void> {
-    const req = await getAtomAuthorizationRequest(web3, swapperdAddress, address);
+    const req = await getSwapperdAuthorizationRequest(web3, swapperdAddress, address);
     await authorizeSwapper(ingressURL, req);
 }
 
-async function getAtomAuthorizationRequest(web3: Web3, swapperdAddress: string, address: string): Promise<AtomAuthorizationRequest> {
+async function getSwapperdAuthorizationRequest(web3: Web3, swapperdAddress: string, address: string): Promise<SwapperdAuthorizationRequest> {
     const checksumAddress = web3.utils.toChecksumAddress(swapperdAddress);
     const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
 
@@ -186,10 +186,10 @@ async function getAtomAuthorizationRequest(web3: Web3, swapperdAddress: string, 
         buff[64] = buff[64] - 27;
     }
 
-    return new AtomAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
+    return new SwapperdAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
 }
 
-// export async function checkAtomAuthorization(
+// export async function checkSwapperdAuthorization(
 //     ingressURL: string,
 //     address: string,
 //     expectedEthAddress: string,
