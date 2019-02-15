@@ -111,7 +111,15 @@ const usedSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise
                 }
             }
         });
-        return tokens.map(token => usedFunds.get(token) || new BigNumber(0));
+        return tokens.map(token => {
+            const funds = usedFunds.get(token);
+            // For some reason orders can become corrupted so we also want to make sure
+            // that their values are proper values.
+            if (funds && funds.isFinite()) {
+                return funds;
+            }
+            return new BigNumber(0);
+        });
     });
 };
 
