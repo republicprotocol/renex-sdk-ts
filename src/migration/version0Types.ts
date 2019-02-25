@@ -168,18 +168,18 @@ export function idToToken(token: number): TokenCode {
     switch (token) {
         case 0:
             return Token.BTC;
-        case 1:
-            return Token.ETH;
-        case 256:
-            return Token.DGX;
+        // case 1:
+        //     return Token.ETH;
+        // case 256:
+        //     return Token.DGX;
         case 257:
             return Token.TUSD;
-        case 65536:
-            return Token.REN;
-        case 65537:
-            return Token.ZRX;
-        case 65538:
-            return Token.OMG;
+        // case 65536:
+        //     return Token.REN;
+        // case 65537:
+        //     return Token.ZRX;
+        // case 65538:
+        //     return Token.OMG;
         default:
             // tslint:disable-next-line: strict-type-predicates
             if (typeof (token) === "string") {
@@ -249,18 +249,18 @@ export function tokenToDigits(token: TokenCode): number {
     switch (token) {
         case Token.BTC:
             return 8;
-        case Token.ETH:
-            return 18;
-        case Token.DGX:
-            return 9;
+        // case Token.ETH:
+        //     return 18;
+        // case Token.DGX:
+        //     return 9;
         case Token.TUSD:
             return 18;
-        case Token.REN:
-            return 18;
-        case Token.ZRX:
-            return 18;
-        case Token.OMG:
-            return 18;
+        // case Token.REN:
+        //     return 18;
+        // case Token.ZRX:
+        //     return 18;
+        // case Token.OMG:
+        //     return 18;
         default:
             throw new Error(`Invalid token ID: ${token}`);
     }

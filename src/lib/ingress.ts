@@ -4,12 +4,15 @@ import axios from "axios";
 import * as NodeRSAType from "node-rsa";
 const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
+import BN from "bn.js";
 import Web3 from "web3";
 
-import BN from "bn.js";
+import { BigNumber } from "bignumber.js";
 import { List, Map } from "immutable";
 
 import * as shamir from "./shamir";
+
+import RenExSDK from "../index";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
@@ -207,6 +210,43 @@ async function getSwapperdAuthorizationRequest(web3: Web3, swapperdAddress: stri
 //             return false;
 //         });
 // }
+
+export interface NewOrder {
+    id: string;
+    sendToken: number;
+    receiveToken: number;
+    price: number;
+    volume: number;
+    min_Volume: number;
+}
+
+export function createNewOrder(sdk: RenExSDK, orderInputs: OrderInputsAll, nonce?: BN): NewOrder {
+    const marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!marketDetail) {
+        throw new Error(`Couldn't find market information for market: ${orderInputs.symbol}`);
+    }
+    const baseToken = marketDetail.base;
+    const quoteToken = marketDetail.quote;
+    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
+    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
+
+    const price = new BigNumber(orderInputs.price).toNumber();
+    const volume = new BigNumber(orderInputs.volume).toNumber() * 100;
+    const minimumVolume = new BigNumber(orderInputs.minVolume).toNumber() * 100;
+
+    // let ingressOrder = createOrder(orderInputs, nonce);
+    // const orderID = getOrderID(sdk.getWeb3(), ingressOrder);
+    // ingressOrder = ingressOrder.set("id", orderID.toBase64());
+
+    return {
+        id: randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex")).toString("hex"),
+        sendToken: tokenToID(spendToken),
+        receiveToken: tokenToID(receiveToken),
+        price, // 350,
+        volume, // 100,
+        min_Volume: minimumVolume, // 10,
+    };
+}
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     const marketDetail = MarketPairs.get(orderInputs.symbol);

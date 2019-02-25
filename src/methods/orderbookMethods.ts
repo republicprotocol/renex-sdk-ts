@@ -1,7 +1,8 @@
-import { BigNumber } from "bignumber.js";
-
+import axios from "axios";
 import BN from "bn.js";
 import PromiEvent from "web3/promiEvent";
+
+import { BigNumber } from "bignumber.js";
 
 import * as ingress from "../lib/ingress";
 
@@ -13,12 +14,13 @@ import { EncodedData, Encodings } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
-import { onTxHash } from "./balanceActionMethods";
 import { getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
 import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 import { submitOrder } from "./swapperdMethods";
+
+const REN_NODE_URL = "http://0.0.0.0:8000/submitOrder";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
@@ -81,7 +83,7 @@ export const openOrder = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
     options?: TransactionOptions,
-): Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> => {
+): Promise<{ traderOrder: TraderOrder }> => {
     const marketDetail = MarketPairs.get(orderInputsIn.symbol);
     if (!marketDetail) {
         throw new Error(`Unsupported market pair: ${orderInputsIn.symbol}`);
@@ -127,7 +129,7 @@ export const openOrder = async (
     // let balanceDetails: BalanceDetails | SwapperdBalanceDetails | undefined;
     // let balance: BigNumber;
 
-    const { simpleConsole, awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
+    const { simpleConsole } = await defaultTransactionOptions(sdk, options);
 
     // simpleConsole.log("Verifying trader balance");
     // try {
@@ -186,9 +188,8 @@ export const openOrder = async (
     }
 
     const nonce = ingress.randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex"));
-    let ingressOrder = ingress.createOrder(orderInputs, nonce);
-    const orderID = ingress.getOrderID(sdk.getWeb3(), ingressOrder);
-    ingressOrder = ingressOrder.set("id", orderID.toBase64());
+    const newOrder = ingress.createNewOrder(sdk, orderInputs, nonce);
+    const orderID = new EncodedData(newOrder.id, Encodings.HEX);
 
     if (orderSettlement === OrderSettlement.RenExAtomic) {
         simpleConsole.log("Submitting order to SwapperD");
@@ -200,48 +201,50 @@ export const openOrder = async (
         }
     }
 
-    // Create order fragment mapping
-    simpleConsole.log("Building order mapping");
+    await axios.post(REN_NODE_URL, newOrder);
 
-    let orderFragmentMappings;
-    try {
-        orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole);
-    } catch (err) {
-        simpleConsole.error(err.message || err);
-        throw err;
-    }
+    // // Create order fragment mapping
+    // simpleConsole.log("Building order mapping");
 
-    const request = new ingress.OpenOrderRequest({
-        address: sdk.getAddress().slice(2),
-        orderFragmentMappings: [orderFragmentMappings]
-    });
-    simpleConsole.log("Sending order fragments");
-    let signature;
-    try {
-        signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
-    } catch (err) {
-        simpleConsole.error(err.message || err);
-        throw err;
-    }
+    // let orderFragmentMappings;
+    // try {
+    //     orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole);
+    // } catch (err) {
+    //     simpleConsole.error(err.message || err);
+    //     throw err;
+    // }
 
-    // Submit order and the signature to the orderbook
-    simpleConsole.log("Waiting for transaction signature");
-    let txHash: string;
-    let promiEvent;
-    try {
-        ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(sdk.getWeb3().utils.toHex(1), signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
-    } catch (err) {
-        simpleConsole.error(err.message || err);
-        throw err;
-    }
+    // const request = new ingress.OpenOrderRequest({
+    //     address: sdk.getAddress().slice(2),
+    //     orderFragmentMappings: [orderFragmentMappings]
+    // });
+    // simpleConsole.log("Sending order fragments");
+    // let signature;
+    // try {
+    //     signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
+    // } catch (err) {
+    //     simpleConsole.error(err.message || err);
+    //     throw err;
+    // }
+
+    // // Submit order and the signature to the orderbook
+    // simpleConsole.log("Waiting for transaction signature");
+    // let txHash: string;
+    // let promiEvent;
+    // try {
+    //     ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(sdk.getWeb3().utils.toHex(1), signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
+    // } catch (err) {
+    //     simpleConsole.error(err.message || err);
+    //     throw err;
+    // }
 
     simpleConsole.log("Order submitted.");
 
-    if (awaitConfirmation) {
-        simpleConsole.log("Waiting for order confirmation...");
-        await promiEvent;
-        simpleConsole.log("Order confirmed.");
-    }
+    // if (awaitConfirmation) {
+    //     simpleConsole.log("Waiting for order confirmation...");
+    //     await promiEvent;
+    //     simpleConsole.log("Order confirmed.");
+    // }
 
     const traderOrder: TraderOrder = {
         swapServer: undefined,
@@ -250,7 +253,7 @@ export const openOrder = async (
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.getAddress(),
         id: orderID.toBase64(),
-        transactionHash: txHash,
+        transactionHash: "", // txHash,
         computedOrderDetails: {
             spendToken,
             receiveToken,
@@ -266,7 +269,7 @@ export const openOrder = async (
 
     sdk._storage.setOrder(traderOrder).catch(console.error);
 
-    return { traderOrder, promiEvent };
+    return { traderOrder };
 };
 
 export const cancelOrder = async (

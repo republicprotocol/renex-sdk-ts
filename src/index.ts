@@ -131,7 +131,8 @@ export class RenExSDK {
 
         // Show warning when the expected network ID is different from the provider network ID
         this._web3.eth.net.getId()
-            .then(networkId => {
+            // tslint:disable-next-line: no-any
+            .then((networkId: any) => {
                 if (networkId !== this._networkData.ethNetworkId) {
                     console.warn(`Incorrect provider network! Your provider should be using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
                 }
@@ -140,13 +141,9 @@ export class RenExSDK {
 
         this._cachedTokenDetails = this._cachedTokenDetails
             .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
-            .set(Token.ETH, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
-            .set(Token.DGX, Promise.resolve({ addr: this._networkData.tokens.DGX, decimals: new BN(9), registered: true }))
+            // .set(Token.ETH, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
             .set(Token.TUSD, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
-            .set(Token.REN, Promise.resolve({ addr: this._networkData.tokens.REN, decimals: new BN(18), registered: true }))
-            .set(Token.ZRX, Promise.resolve({ addr: this._networkData.tokens.ZRX, decimals: new BN(18), registered: true }))
-            .set(Token.OMG, Promise.resolve({ addr: this._networkData.tokens.OMG, decimals: new BN(18), registered: true }))
-            .set(Token.WBTC, Promise.resolve({ addr: this._networkData.tokens.WBTC, decimals: new BN(8), registered: true }));
+            ;
 
         this._storage = this.setupStorageProvider();
 
@@ -185,7 +182,7 @@ export class RenExSDK {
         Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
         withdraw(this, value, token, options)
     public openOrder = (order: OrderInputs, options?: TransactionOptions):
-        Promise<{ traderOrder: TraderOrder, promiEvent: PromiEvent<Transaction> | null }> =>
+        Promise<{ traderOrder: TraderOrder }> =>
         openOrder(this, order, options)
     public cancelOrder = (orderID: OrderID, options?: TransactionOptions):
         Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>

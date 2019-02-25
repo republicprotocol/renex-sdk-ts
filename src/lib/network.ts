@@ -21,12 +21,7 @@ export interface NetworkData {
         }
     ];
     tokens: {
-        DGX: string;
         TUSD: string;
-        REN: string;
-        OMG: string;
-        ZRX: string;
-        WBTC: string;
     };
 }
 
