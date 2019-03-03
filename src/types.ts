@@ -53,11 +53,11 @@ export enum Token {
 
 export enum MarketPair {
     // WBTC_BTC = "WBTC/BTC",
-    // ETH_BTC = "ETH/BTC",
+    ETH_BTC = "ETH/BTC",
     // REN_BTC = "REN/BTC",
     TUSD_BTC = "TUSD/BTC",
     // DGX_ETH = "DGX/ETH",
-    // TUSD_ETH = "TUSD/ETH",
+    TUSD_ETH = "TUSD/ETH",
     // REN_ETH = "REN/ETH",
     // ZRX_ETH = "ZRX/ETH",
     // OMG_ETH = "OMG/ETH",

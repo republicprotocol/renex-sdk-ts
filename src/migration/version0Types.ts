@@ -168,8 +168,8 @@ export function idToToken(token: number): TokenCode {
     switch (token) {
         case 0:
             return Token.BTC;
-        // case 1:
-        //     return Token.ETH;
+        case 1:
+            return Token.ETH;
         // case 256:
         //     return Token.DGX;
         case 257:

@@ -70,7 +70,7 @@ export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
 
 /* Swapperd balances */
 
-export const supportedSwapperdTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.TUSD];
+export const supportedSwapperdTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.TUSD];
 
 const retrieveSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
     return getSwapperdBalances({ network: sdk._networkData.network }).then(balances => {
