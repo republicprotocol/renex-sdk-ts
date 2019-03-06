@@ -12,7 +12,7 @@ export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
     ConnectedUnlocked = "connected_unlocked",
     ConnectedLocked = "connected_locked",
-    NotAuthorized = "not_authorized",
+    // NotAuthorized = "not_authorized",
 }
 
 interface InfoResponse {
@@ -43,12 +43,12 @@ export async function fetchSwapperStatus(network: string, ingress: string, getSw
     try {
         const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
         if (response.bootloaded) {
-            try {
-                const swapperID = await getSwapperID();
-                await axios.get(`${ingress}/kyc/${swapperID}`);
-            } catch (error) {
-                return SwapperConnectionStatus.NotAuthorized;
-            }
+            // try {
+            //     const swapperID = await getSwapperID();
+            //     await axios.get(`${ingress}/kyc/${swapperID}`);
+            // } catch (error) {
+            //     return SwapperConnectionStatus.NotAuthorized;
+            // }
 
             return SwapperConnectionStatus.ConnectedUnlocked;
         }

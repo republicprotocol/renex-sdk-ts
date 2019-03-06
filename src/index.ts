@@ -22,7 +22,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
-import { authorizeSwapperD, currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperDConnectionStatus, resetSwapperDConnection, supportedSwapperDTokens, swapperDAddresses, swapperDBalances, swapperDConnected } from "./methods/swapperDMethods";
+import { currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperDConnectionStatus, resetSwapperDConnection, supportedSwapperDTokens, swapperDAddresses, swapperDBalances, swapperDConnected } from "./methods/swapperDMethods";
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
@@ -77,7 +77,7 @@ export class RenExSDK {
         isConnected: (): boolean => swapperDConnected(this),
         refreshStatus: (): Promise<SwapperDConnectionStatus> => refreshSwapperDConnectionStatus(this),
         resetStatus: (): Promise<SwapperDConnectionStatus> => resetSwapperDConnection(this),
-        authorize: (): Promise<SwapperDConnectionStatus> => authorizeSwapperD(this),
+        // authorize: (): Promise<SwapperDConnectionStatus> => authorizeSwapperD(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
         fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => swapperDAddresses(this, tokens),
         wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),

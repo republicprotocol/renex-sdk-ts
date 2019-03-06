@@ -16,7 +16,7 @@ import RenExSDK from "../index";
 
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
-import { errors, responseError, updateError } from "../errors";
+import { responseError, updateError } from "../errors";
 import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
@@ -143,54 +143,54 @@ export function randomNonce(randomBN: () => BN): BN {
     return nonce;
 }
 
-export async function authorizeSwapper(ingressURL: string, request: SwapperDAuthorizationRequest): Promise<boolean> {
-    try {
-        const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
-        if (resp.status === 201) {
-            return true;
-        }
-        throw responseError(errors.CouldNotAuthorizeSwapper, resp);
-    } catch (error) {
-        if (error && error.response) {
-            if (error.response.status === 401) {
-                throw updateError(`Could not authorize swapper. Address is not KYC'd. ${error.message || error}`, error);
-            }
-            throw updateError(`Could not authorize swapper. ${error.message || error}`, error);
-        }
-        throw error;
-    }
-}
+// export async function authorizeSwapper(ingressURL: string, request: SwapperDAuthorizationRequest): Promise<boolean> {
+//     try {
+//         const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
+//         if (resp.status === 201) {
+//             return true;
+//         }
+//         throw responseError(errors.CouldNotAuthorizeSwapper, resp);
+//     } catch (error) {
+//         if (error && error.response) {
+//             if (error.response.status === 401) {
+//                 throw updateError(`Could not authorize swapper. Address is not KYC'd. ${error.message || error}`, error);
+//             }
+//             throw updateError(`Could not authorize swapper. ${error.message || error}`, error);
+//         }
+//         throw error;
+//     }
+// }
 
-export async function _authorizeSwapperD(web3: Web3, ingressURL: string, swapperDAddress: string, address: string): Promise<void> {
-    const req = await getSwapperDAuthorizationRequest(web3, swapperDAddress, address);
-    await authorizeSwapper(ingressURL, req);
-}
+// export async function _authorizeSwapperD(web3: Web3, ingressURL: string, swapperDAddress: string, address: string): Promise<void> {
+//     const req = await getSwapperDAuthorizationRequest(web3, swapperDAddress, address);
+//     await authorizeSwapper(ingressURL, req);
+// }
 
-async function getSwapperDAuthorizationRequest(web3: Web3, swapperDAddress: string, address: string): Promise<SwapperDAuthorizationRequest> {
-    const checksumAddress = web3.utils.toChecksumAddress(swapperDAddress);
-    const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
+// async function getSwapperDAuthorizationRequest(web3: Web3, swapperDAddress: string, address: string): Promise<SwapperDAuthorizationRequest> {
+//     const checksumAddress = web3.utils.toChecksumAddress(swapperDAddress);
+//     const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
 
-    let signature: EncodedData;
-    try {
-        // tslint:disable-next-line:no-any
-        signature = new EncodedData(await (web3.eth.personal.sign as any)(dataForSigning, address));
-    } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
-        }
-        return Promise.reject(updateError(`${errors.UnsignedTransaction}: ${error.message || error}`, error));
-    }
+//     let signature: EncodedData;
+//     try {
+//         // tslint:disable-next-line:no-any
+//         signature = new EncodedData(await (web3.eth.personal.sign as any)(dataForSigning, address));
+//     } catch (error) {
+//         if (error.message.match(/User denied message signature/)) {
+//             return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
+//         }
+//         return Promise.reject(updateError(`${errors.UnsignedTransaction}: ${error.message || error}`, error));
+//     }
 
-    const buff = signature.toBuffer();
-    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
-    // but for future compatibility, we stick to one format)
-    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
-    if (buff[64] === 27 || buff[64] === 28) {
-        buff[64] = buff[64] - 27;
-    }
+//     const buff = signature.toBuffer();
+//     // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
+//     // but for future compatibility, we stick to one format)
+//     // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
+//     if (buff[64] === 27 || buff[64] === 28) {
+//         buff[64] = buff[64] - 27;
+//     }
 
-    return new SwapperDAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
-}
+//     return new SwapperDAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
+// }
 
 // export async function checkSwapperDAuthorization(
 //     ingressURL: string,

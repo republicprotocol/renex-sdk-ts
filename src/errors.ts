@@ -19,7 +19,7 @@ export const updateError = (msg: string, error: Error) => {
 
 export const errors = {
     CouldNotFindSwap: "Couldn't find a swap with matching orderID",
-    CouldNotAuthorizeSwapper: "Could not authorize swapper",
+    // CouldNotAuthorizeSwapper: "Could not authorize swapper",
 
     InvalidBuffer: "invalid buffer",
     InvalidHex: "invalid hex",

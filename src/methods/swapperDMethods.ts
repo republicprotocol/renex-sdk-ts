@@ -4,7 +4,6 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { errors, updateError } from "../errors";
 import { EncodedData } from "../lib/encodedData";
-import { _authorizeSwapperD } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
 import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperDAddresses, getSwapperDBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
@@ -47,18 +46,18 @@ const getSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConne
             return SwapperDConnectionStatus.ConnectedLocked;
         case SwapperConnectionStatus.ConnectedUnlocked:
             return SwapperDConnectionStatus.ConnectedUnlocked;
-        case SwapperConnectionStatus.NotAuthorized:
-            return SwapperDConnectionStatus.SwapperDNotAuthorized;
+        // case SwapperConnectionStatus.NotAuthorized:
+        //     return SwapperDConnectionStatus.SwapperDNotAuthorized;
         default:
             throw new Error(`Unknown swapper status: ${swapperStatus}`);
     }
 };
 
-export const authorizeSwapperD = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
-    const address = await getSwapperID(sdk);
-    await _authorizeSwapperD(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
-    return refreshSwapperDConnectionStatus(sdk);
-};
+// export const authorizeSwapperD = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
+//     const address = await getSwapperID(sdk);
+//     await _authorizeSwapperD(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
+//     return refreshSwapperDConnectionStatus(sdk);
+// };
 
 export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
     return fetchSwapperAddress(sdk._networkData.network);

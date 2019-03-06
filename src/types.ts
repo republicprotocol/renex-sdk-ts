@@ -239,7 +239,7 @@ export enum SwapperDConnectionStatus {
     InvalidSwapper = "invalid_swapper",
     ChangedSwapper = "changed_swapper",
     NotConnected = "not_connected",
-    NotAuthorized = "not_authorized",
+    // NotAuthorized = "not_authorized",
     SwapperDNotAuthorized = "swapperD_not_authorized",
     ConnectedUnlocked = "connected_unlocked",
     ConnectedLocked = "connected_locked",
