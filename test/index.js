@@ -10,4 +10,4 @@ const sdk = new RenExSDK(web3.currentProvider, {
     network: "testnet"
 });
 
-sdk.swapperd.getWrappingFees("WBTC").then(console.log).catch(console.error);
+sdk.swapperD.getWrappingFees("WBTC").then(console.log).catch(console.error);

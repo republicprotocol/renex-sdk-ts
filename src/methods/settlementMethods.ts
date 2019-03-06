@@ -9,7 +9,7 @@ import { fromSmallestUnit, idToToken } from "../lib/tokens";
 import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { getOrderBlockNumber } from "./orderbookMethods";
-import { fetchSwapperdOrder, fetchSwapperdOrderStatus, swapperdConnected, toOrderStatus } from "./swapperdMethods";
+import { fetchSwapperDOrder, fetchSwapperDOrderStatus, swapperDConnected, toOrderStatus } from "./swapperDMethods";
 
 // This function is called if the Orderbook returns Confirmed
 const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: TraderOrder): Promise<OrderStatus> => {
@@ -19,11 +19,11 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: Trad
         // If order is an atomic order, ask Swapper for status
         if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
             // If the Swapper is disconnected we won't know the swap status
-            if (!swapperdConnected(sdk)) {
+            if (!swapperDConnected(sdk)) {
                 return defaultStatus;
             }
             try {
-                return await fetchSwapperdOrderStatus(sdk, orderID);
+                return await fetchSwapperDOrderStatus(sdk, orderID);
             } catch (error) {
                 return defaultStatus;
             }
@@ -52,7 +52,7 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
 
     if (order && order.swapServer) {
         try {
-            return await fetchSwapperdOrderStatus(sdk, orderID);
+            return await fetchSwapperDOrderStatus(sdk, orderID);
         } catch (error) {
             return OrderStatus.CONFIRMED;
         }
@@ -158,7 +158,7 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
         let swap;
         try {
-            swap = await fetchSwapperdOrder(sdk, orderID);
+            swap = await fetchSwapperDOrder(sdk, orderID);
         } catch (error) {
             return undefined;
         }

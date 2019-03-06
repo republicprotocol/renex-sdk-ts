@@ -4,60 +4,60 @@ import RenExSDK, { TokenCode } from "../index";
 
 import { errors, updateError } from "../errors";
 import { EncodedData } from "../lib/encodedData";
-import { _authorizeSwapperd } from "../lib/ingress";
+import { _authorizeSwapperD } from "../lib/ingress";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperdAddresses, getSwapperdBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
+import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperDAddresses, getSwapperDBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
-import { OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, SwapperdBalanceDetails, SwapperdConnectionStatus, Token } from "../types";
+import { OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { darknodeFees } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
-/* Swapperd Connection */
+/* SwapperD Connection */
 
 type MaybeBigNumber = BigNumber | null;
 
-export const currentSwapperdConnectionStatus = (sdk: RenExSDK): SwapperdConnectionStatus => {
-    return sdk._swapperdConnectionStatus;
+export const currentSwapperDConnectionStatus = (sdk: RenExSDK): SwapperDConnectionStatus => {
+    return sdk._swapperDConnectionStatus;
 };
 
-export const swapperdConnected = (sdk: RenExSDK): boolean => {
-    const status = currentSwapperdConnectionStatus(sdk);
+export const swapperDConnected = (sdk: RenExSDK): boolean => {
+    const status = currentSwapperDConnectionStatus(sdk);
     return (
-        status === SwapperdConnectionStatus.ConnectedUnlocked
+        status === SwapperDConnectionStatus.ConnectedUnlocked
     );
 };
 
-export const resetSwapperdConnection = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
-    sdk._swapperdConnectionStatus = SwapperdConnectionStatus.NotConnected;
-    return refreshSwapperdConnectionStatus(sdk);
+export const resetSwapperDConnection = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
+    sdk._swapperDConnectionStatus = SwapperDConnectionStatus.NotConnected;
+    return refreshSwapperDConnectionStatus(sdk);
 };
 
-export const refreshSwapperdConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
-    sdk._swapperdConnectionStatus = await getSwapperdConnectionStatus(sdk);
-    return sdk._swapperdConnectionStatus;
+export const refreshSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
+    sdk._swapperDConnectionStatus = await getSwapperDConnectionStatus(sdk);
+    return sdk._swapperDConnectionStatus;
 };
 
-const getSwapperdConnectionStatus = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
+const getSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
     const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, () => getSwapperID(sdk));
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
-            return SwapperdConnectionStatus.NotConnected;
+            return SwapperDConnectionStatus.NotConnected;
         case SwapperConnectionStatus.ConnectedLocked:
-            return SwapperdConnectionStatus.ConnectedLocked;
+            return SwapperDConnectionStatus.ConnectedLocked;
         case SwapperConnectionStatus.ConnectedUnlocked:
-            return SwapperdConnectionStatus.ConnectedUnlocked;
+            return SwapperDConnectionStatus.ConnectedUnlocked;
         case SwapperConnectionStatus.NotAuthorized:
-            return SwapperdConnectionStatus.SwapperdNotAuthorized;
+            return SwapperDConnectionStatus.SwapperDNotAuthorized;
         default:
             throw new Error(`Unknown swapper status: ${swapperStatus}`);
     }
 };
 
-export const authorizeSwapperd = async (sdk: RenExSDK): Promise<SwapperdConnectionStatus> => {
+export const authorizeSwapperD = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
     const address = await getSwapperID(sdk);
-    await _authorizeSwapperd(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
-    return refreshSwapperdConnectionStatus(sdk);
+    await _authorizeSwapperD(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
+    return refreshSwapperDConnectionStatus(sdk);
 };
 
 export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
@@ -68,12 +68,12 @@ export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
     return fetchSwapperVersion(sdk._networkData.network);
 };
 
-/* Swapperd balances */
+/* SwapperD balances */
 
-export const supportedSwapperdTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.TUSD];
+export const supportedSwapperDTokens = async (sdk: RenExSDK): Promise<TokenCode[]> => [Token.BTC, Token.ETH, Token.TUSD];
 
-const retrieveSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
-    return getSwapperdBalances({ network: sdk._networkData.network }).then(balances => {
+const retrieveSwapperDBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumber[]> => {
+    return getSwapperDBalances({ network: sdk._networkData.network }).then(balances => {
         return Promise.all(tokens.map(async token => {
             const tokenDetails = await getTokenDetails(sdk, token);
             if (balances[token]) {
@@ -85,11 +85,11 @@ const retrieveSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Pro
     });
 };
 
-export const swapperdAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
-    return getSwapperdAddresses(tokens, { network: sdk._networkData.network });
+export const swapperDAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<string[]> => {
+    return getSwapperDAddresses(tokens, { network: sdk._networkData.network });
 };
 
-const usedSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
+const usedSwapperDBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     return fetchTraderOrders(sdk).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
@@ -123,23 +123,23 @@ const usedSwapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise
     });
 };
 
-export const swapperdBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, SwapperdBalanceDetails>> => {
-    return Promise.all([retrieveSwapperdBalances(sdk, tokens), usedSwapperdBalances(sdk, tokens)]).then(([
+export const swapperDBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<Map<TokenCode, SwapperDBalanceDetails>> => {
+    return Promise.all([retrieveSwapperDBalances(sdk, tokens), usedSwapperDBalances(sdk, tokens)]).then(([
         startingBalance,
         usedBalance,
     ]) => {
-        let swapperdBalance = new Map<TokenCode, SwapperdBalanceDetails>();
+        let swapperDBalance = new Map<TokenCode, SwapperDBalanceDetails>();
         tokens.forEach((token, index) => {
             let free: MaybeBigNumber = null;
             if (startingBalance[index] !== null) {
                 free = BigNumber.max(new BigNumber(0), (startingBalance[index] as BigNumber).minus(usedBalance[index]));
             }
-            swapperdBalance = swapperdBalance.set(token, {
+            swapperDBalance = swapperDBalance.set(token, {
                 used: usedBalance[index],
                 free,
             });
         });
-        return swapperdBalance;
+        return swapperDBalance;
     });
 };
 
@@ -160,7 +160,7 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
     const spendTokenDetails = await getTokenDetails(sdk, spendToken);
     const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
-    const tokenAddress = await swapperdAddresses(sdk, [spendToken, receiveToken]);
+    const tokenAddress = await swapperDAddresses(sdk, [spendToken, receiveToken]);
     // Convert the fee fraction to bips by multiplying by 10000
     const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
@@ -172,7 +172,7 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
         minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toFixed(),
         brokerFee,
         delay: true,
-        delayCallbackUrl: `${sdk._networkData.ingress}/swapperd/cb`,
+        delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
         delayInfo: {
             orderID: orderID.toBase64(),
             kycAddr: sdk.getAddress(),
@@ -183,12 +183,12 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     return submitSwap(req, sdk._networkData.network);
 };
 
-export async function fetchSwapperdOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
-    const swap = await fetchSwapperdOrder(sdk, orderID);
+export async function fetchSwapperDOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
+    const swap = await fetchSwapperDOrder(sdk, orderID);
     return toOrderStatus(swap.status);
 }
 
-export async function fetchSwapperdOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
+export async function fetchSwapperDOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
     try {
         const swap = await findMatchingSwapReceipt((swapReceipt) => {
             if (swapReceipt.id === orderID.toBase64()) {

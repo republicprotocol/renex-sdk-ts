@@ -6,7 +6,7 @@ import { TokenCode } from "../types";
 import { EncodedData } from "./encodedData";
 
 const API = "http://localhost:7928";
-const SIGNATURE_PREFIX = "RenEx: swapperd: ";
+const SIGNATURE_PREFIX = "RenEx: swapperD: ";
 
 export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
@@ -196,7 +196,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
     throw new Error(errors.UnableToFindMatchingSwap);
 }
 
-export async function getSwapperdAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
+export async function getSwapperDAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
 
     const addresses = await Promise.all(tokens.map(async (token) => {
         return (await axios.get(`${API}/addresses/${token}?network=${options.network}`)).data;
@@ -205,7 +205,7 @@ export async function getSwapperdAddresses(tokens: TokenCode[], options: { netwo
     return addresses;
 }
 
-export async function getSwapperdBalances(options: { network: string }): Promise<BalancesResponse> {
+export async function getSwapperDBalances(options: { network: string }): Promise<BalancesResponse> {
 
     let response: BalancesResponse;
     try {

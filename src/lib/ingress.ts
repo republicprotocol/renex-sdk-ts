@@ -99,7 +99,7 @@ export class Order extends Record({
     nonce: new BN(0),
 }) { }
 
-export class SwapperdAuthorizationRequest extends Record({
+export class SwapperDAuthorizationRequest extends Record({
     address: "",
     signature: "",
 }) { }
@@ -143,7 +143,7 @@ export function randomNonce(randomBN: () => BN): BN {
     return nonce;
 }
 
-export async function authorizeSwapper(ingressURL: string, request: SwapperdAuthorizationRequest): Promise<boolean> {
+export async function authorizeSwapper(ingressURL: string, request: SwapperDAuthorizationRequest): Promise<boolean> {
     try {
         const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
         if (resp.status === 201) {
@@ -161,13 +161,13 @@ export async function authorizeSwapper(ingressURL: string, request: SwapperdAuth
     }
 }
 
-export async function _authorizeSwapperd(web3: Web3, ingressURL: string, swapperdAddress: string, address: string): Promise<void> {
-    const req = await getSwapperdAuthorizationRequest(web3, swapperdAddress, address);
+export async function _authorizeSwapperD(web3: Web3, ingressURL: string, swapperDAddress: string, address: string): Promise<void> {
+    const req = await getSwapperDAuthorizationRequest(web3, swapperDAddress, address);
     await authorizeSwapper(ingressURL, req);
 }
 
-async function getSwapperdAuthorizationRequest(web3: Web3, swapperdAddress: string, address: string): Promise<SwapperdAuthorizationRequest> {
-    const checksumAddress = web3.utils.toChecksumAddress(swapperdAddress);
+async function getSwapperDAuthorizationRequest(web3: Web3, swapperDAddress: string, address: string): Promise<SwapperDAuthorizationRequest> {
+    const checksumAddress = web3.utils.toChecksumAddress(swapperDAddress);
     const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
 
     let signature: EncodedData;
@@ -189,10 +189,10 @@ async function getSwapperdAuthorizationRequest(web3: Web3, swapperdAddress: stri
         buff[64] = buff[64] - 27;
     }
 
-    return new SwapperdAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
+    return new SwapperDAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
 }
 
-// export async function checkSwapperdAuthorization(
+// export async function checkSwapperDAuthorization(
 //     ingressURL: string,
 //     address: string,
 //     expectedEthAddress: string,

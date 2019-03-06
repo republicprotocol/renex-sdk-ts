@@ -3,7 +3,7 @@
     "ingress": "https://renex-ingress-testnet.herokuapp.com",
     "infura": "https://kovan.infura.io/v3",
     "etherscan": "https://kovan.etherscan.io",
-    "wbtcKYCServer": "https://swapperd-kyc-server-testnet.herokuapp.com",
+    "wbtcKYCServer": "https://swapperD-kyc-server-testnet.herokuapp.com",
     "ethNetwork": "kovan",
     "ethNetworkLabel": "Kovan",
     "ethNetworkId": 42,

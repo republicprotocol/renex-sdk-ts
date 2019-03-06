@@ -18,7 +18,7 @@ import { getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
 import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
-import { submitOrder } from "./swapperdMethods";
+import { submitOrder } from "./swapperDMethods";
 
 const REN_NODE_URL = "http://0.0.0.0:8000/submitOrder";
 
@@ -126,7 +126,7 @@ export const openOrder = async (
     const feeToken = receiveToken;
     const feeAmount = quoteVolume.times(feePercent);
 
-    // let balanceDetails: BalanceDetails | SwapperdBalanceDetails | undefined;
+    // let balanceDetails: BalanceDetails | SwapperDBalanceDetails | undefined;
     // let balance: BigNumber;
 
     const { simpleConsole } = await defaultTransactionOptions(sdk, options);
@@ -136,7 +136,7 @@ export const openOrder = async (
     //     if (orderSettlement === OrderSettlement.RenEx) {
     //         balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
     //     } else {
-    //         balanceDetails = await swapperdBalances(sdk, [spendToken]).then(b => b.get(spendToken));
+    //         balanceDetails = await swapperDBalances(sdk, [spendToken]).then(b => b.get(spendToken));
     //     }
     //     if (!balanceDetails || balanceDetails.free === null) {
     //         simpleConsole.error(errors.FailedBalanceCheck);

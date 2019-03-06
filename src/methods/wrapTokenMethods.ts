@@ -5,7 +5,7 @@ import BN from "bn.js";
 import RenExSDK, { NumberInput, Token } from "../index";
 
 import { errors, updateError } from "../errors";
-import { getSwapperdBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
+import { getSwapperDBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { OrderInputs, OrderSettlement, OrderSide, OrderStatus, TokenCode, WBTCOrder } from "../types";
@@ -116,7 +116,7 @@ async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, re
  * @param {string} fromToken the token to be wrapped or unwrapped
  */
 async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, fromToken: string): Promise<boolean> {
-    const balances = await getSwapperdBalances({ network: sdk._networkData.network });
+    const balances = await getSwapperDBalances({ network: sdk._networkData.network });
     const fromTokenBalance = new BigNumber(balances[fromToken].balance);
     if (fromTokenBalance.lt(amount)) {
         throw new Error(`User has insufficient ${fromToken} balance in Swapper`);
