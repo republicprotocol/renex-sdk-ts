@@ -8,6 +8,7 @@ import { Provider } from "web3/providers";
 
 import LocalStorage from "./storage/localStorage";
 
+import { SwapObject } from "lib/swapper";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { errors, updateError } from "./errors";
 import { generateConfig } from "./lib/config";
@@ -22,7 +23,7 @@ import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
 import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
-import { currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperDConnectionStatus, resetSwapperDConnection, supportedSwapperDTokens, swapperDAddresses, swapperDBalances, swapperDConnected } from "./methods/swapperDMethods";
+import { currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperDConnectionStatus, resetSwapperDConnection, supportedSwapperDTokens, swapperDAddresses, swapperDBalances, swapperDConnected, swapperDSwaps } from "./methods/swapperDMethods";
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapTokenMethods";
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
@@ -40,6 +41,7 @@ import { WyreContract } from "./contracts/bindings/wyre";
 
 // Export all types
 export * from "./types";
+export * from "./lib/swapper";
 export { errors } from "./errors";
 export { StorageProvider } from "./storage/interface";
 export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./storage/serializers";
@@ -79,6 +81,7 @@ export class RenExSDK {
         resetStatus: (): Promise<SwapperDConnectionStatus> => resetSwapperDConnection(this),
         // authorize: (): Promise<SwapperDConnectionStatus> => authorizeSwapperD(this),
         fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
+        fetchSwaps: (): Promise<SwapObject[]> => swapperDSwaps(this),
         fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => swapperDAddresses(this, tokens),
         wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),
         unwrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => unwrap(this, amount, token),

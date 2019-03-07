@@ -31,6 +31,29 @@ export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
+interface CostObject {
+    [token: string]: string;
+}
+
+export interface SwapObject {
+    id: string;
+    sendToken: string;
+    receiveToken: string;
+    sendAmount: string;
+    receiveAmount: string;
+    sendCost: CostObject[];
+    receiveCost: CostObject[];
+    timestamp: number;
+    timeLock: number;
+    status: number;
+    delay: boolean;
+    active: boolean;
+}
+
+export interface SwapsResponse {
+    swaps: SwapObject[];
+}
+
 export const fetchSwapperVersion = async (network: string): Promise<string> => {
     return (await axios.get(`${API}/version`)).data;
 };
@@ -75,7 +98,7 @@ export enum SwapStatus {
     EXPIRED = "expired",
 }
 
-function toSwapStatus(num: number): SwapStatus {
+export function toSwapStatus(num: number): SwapStatus {
 
     switch (num) {
         case 0:
@@ -212,6 +235,17 @@ export async function getSwapperDBalances(options: { network: string }): Promise
         response = (await axios.get(`${API}/balances?network=${options.network}`)).data;
     } catch (error) {
         throw updateError(`${errors.UnableToRetrieveStatus}: ${error.message || error}`, error);
+    }
+
+    return response;
+}
+
+export async function getSwapperDSwaps(options: { network: string }): Promise<SwapsResponse> {
+    let response: SwapsResponse;
+    try {
+        response = (await axios.get(`${API}/swaps?network=${options.network}`)).data;
+    } catch (error) {
+        throw updateError(`${errors.UnableToRetrieveSwaps}: ${error.message || error}`, error);
     }
 
     return response;

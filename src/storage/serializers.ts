@@ -1,7 +1,6 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { migrateV0BalanceAction, migrateV0TraderOrder } from "../migration/migration";
 import { BalanceAction, TraderOrder } from "../types";
 
 export const LATEST_TRADER_ORDER_VERSION = 1;
@@ -13,14 +12,6 @@ export const serializeTraderOrder = (order: TraderOrder): string => {
 
 export const deserializeTraderOrder = (orderString: string): TraderOrder => {
     const order: TraderOrder = JSON.parse(orderString);
-    if (order.version === undefined) {
-        try {
-            return migrateV0TraderOrder(orderString);
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
     if (order.matchDetails) {
         order.matchDetails.fee = new BigNumber(order.matchDetails.fee);
         order.matchDetails.receivedVolume = new BigNumber(order.matchDetails.receivedVolume);
@@ -47,13 +38,6 @@ export const serializeBalanceAction = (balanceAction: BalanceAction): string => 
 
 export const deserializeBalanceAction = (balanceActionString: string): BalanceAction => {
     const balanceAction: BalanceAction = JSON.parse(balanceActionString);
-    if (balanceAction.version === undefined) {
-        try {
-            return migrateV0BalanceAction(balanceActionString);
-        } catch (error) {
-            console.error(error);
-        }
-    }
     balanceAction.amount = new BigNumber(balanceAction.amount);
     return balanceAction;
 };
