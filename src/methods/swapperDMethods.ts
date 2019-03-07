@@ -9,6 +9,7 @@ import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatch
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
+import { REN_NODE_URL } from "./orderbookMethods";
 import { darknodeFees } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 
@@ -171,7 +172,8 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
         minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toFixed(),
         brokerFee,
         delay: true,
-        delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
+        // delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
+        delayCallbackUrl: `${REN_NODE_URL}/swaps`,
         delayInfo: {
             orderID: orderID.toBase64(),
             kycAddr: sdk.getAddress(),

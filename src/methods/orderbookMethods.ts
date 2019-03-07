@@ -20,7 +20,7 @@ import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 import { submitOrder } from "./swapperDMethods";
 
-const REN_NODE_URL = "http://0.0.0.0:8000/submitOrder";
+export const REN_NODE_URL = "http://0.0.0.0:8000/submitOrder";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
