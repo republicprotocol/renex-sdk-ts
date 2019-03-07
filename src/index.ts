@@ -8,7 +8,6 @@ import { Provider } from "web3/providers";
 
 import LocalStorage from "./storage/localStorage";
 
-import { SwapObject } from "lib/swapper";
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { errors, updateError } from "./errors";
 import { generateConfig } from "./lib/config";
@@ -16,6 +15,7 @@ import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversio
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
+import { SwapObject } from "./lib/swapper";
 import { supportedTokens } from "./lib/tokens";
 import { updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
 import { balances } from "./methods/balancesMethods";

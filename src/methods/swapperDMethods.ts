@@ -5,7 +5,7 @@ import RenExSDK, { TokenCode } from "../index";
 import { errors, updateError } from "../errors";
 import { EncodedData } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperDAddresses, getSwapperDBalances, submitSwap, SwapBlob, SwapperConnectionStatus, SwapReceipt, SwapStatus, getSwapperDSwaps, SwapObject } from "../lib/swapper";
+import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperDAddresses, getSwapperDBalances, getSwapperDSwaps, submitSwap, SwapBlob, SwapObject, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
