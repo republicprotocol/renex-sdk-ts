@@ -40,6 +40,7 @@
         "no-any": true,
         "typedef": [true],
         "no-unused-variable": true,
-        "indent": [true, "spaces", 4]
+        "indent": [true, "spaces", 4],
+        "no-return-await": false
     }
 }

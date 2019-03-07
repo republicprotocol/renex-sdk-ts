@@ -68,7 +68,7 @@ const totalBalances = (sdk: RenExSDK, tokens: TokenCode[]): Promise<MaybeBigNumb
 
 const lockedBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
     // Add balances from orders that are open or not settled
-    const usedOrderBalancesPromise = fetchTraderOrders(sdk).then(orders => {
+    const usedOrderBalancesPromise = fetchTraderOrders(sdk, { refresh: false }).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (

@@ -90,7 +90,7 @@ export const swapperDAddresses = async (sdk: RenExSDK, tokens: TokenCode[]): Pro
 };
 
 const usedSwapperDBalances = async (sdk: RenExSDK, tokens: TokenCode[]): Promise<BigNumber[]> => {
-    return fetchTraderOrders(sdk).then(orders => {
+    return fetchTraderOrders(sdk, { refresh: false }).then(orders => {
         const usedFunds = new Map<TokenCode, BigNumber>();
         orders.forEach(order => {
             if (
@@ -179,9 +179,9 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const req: SwapBlob = {
         sendToken: spendToken,
         receiveToken,
-        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).toFixed(),
-        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).toFixed(),
-        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).toFixed(),
+        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
+        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee,
         delay: true,
         // delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
@@ -193,6 +193,7 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
             receiveTokenAddr: tokenAddress[1],
         }
     };
+
     return submitSwap(req, sdk._networkData.network);
 };
 

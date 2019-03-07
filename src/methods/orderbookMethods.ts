@@ -20,7 +20,7 @@ import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 import { submitOrder } from "./swapperDMethods";
 
-export const REN_NODE_URL = "http://0.0.0.0:8000/submitOrder";
+export const REN_NODE_URL = "http://localhost:8000/submitOrder";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
@@ -201,18 +201,16 @@ export const openOrder = async (
         }
     }
 
-    await axios.post(REN_NODE_URL, newOrder);
+    // Create order fragment mapping
+    simpleConsole.log("Building order mapping");
 
-    // // Create order fragment mapping
-    // simpleConsole.log("Building order mapping");
-
-    // let orderFragmentMappings;
-    // try {
-    //     orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, ingressOrder, simpleConsole);
-    // } catch (err) {
-    //     simpleConsole.error(err.message || err);
-    //     throw err;
-    // }
+    let orderFragmentMappings;
+    try {
+        orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, newOrder, simpleConsole);
+    } catch (err) {
+        simpleConsole.error(err.message || err);
+        throw err;
+    }
 
     // const request = new ingress.OpenOrderRequest({
     //     address: sdk.getAddress().slice(2),
@@ -226,6 +224,8 @@ export const openOrder = async (
     //     simpleConsole.error(err.message || err);
     //     throw err;
     // }
+
+    await axios.post(REN_NODE_URL, newOrder);
 
     // // Submit order and the signature to the orderbook
     // simpleConsole.log("Waiting for transaction signature");
