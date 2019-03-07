@@ -20,7 +20,8 @@ import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
 import { fetchTraderOrders } from "./storageMethods";
 import { submitOrder } from "./swapperDMethods";
 
-export const REN_NODE_URL = "http://localhost:8000/submitOrder";
+// TODO: Decide where this should go (network env, or passed in to constructor)
+export const REN_NODE_URL = "http://localhost:8000";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
@@ -225,7 +226,7 @@ export const openOrder = async (
     //     throw err;
     // }
 
-    await axios.post(REN_NODE_URL, newOrder);
+    await axios.post(`${REN_NODE_URL}/submitOrder`, newOrder);
 
     // // Submit order and the signature to the orderbook
     // simpleConsole.log("Waiting for transaction signature");

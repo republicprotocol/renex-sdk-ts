@@ -55,19 +55,19 @@ export function idToToken(token: number): TokenCode {
         case 0:
             return Token.BTC;
         case 1:
-            //     return Token.ETH;
-            // case 256:
-            //     return Token.DGX;
-            // case 257:
+            return Token.ETH;
+        case 256:
+            return Token.DGX;
+        case 257:
             return Token.TUSD;
         case 65536:
-        //     return Token.REN;
-        // case 65537:
-        //     return Token.ZRX;
-        // case 65538:
-        //     return Token.OMG;
-        // case 65539:
-        //     return Token.WBTC;
+            return Token.REN;
+        case 65537:
+            return Token.ZRX;
+        case 65538:
+            return Token.OMG;
+        case 65539:
+            return Token.WBTC;
     }
     throw new Error(`Invalid token ID: ${token}`);
 }

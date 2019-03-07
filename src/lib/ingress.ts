@@ -17,6 +17,7 @@ import RenExSDK from "../index";
 import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
 import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { responseError, updateError } from "../errors";
+import { REN_NODE_URL } from "../methods/orderbookMethods";
 import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
@@ -591,10 +592,13 @@ async function getAllDarknodes(web3: Web3, darknodeRegistryContract: DarknodeReg
 }
 
 async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole, marketID: string): Promise<List<Pod>> {
-    // const URL = "http://0.0.0.0:8000";
-    // const res = await axios.get(`${URL}/pods?tokens=${marketID}`);
+    const res = await axios.get<string[]>(`${REN_NODE_URL}/pods?tokens=${marketID}`);
 
-    return await getAllPods(web3, darknodeRegistryContract, simpleConsole);
+    const podsForPair = res.data;
+
+    const allPods = await getAllPods(web3, darknodeRegistryContract, simpleConsole);
+
+    return allPods.filter((pod: Pod) => podsForPair.includes(pod.id));
 }
 
 /*
