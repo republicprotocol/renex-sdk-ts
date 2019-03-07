@@ -24,8 +24,8 @@ export const tupleToPrice = (t: Tuple): BigNumber => {
     return new BigNumber(t.c).times(5).times(e);
 };
 
-export const normalizePrice = (p: BigNumber, roundUp?: boolean): BigNumber => {
-    return tupleToPrice(priceToTuple(p, roundUp));
+export const normalizePrice = (input: BigNumber, roundUp?: boolean): BigNumber => {
+    return input.decimalPlaces(8, roundUp ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN);
 };
 
 export function volumeToTuple(volume: BigNumber, roundUp?: boolean): Tuple {
@@ -43,8 +43,8 @@ export const tupleToVolume = (t: Tuple): BigNumber => {
     return new BigNumber(t.c).times(0.2).times(e);
 };
 
-export const normalizeVolume = (v: BigNumber, roundUp?: boolean): BigNumber => {
-    return tupleToVolume(volumeToTuple(v, roundUp));
+export const normalizeVolume = (input: BigNumber, roundUp?: boolean): BigNumber => {
+    return input.decimalPlaces(8, roundUp ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN);
 };
 
 function floatToTuple(shift: number, exponentOffset: number, step: number, value: BigNumber, max: number, roundUp?: boolean): Tuple {

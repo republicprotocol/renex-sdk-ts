@@ -2,7 +2,7 @@ import axios from "axios";
 
 // tsc complains about importing NodeRSA normally
 import * as NodeRSAType from "node-rsa";
-const NodeRSA = require("node-rsa") as new () => NodeRSAType;
+// const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
 import BN from "bn.js";
 import Web3 from "web3";
@@ -21,7 +21,7 @@ import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, Order
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
 import { MarketPairs } from "./market";
-import { orderbookStateToOrderStatus, priceToCoExp, volumeToCoExp } from "./order";
+import { orderbookStateToOrderStatus } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
 
@@ -97,6 +97,7 @@ export class Order extends Record({
     volume: new BN(0),
     minimumVolume: new BN(0),
     nonce: new BN(0),
+    marketID: null as string | null,
 }) { }
 
 export class SwapperDAuthorizationRequest extends Record({
@@ -104,9 +105,16 @@ export class SwapperDAuthorizationRequest extends Record({
     signature: "",
 }) { }
 
+export class PodShares extends Record({
+    price: List<Buffer>(),
+    volume: List<Buffer>(),
+    minVolume: List<Buffer>(),
+}) { }
 export class OpenOrderRequest extends Record({
-    address: "",
-    orderFragmentMappings: Array<Map<string, List<OrderFragment>>>()
+    orderID: "",
+    sendToken: 0,
+    receiveToken: 0,
+    pods: Map<string, PodShares>(),
 }) { }
 
 export class WithdrawRequest extends Record({
@@ -215,6 +223,7 @@ export interface NewOrder {
     id: string;
     sendToken: number;
     receiveToken: number;
+    marketID: string;
     price: number;
     volume: number;
     min_Volume: number;
@@ -238,14 +247,17 @@ export function createNewOrder(sdk: RenExSDK, orderInputs: OrderInputsAll, nonce
     // const orderID = getOrderID(sdk.getWeb3(), ingressOrder);
     // ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
-    return {
+    const order: NewOrder = {
         id: randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex")).toString("hex"),
         sendToken: tokenToID(spendToken),
         receiveToken: tokenToID(receiveToken),
+        marketID: `${quoteToken}-${baseToken}`,
         price, // 350,
         volume, // 100,
         min_Volume: minimumVolume, // 10,
     };
+
+    return order;
 }
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
@@ -255,6 +267,7 @@ export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
     }
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
+    const marketID = `${baseToken}-${quoteToken}`;
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
     const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
 
@@ -276,6 +289,7 @@ export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
         price,
         volume,
         minimumVolume,
+        marketID,
     });
     return ingressOrder;
 }
@@ -406,13 +420,14 @@ export function getOrderID(web3: Web3, order: Order): EncodedData {
 }
 
 export async function buildOrderMapping(
-    web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: Order, simpleConsole: SimpleConsole,
+    web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: NewOrder, simpleConsole: SimpleConsole,
 ): Promise<Map<string, List<OrderFragment>>> {
-    const pods = await getPods(web3, darknodeRegistryContract, simpleConsole);
+    const marketID = order.marketID;
+    const pods = await getPods(web3, darknodeRegistryContract, simpleConsole, marketID);
 
-    const priceCoExp = priceToCoExp(order.price);
-    const volumeCoExp = volumeToCoExp(order.volume);
-    const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
+    // const priceCoExp = priceToCoExp(order.price);
+    // const volumeCoExp = volumeToCoExp(order.volume);
+    // const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
 
     const fragmentPromises = (pods)
         .map(async (pod: Pod): Promise<Pod> => {
@@ -420,16 +435,11 @@ export async function buildOrderMapping(
             const k = Math.floor((2 * (n + 1)) / 3);
 
             simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
-            const tokenShares = shamir.split(n, k, new BN(order.tokens));
-            const priceCoShares = shamir.split(n, k, new BN(priceCoExp.co));
-            const priceExpShares = shamir.split(n, k, new BN(priceCoExp.exp));
-            const volumeCoShares = shamir.split(n, k, new BN(volumeCoExp.co));
-            const volumeExpShares = shamir.split(n, k, new BN(volumeCoExp.exp));
-            const minimumVolumeCoShares = shamir.split(n, k, new BN(minVolumeCoExp.co));
-            const minimumVolumeExpShares = shamir.split(n, k, new BN(minVolumeCoExp.exp));
-            const nonceShares = shamir.split(n, k, order.nonce);
+            const priceShares = shamir.split(n, k, new BN(order.price));
+            const volumeShares = shamir.split(n, k, new BN(order.volume));
+            const minimumVolumeShares = shamir.split(n, k, new BN(order.min_Volume));
 
-            let orderFragments = List<OrderFragment>();
+            const orderFragments = List<OrderFragment>();
 
             // Loop through each darknode in the pod
             for (let i = 0; i < n; i++) {
@@ -440,71 +450,56 @@ export async function buildOrderMapping(
                 simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
 
                 // Retrieve darknode RSA public key from Darknode contract
-                let darknodeKey = null;
-                try {
-                    darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
-                } catch (error) {
-                    // We don't want everything to crash if even one darknode is malicious
-                    // Log the error but keep going
-                    console.error(error);
-                }
+                // let darknodeKey = null;
+                // try {
+                //     darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
+                // } catch (error) {
+                //     // We don't want everything to crash if even one darknode is malicious
+                //     // Log the error but keep going
+                //     console.error(error);
+                // }
 
                 const [
-                    tokenShare,
-                    priceCoShare,
-                    priceExpShare,
-                    volumeCoShare,
-                    volumeExpShare,
-                    minimumVolumeCoShare,
-                    minimumVolumeExpShare,
-                    nonceShare
+                    priceShare,
+                    volumeShare,
+                    minimumVolumeShare,
                 ] = [
-                        tokenShares.get(i),
-                        priceCoShares.get(i),
-                        priceExpShares.get(i),
-                        volumeCoShares.get(i),
-                        volumeExpShares.get(i),
-                        minimumVolumeCoShares.get(i),
-                        minimumVolumeExpShares.get(i),
-                        nonceShares.get(i),
+                        priceShares.get(i),
+                        volumeShares.get(i),
+                        minimumVolumeShares.get(i),
                     ];
 
                 if (
-                    tokenShare === undefined ||
-                    priceCoShare === undefined ||
-                    priceExpShare === undefined ||
-                    volumeCoShare === undefined ||
-                    volumeExpShare === undefined ||
-                    minimumVolumeCoShare === undefined ||
-                    minimumVolumeExpShare === undefined ||
-                    nonceShare === undefined
+                    priceShare === undefined ||
+                    volumeShare === undefined ||
+                    minimumVolumeShare === undefined
                 ) {
                     throw new Error("invalid share access");
                 }
 
-                let orderFragment = new OrderFragment({
-                    orderId: order.id,
-                    orderType: order.type,
-                    orderParity: order.parity,
-                    orderSettlement: order.orderSettlement,
-                    tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
-                    price: [
-                        encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
-                        encryptForDarknode(darknodeKey, priceExpShare, 8).toBase64()
-                    ],
-                    volume: [
-                        encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
-                        encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
-                    ],
-                    minimumVolume: [
-                        encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
-                        encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
-                    ],
-                    nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
-                    index: i + 1,
-                });
-                orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
-                orderFragments = orderFragments.push(orderFragment);
+                // let orderFragment = new OrderFragment({
+                //     orderId: order.id,
+                //     orderType: order.type,
+                //     orderParity: order.parity,
+                //     orderSettlement: order.orderSettlement,
+                //     tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
+                //     price: [
+                //         encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
+                //         encryptForDarknode(darknodeKey, priceExpShare, 8).toBase64()
+                //     ],
+                //     volume: [
+                //         encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
+                //         encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
+                //     ],
+                //     minimumVolume: [
+                //         encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
+                //         encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
+                //     ],
+                //     nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
+                //     index: i + 1,
+                // });
+                // orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
+                // orderFragments = orderFragments.push(orderFragment);
             }
             return pod.set("orderFragments", orderFragments);
         });
@@ -520,44 +515,44 @@ export async function buildOrderMapping(
     );
 }
 
-function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string {
-    // TODO: Fix order hashing
-    return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
-}
+// function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string {
+//     // TODO: Fix order hashing
+//     return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
+// }
 
-async function getDarknodePublicKey(
-    darknodeRegistryContract: DarknodeRegistryContract, darknode: string, simpleConsole: SimpleConsole,
-): Promise<NodeRSAType | null> {
-    const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
+// async function getDarknodePublicKey(
+//     darknodeRegistryContract: DarknodeRegistryContract, darknode: string, simpleConsole: SimpleConsole,
+// ): Promise<NodeRSAType | null> {
+//     const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
 
-    if (darknodeKeyHex as (string | null) === null || darknodeKeyHex.length === 0) {
-        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
-        return null;
-    }
+//     if (darknodeKeyHex as (string | null) === null || darknodeKeyHex.length === 0) {
+//         simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
+//         return null;
+//     }
 
-    const darknodeKey = Buffer.from(darknodeKeyHex.slice(2), "hex");
+//     const darknodeKey = Buffer.from(darknodeKeyHex.slice(2), "hex");
 
-    // We require the exponent E to fit into 32 bytes.
-    // Since it is stored at 64 bytes, we ignore the first 32 bytes.
-    // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
-    const e = darknodeKey.slice(0, 8).readUInt32BE(4);
-    const n = darknodeKey.slice(8);
+//     // We require the exponent E to fit into 32 bytes.
+//     // Since it is stored at 64 bytes, we ignore the first 32 bytes.
+//     // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
+//     const e = darknodeKey.slice(0, 8).readUInt32BE(4);
+//     const n = darknodeKey.slice(8);
 
-    const key = new NodeRSA();
-    key.importKey({
-        n,
-        e,
-    });
+//     const key = new NodeRSA();
+//     key.importKey({
+//         n,
+//         e,
+//     });
 
-    key.setOptions({
-        encryptionScheme: {
-            scheme: "pkcs1_oaep",
-            hash: "sha1"
-        }
-    });
+//     key.setOptions({
+//         encryptionScheme: {
+//             scheme: "pkcs1_oaep",
+//             hash: "sha1"
+//         }
+//     });
 
-    return key;
-}
+//     return key;
+// }
 
 export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shamir.Share, byteCount: number): EncodedData {
     if (darknodeKey === null) {
@@ -582,7 +577,7 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
  * first entry so it should not be re-added to the list of all darknodes.
  */
 async function getAllDarknodes(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<string[]> {
-    const batchSize = web3.utils.toHex(10);
+    const batchSize = web3.utils.toHex(50);
 
     const allDarknodes = [];
     let lastDarknode = NULL;
@@ -595,10 +590,17 @@ async function getAllDarknodes(web3: Web3, darknodeRegistryContract: DarknodeReg
     return allDarknodes;
 }
 
+async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole, marketID: string): Promise<List<Pod>> {
+    // const URL = "http://0.0.0.0:8000";
+    // const res = await axios.get(`${URL}/pods?tokens=${marketID}`);
+
+    return await getAllPods(web3, darknodeRegistryContract, simpleConsole);
+}
+
 /*
  * Calculate pod arrangement based on current epoch
  */
-async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
+async function getAllPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
     const darknodes = await getAllDarknodes(web3, darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
     simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);

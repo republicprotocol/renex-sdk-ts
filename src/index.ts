@@ -114,7 +114,7 @@ export class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, options?: Options) {
+    constructor(provider: Provider, options?: Options, mainnetProvider?: Provider) {
         this._web3 = new Web3(provider);
         this._config = generateConfig(options);
 
@@ -156,7 +156,7 @@ export class RenExSDK {
             renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
             renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
             orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
+            darknodeRegistry: new (withProvider(mainnetProvider || provider, DarknodeRegistry))("0x34bd421C7948Bc16f826Fd99f9B785929b121633"),
             renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
             erc20: new Map<TokenCode, ERC20Contract>(),
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
