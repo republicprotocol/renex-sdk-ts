@@ -22,6 +22,7 @@ export interface NetworkData {
     ];
     tokens: {
         TUSD: string;
+        DAI: string;
     };
 }
 

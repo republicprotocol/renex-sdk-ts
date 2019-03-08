@@ -180,6 +180,7 @@ export async function submitSwap(swap: SwapBlob, network: string): Promise<boole
     let resp;
 
     try {
+        console.log(JSON.stringify(swap, null, "    "));
         resp = await axios.post(`${API}/swaps?network=${network}`, swap);
     } catch (error) {
         if (error.response && error.response.status === 403) {

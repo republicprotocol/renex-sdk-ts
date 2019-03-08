@@ -16,6 +16,7 @@
         "wyre": "0x9f2a7b5E6280727cd6c8486f5F96E5f76164F2DF"
     }],
     "tokens": {
-        "TUSD": "0x8dd5fbCe2F6a956C3022bA3663759011Dd51e73E"
+        "TUSD": "0x8dd5fbCe2F6a956C3022bA3663759011Dd51e73E",
+        "DAI": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359"
     }
 }

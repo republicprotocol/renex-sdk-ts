@@ -107,16 +107,18 @@ export class SwapperDAuthorizationRequest extends Record({
 }) { }
 
 export class PodShares extends Record({
-    price: List<Buffer>(),
-    volume: List<Buffer>(),
-    minVolume: List<Buffer>(),
+    price: List<string>(),
+    volume: List<string>(),
+    minVolume: List<string>(),
 }) { }
-export class OpenOrderRequest extends Record({
+export class EncryptedShares extends Record({
     orderID: "",
     sendToken: 0,
     receiveToken: 0,
     pods: Map<string, PodShares>(),
 }) { }
+
+export type OpenOrderRequest = EncryptedShares;
 
 export class WithdrawRequest extends Record({
     address: "",
@@ -144,12 +146,9 @@ export class Pod extends Record({
     orderFragments: List<OrderFragment>(),
 }) { }
 
-export function randomNonce(randomBN: () => BN): BN {
-    let nonce = randomBN();
-    while (nonce.gte(shamir.PRIME)) {
-        nonce = randomBN();
-    }
-    return nonce;
+export function randomNonce(): BN {
+    const nonce = new BigNumber(Math.random()).multipliedBy(new BigNumber(shamir.PRIME.toString()));
+    return new BN(nonce.toFixed());
 }
 
 // export async function authorizeSwapper(ingressURL: string, request: SwapperDAuthorizationRequest): Promise<boolean> {
@@ -249,7 +248,7 @@ export function createNewOrder(sdk: RenExSDK, orderInputs: OrderInputsAll, nonce
     // ingressOrder = ingressOrder.set("id", orderID.toBase64());
 
     const order: NewOrder = {
-        id: randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex")).toString("hex"),
+        id: randomNonce().toString("hex"),
         sendToken: tokenToID(spendToken),
         receiveToken: tokenToID(receiveToken),
         marketID: `${quoteToken}-${baseToken}`,
@@ -298,19 +297,18 @@ export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
 export async function submitOrderFragments(
     ingressURL: string,
     request: OpenOrderRequest,
-): Promise<EncodedData> {
+): Promise<void> {
     try {
-        const resp = await axios.post(`${ingressURL}/orders`, request.toJS());
-        if (resp.status !== 201) {
+        const resp = await axios.post(`${REN_NODE_URL}/order`, request.toJS());
+        if (resp.status !== 200) {
             throw responseError("Unexpected status code returned by Ingress", resp);
         }
-        return new EncodedData(resp.data.signature, Encodings.BASE64);
+        return;
+        // return new EncodedData(resp.data.signature, Encodings.BASE64);
     } catch (error) {
         if (error.response) {
             if (error.response.status === 401) {
                 throw updateError("KYC verification failed in Ingress", error);
-                error.message = "KYC verification failed in Ingress";
-                throw error;
             } else {
                 throw new Error(`Ingress returned status ${error.response.status} with reason: ${error.response.data}`);
             }
@@ -422,7 +420,7 @@ export function getOrderID(web3: Web3, order: Order): EncodedData {
 
 export async function buildOrderMapping(
     web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: NewOrder, simpleConsole: SimpleConsole,
-): Promise<Map<string, List<OrderFragment>>> {
+): Promise<Map<string, PodShares>> {
     const marketID = order.marketID;
     const pods = await getPods(web3, darknodeRegistryContract, simpleConsole, marketID);
 
@@ -431,88 +429,95 @@ export async function buildOrderMapping(
     // const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
 
     const fragmentPromises = (pods)
-        .map(async (pod: Pod): Promise<Pod> => {
+        .map(async (pod: Pod): Promise<[string, PodShares]> => {
             const n = pod.darknodes.size;
-            const k = Math.floor((2 * (n + 1)) / 3);
+            const k = Math.floor(((n * 2) / 3 + 1) / 2) - 1;
+
+            console.log(`Before was using ${Math.floor((2 * (n + 1)) / 3)}, now using ${k}`);
 
             simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
-            const priceShares = shamir.split(n, k, new BN(order.price));
-            const volumeShares = shamir.split(n, k, new BN(order.volume));
-            const minimumVolumeShares = shamir.split(n, k, new BN(order.min_Volume));
+            const priceShares = shamir.split(n, k, new BN(10));
+            const volumeShares = shamir.split(n, k, new BN(10));
+            const minimumVolumeShares = shamir.split(n, k, new BN(10));
 
-            const orderFragments = List<OrderFragment>();
+            const podShares = new PodShares({
+                price: priceShares.map((share) => shareToBuffer(share, 8).toBase64()),
+                volume: volumeShares.map((share) => shareToBuffer(share, 8).toBase64()),
+                minVolume: minimumVolumeShares.map((share) => shareToBuffer(share, 8).toBase64()),
+            });
 
-            // Loop through each darknode in the pod
-            for (let i = 0; i < n; i++) {
-                const darknode = pod.darknodes.get(i, undefined);
-                if (darknode === undefined) {
-                    throw new Error("invalid darknode access");
-                }
-                simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
+            return [pod.id, podShares];
 
-                // Retrieve darknode RSA public key from Darknode contract
-                // let darknodeKey = null;
-                // try {
-                //     darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
-                // } catch (error) {
-                //     // We don't want everything to crash if even one darknode is malicious
-                //     // Log the error but keep going
-                //     console.error(error);
-                // }
+            // // Loop through each darknode in the pod
+            // for (let i = 0; i < n; i++) {
+            //     const darknode = pod.darknodes.get(i, undefined);
+            //     if (darknode === undefined) {
+            //         throw new Error("invalid darknode access");
+            //     }
+            //     simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
 
-                const [
-                    priceShare,
-                    volumeShare,
-                    minimumVolumeShare,
-                ] = [
-                        priceShares.get(i),
-                        volumeShares.get(i),
-                        minimumVolumeShares.get(i),
-                    ];
+            //     // Retrieve darknode RSA public key from Darknode contract
+            //     // let darknodeKey = null;
+            //     // try {
+            //     //     darknodeKey = await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole);
+            //     // } catch (error) {
+            //     //     // We don't want everything to crash if even one darknode is malicious
+            //     //     // Log the error but keep going
+            //     //     console.error(error);
+            //     // }
 
-                if (
-                    priceShare === undefined ||
-                    volumeShare === undefined ||
-                    minimumVolumeShare === undefined
-                ) {
-                    throw new Error("invalid share access");
-                }
+            //     const [
+            //         priceShare,
+            //         volumeShare,
+            //         minimumVolumeShare,
+            //     ] = [
+            //             priceShares.get(i),
+            //             volumeShares.get(i),
+            //             minimumVolumeShares.get(i),
+            //         ];
 
-                // let orderFragment = new OrderFragment({
-                //     orderId: order.id,
-                //     orderType: order.type,
-                //     orderParity: order.parity,
-                //     orderSettlement: order.orderSettlement,
-                //     tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
-                //     price: [
-                //         encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
-                //         encryptForDarknode(darknodeKey, priceExpShare, 8).toBase64()
-                //     ],
-                //     volume: [
-                //         encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
-                //         encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
-                //     ],
-                //     minimumVolume: [
-                //         encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
-                //         encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
-                //     ],
-                //     nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
-                //     index: i + 1,
-                // });
-                // orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
-                // orderFragments = orderFragments.push(orderFragment);
-            }
-            return pod.set("orderFragments", orderFragments);
+            //     if (
+            //         priceShare === undefined ||
+            //         volumeShare === undefined ||
+            //         minimumVolumeShare === undefined
+            //     ) {
+            //         throw new Error("invalid share access");
+            //     }
+
+            //     // let orderFragment = new OrderFragment({
+            //     //     orderId: order.id,
+            //     //     orderType: order.type,
+            //     //     orderParity: order.parity,
+            //     //     orderSettlement: order.orderSettlement,
+            //     //     tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
+            //     //     price: [
+            //     //         encryptForDarknode(darknodeKey, priceCoShare, 8).toBase64(),
+            //     //         encryptForDarknode(darknodeKey, priceExpShare, 8).toBase64()
+            //     //     ],
+            //     //     volume: [
+            //     //         encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
+            //     //         encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
+            //     //     ],
+            //     //     minimumVolume: [
+            //     //         encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
+            //     //         encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
+            //     //     ],
+            //     //     nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
+            //     //     index: i + 1,
+            //     // });
+            //     // orderFragment = orderFragment.set("id", hashOrderFragmentToId(web3, orderFragment));
+            //     // orderFragments = orderFragments.push(orderFragment);
+            // }
         });
 
     // Reduce must happen serially
     return fragmentPromises.reduce(
-        async (fragmentMappingsPromise: Promise<Map<string, List<OrderFragment>>>, podPromise: Promise<Pod>) => {
+        async (fragmentMappingsPromise: Promise<Map<string, PodShares>>, podPromise: Promise<[string, PodShares]>) => {
             const fragmentMappings = await fragmentMappingsPromise;
-            const pod = await podPromise;
-            return fragmentMappings.set(pod.id, pod.orderFragments);
+            const [podID, podShares] = await podPromise;
+            return fragmentMappings.set(podID, podShares);
         },
-        Promise.resolve(Map<string, List<OrderFragment>>())
+        Promise.resolve(Map<string, PodShares>())
     );
 }
 
@@ -555,19 +560,43 @@ export async function buildOrderMapping(
 //     return key;
 // }
 
+function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
+    // TODO: Check that bignumber isn't bigger than 8 bytes (64 bits)
+    // Serialize number to 8-byte array (64-bits) (big-endian)
+    try {
+
+        /* Total: 40
+        64bit: index
+        64bit: length of share.value (32)
+        64bit: length of prime (4)
+        64bit: prime
+        64bit: length of value (4)
+        64bit: value
+        */
+
+        const indexBytes = new BN(share.index).toArrayLike(Buffer, "be", byteCount);
+        const shareLengthBytes = new BN(byteCount + byteCount + 4 + 4).toArrayLike(Buffer, "be", byteCount);
+        const primeLengthBytes = new BN(4).toArrayLike(Buffer, "be", byteCount);
+        const primeBytes = shamir.PRIME.toArrayLike(Buffer, "be", 4);
+        const shareValueLengthBytes = new BN(4).toArrayLike(Buffer, "be", byteCount);
+        const shareValueBytes = share.value.toArrayLike(Buffer, "be", 4);
+
+        const bytes = Buffer.concat([indexBytes, shareLengthBytes, primeLengthBytes, primeBytes, shareValueLengthBytes, shareValueBytes]);
+
+        return new EncodedData(bytes, Encodings.BUFFER);
+    } catch (error) {
+        throw updateError(`${error.message}: ${share.index}, ${share.value.toString()}`, error);
+    }
+}
+
 export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shamir.Share, byteCount: number): EncodedData {
     if (darknodeKey === null) {
         return new EncodedData("", Encodings.BASE64);
     }
 
-    // TODO: Check that bignumber isn't bigger than 8 bytes (64 bits)
-    // Serialize number to 8-byte array (64-bits) (big-endian)
-    const indexBytes = new BN(share.index).toArrayLike(Buffer, "be", byteCount);
-    const bignumberBytes = share.value.toArrayLike(Buffer, "be", byteCount);
+    const bytes = shareToBuffer(share, byteCount);
 
-    const bytes = Buffer.concat([indexBytes, bignumberBytes]);
-
-    return new EncodedData(darknodeKey.encrypt(bytes, "buffer"), Encodings.BUFFER);
+    return new EncodedData(darknodeKey.encrypt(bytes.toBuffer(), "buffer"), Encodings.BUFFER);
 }
 
 /*

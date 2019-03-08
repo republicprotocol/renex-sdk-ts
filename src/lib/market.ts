@@ -11,6 +11,7 @@ export const MarketPairs: OrderedMap<MarketCode, MarketDetails> = OrderedMap<Mar
     // ETH pairs
     // .set(MarketPair.DGX_ETH, { symbol: MarketPair.DGX_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.DGX })
     .set(MarketPair.TUSD_ETH, { symbol: MarketPair.TUSD_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.TUSD })
+    .set(MarketPair.DAI_ETH, { symbol: MarketPair.DAI_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.DAI })
     // .set(MarketPair.REN_ETH, { symbol: MarketPair.REN_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.REN })
     // .set(MarketPair.ZRX_ETH, { symbol: MarketPair.ZRX_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.ZRX })
     // .set(MarketPair.OMG_ETH, { symbol: MarketPair.OMG_ETH, orderSettlement: OrderSettlement.RenExAtomic, quote: Token.ETH, base: Token.OMG })

@@ -38,6 +38,8 @@ export function tokenToID(token: TokenCode): number {
             return 256;
         case Token.TUSD:
             return 257;
+        case Token.DAI:
+            return 258;
         case Token.REN:
             return 65536;
         case Token.ZRX:

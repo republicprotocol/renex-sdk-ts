@@ -21,7 +21,7 @@ import { fetchTraderOrders } from "./storageMethods";
 import { submitOrder } from "./swapperDMethods";
 
 // TODO: Decide where this should go (network env, or passed in to constructor)
-export const REN_NODE_URL = "http://localhost:8000";
+export const REN_NODE_URL = "https://renex-testnet.herokuapp.com";
 
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
@@ -188,7 +188,7 @@ export const openOrder = async (
         throw new Error(errMsg);
     }
 
-    const nonce = ingress.randomNonce(() => new BN(sdk.getWeb3().utils.randomHex(8).slice(2), "hex"));
+    const nonce = ingress.randomNonce();
     const newOrder = ingress.createNewOrder(sdk, orderInputs, nonce);
     const orderID = new EncodedData(newOrder.id, Encodings.HEX);
 
@@ -205,6 +205,8 @@ export const openOrder = async (
     // Create order fragment mapping
     simpleConsole.log("Building order mapping");
 
+    console.log(JSON.stringify(newOrder, null, "    "));
+
     let orderFragmentMappings;
     try {
         orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, newOrder, simpleConsole);
@@ -213,20 +215,32 @@ export const openOrder = async (
         throw err;
     }
 
-    // const request = new ingress.OpenOrderRequest({
-    //     address: sdk.getAddress().slice(2),
-    //     orderFragmentMappings: [orderFragmentMappings]
-    // });
-    // simpleConsole.log("Sending order fragments");
-    // let signature;
-    // try {
-    //     signature = await ingress.submitOrderFragments(sdk._networkData.ingress, request);
-    // } catch (err) {
-    //     simpleConsole.error(err.message || err);
-    //     throw err;
-    // }
+    const request = new ingress.EncryptedShares({
+        orderID: orderID.toBase64(),
+        sendToken: newOrder.sendToken,
+        receiveToken: newOrder.receiveToken,
+        pods: orderFragmentMappings,
+    });
 
-    await axios.post(`${REN_NODE_URL}/submitOrder`, newOrder);
+    console.log(JSON.stringify(request.toJS(), null, "    "));
+
+    simpleConsole.log("Sending order fragments");
+    // let signature;
+    try {
+        await ingress.submitOrderFragments(sdk._networkData.ingress, request);
+    } catch (err) {
+        simpleConsole.error(err.message || err);
+        throw err;
+    }
+
+    // const podMap = Map<string, PodShares>();
+
+    // let encryptedShares = new EncryptedShares({
+    //     orderID: order.id,
+    //     sendToken: order.sendToken,
+    //     receiveToken: order.receiveToken,
+    //     pods: podMap,
+    // });
 
     // // Submit order and the signature to the orderbook
     // simpleConsole.log("Waiting for transaction signature");
