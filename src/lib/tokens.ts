@@ -1,8 +1,6 @@
-import RenExSDK from "../index";
-
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
-import { NumberInput, Token, TokenCode, TokenDetails } from "../types";
+import { NumberInput, Token, TokenDetails } from "../types";
 
 export function toSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
     let decimals: number;
@@ -24,11 +22,7 @@ export function fromSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails
     return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
 }
 
-export function supportedTokens(sdk: RenExSDK): Promise<TokenCode[]> {
-    return Promise.resolve([]);
-}
-
-export function tokenToID(token: TokenCode): number {
+export function tokenToID(token: Token): number {
     switch (token) {
         case Token.BTC:
             return 0;
@@ -52,7 +46,7 @@ export function tokenToID(token: TokenCode): number {
     throw new Error(`Invalid token: ${token}`);
 }
 
-export function idToToken(token: number): TokenCode {
+export function idToToken(token: number): Token {
     switch (token) {
         case 0:
             return Token.BTC;

@@ -5,10 +5,9 @@ import RenExSDK from "../index";
 
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { orderbookStateToOrderStatus } from "../lib/order";
-import { fromSmallestUnit, idToToken } from "../lib/tokens";
-import { MatchDetails, OrderID, OrderSettlement, OrderStatus, TraderOrder } from "../types";
+import { fromSmallestUnit } from "../lib/tokens";
+import { MatchDetails, OrderID, OrderStatus, Token, TraderOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
-import { getOrderBlockNumber } from "./orderbookMethods";
 import { fetchSwapperDOrder, fetchSwapperDOrderStatus, swapperDConnected, toOrderStatus } from "./swapperDMethods";
 
 // This function is called if the Orderbook returns Confirmed
@@ -16,26 +15,18 @@ const settlementStatus = async (sdk: RenExSDK, orderID: EncodedData, order: Trad
     let defaultStatus: OrderStatus = OrderStatus.CONFIRMED;
     try {
         defaultStatus = order.status !== OrderStatus.OPEN ? order.status : defaultStatus;
-        // If order is an atomic order, ask Swapper for status
-        if (order.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
-            // If the Swapper is disconnected we won't know the swap status
-            if (!swapperDConnected(sdk)) {
-                return defaultStatus;
-            }
-            try {
-                return await fetchSwapperDOrderStatus(sdk, orderID);
-            } catch (error) {
-                return defaultStatus;
-            }
+        // If the Swapper is disconnected we won't know the swap status
+        if (!swapperDConnected(sdk)) {
+            return defaultStatus;
         }
-        const match = await matchDetails(sdk, orderID.toBase64());
-        if (match !== undefined) {
-            return OrderStatus.SETTLED;
+        try {
+            return await fetchSwapperDOrderStatus(sdk, orderID);
+        } catch (error) {
+            return defaultStatus;
         }
     } catch (error) {
         return defaultStatus;
     }
-    return defaultStatus;
 };
 
 export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?: TraderOrder): Promise<OrderStatus> => {
@@ -74,30 +65,6 @@ export const fetchOrderStatus = async (sdk: RenExSDK, orderID64: OrderID, order?
 
     if (order && orderbookStatus === OrderStatus.CONFIRMED) {
         orderStatus = await settlementStatus(sdk, orderID, order);
-
-        // If the order is still settling, check how much time has passed. We
-        // do this since we do not want the user's funds to be locked up
-        // forever if a trader attempts to settle an order without funds they
-        // actually possess.
-        if (order && order.computedOrderDetails.orderSettlement === OrderSettlement.RenEx && orderStatus === OrderStatus.CONFIRMED) {
-            let currentBlockNumber = 0;
-            try {
-                currentBlockNumber = await sdk.getWeb3().eth.getBlockNumber();
-            } catch (error) {
-                console.error(error);
-            }
-            if (currentBlockNumber > 0) {
-                let blockNumber = 0;
-                try {
-                    blockNumber = await getOrderBlockNumber(sdk, orderID64);
-                } catch (error) {
-                    console.error(error);
-                }
-                if (blockNumber > 0 && currentBlockNumber - blockNumber > 20000) {
-                    orderStatus = OrderStatus.FAILED_TO_SETTLE;
-                }
-            }
-        }
     } else if (orderbookStatus === OrderStatus.OPEN) {
         if (order &&
             order.orderInputs.expiry !== 0 &&
@@ -142,20 +109,11 @@ export const matchDetails = async (sdk: RenExSDK, orderID64: OrderID): Promise<M
     const matchedID = new EncodedData(details.matchedID, Encodings.HEX);
 
     let fee: string;
-    let spentToken: string;
+    let spentToken: Token;
     let spentVolume: string;
-    let receivedToken: string;
+    let receivedToken: Token;
     let receivedVolume: string;
-    if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenEx) {
-        if (!details.settled) {
-            return undefined;
-        }
-        fee = (details.orderIsBuy) ? details.priorityFee : details.secondaryFee;
-        spentToken = idToToken(new BN((details.orderIsBuy) ? details.priorityToken : details.secondaryToken).toNumber());
-        spentVolume = (details.orderIsBuy) ? details.priorityVolume : details.secondaryVolume;
-        receivedToken = idToToken(new BN((details.orderIsBuy) ? details.secondaryToken : details.priorityToken).toNumber());
-        receivedVolume = (details.orderIsBuy) ? details.secondaryVolume : details.priorityVolume;
-    } else if (storedOrder && storedOrder.computedOrderDetails.orderSettlement === OrderSettlement.RenExAtomic) {
+    if (storedOrder) {
         let swap;
         try {
             swap = await fetchSwapperDOrder(sdk, orderID);

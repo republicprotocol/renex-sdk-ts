@@ -18,7 +18,7 @@ import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registr
 import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { responseError, updateError } from "../errors";
 import { REN_NODE_URL } from "../methods/orderbookMethods";
-import { OrderID, OrderInputsAll, OrderSettlement as RenExOrderSettlement, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, TokenCode } from "../types";
+import { OrderID, OrderInputsAll, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, Token } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
 import { MarketPairs } from "./market";
@@ -30,20 +30,6 @@ import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
 const PRICE_OFFSET = 12;
 const VOLUME_OFFSET = 12;
 const NULL = "0x0000000000000000000000000000000000000000";
-
-export enum OrderSettlement {
-    RenEx = 1,
-    RenExAtomic = 3,
-}
-
-function orderSettlementMapper(settlement: RenExOrderSettlement) {
-    switch (settlement) {
-        case RenExOrderSettlement.RenEx:
-            return OrderSettlement.RenEx;
-        case RenExOrderSettlement.RenExAtomic:
-            return OrderSettlement.RenExAtomic;
-    }
-}
 
 export enum OrderType {
     MIDPOINT = 0, // FIXME: Unsupported
@@ -91,7 +77,6 @@ export class Order extends Record({
     id: "",
     type: OrderType.LIMIT,
     parity: OrderParity.BUY,
-    orderSettlement: OrderSettlement.RenEx,
     expiry: 0,
     tokens: new BN(0),
     price: new BN(0),
@@ -130,7 +115,6 @@ export class OrderFragment extends Record({
     orderId: "",
     orderType: OrderType.LIMIT,
     orderParity: OrderParity.BUY,
-    orderSettlement: OrderSettlement.RenEx,
     orderExpiry: 0,
     tokens: "",
     price: ["", ""],
@@ -251,7 +235,7 @@ export function createNewOrder(sdk: RenExSDK, orderInputs: OrderInputsAll, nonce
         id: randomNonce().toString("hex"),
         sendToken: tokenToID(spendToken),
         receiveToken: tokenToID(receiveToken),
-        marketID: `${quoteToken}-${baseToken}`,
+        marketID: `${baseToken}-${quoteToken}`,
         price, // 350,
         volume, // 100,
         min_Volume: minimumVolume, // 10,
@@ -281,7 +265,6 @@ export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
 
     const ingressOrder = new Order({
         type: orderTypeMapper(orderInputs.type),
-        orderSettlement: orderSettlementMapper(marketDetail.orderSettlement),
         nonce: nonce ? nonce : new BN(0),
 
         parity: orderParityMapper(orderInputs.side),
@@ -318,7 +301,7 @@ export async function submitOrderFragments(
     }
 }
 
-export async function requestWithdrawalSignature(ingressURL: string, address: string, token: TokenCode): Promise<EncodedData> {
+export async function requestWithdrawalSignature(ingressURL: string, address: string, token: Token): Promise<EncodedData> {
     const request = new WithdrawRequest({
         address: address.slice(2),
         tokenID: tokenToID(token),
@@ -409,7 +392,6 @@ export function getOrderID(web3: Web3, order: Order): EncodedData {
         new BN(order.type).toArrayLike(Buffer, "be", 1),
         new BN(order.expiry).toArrayLike(Buffer, "be", 8),
         order.nonce.toArrayLike(Buffer, "be", 8),
-        new BN(order.orderSettlement).toArrayLike(Buffer, "be", 8),
         adjustedTokens.toArrayLike(Buffer, "be", 8),
         new BN(order.price).toArrayLike(Buffer, "be", 32),
         new BN(order.volume).toArrayLike(Buffer, "be", 32),

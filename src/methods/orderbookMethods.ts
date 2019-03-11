@@ -12,7 +12,11 @@ import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
 import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
-import { MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs, OrderInputsAll, OrderSettlement, OrderSide, OrderStatus, OrderType, SimpleConsole, Token, TraderOrder, Transaction, TransactionOptions } from "../types";
+import {
+    MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs,
+    OrderInputsAll, OrderSide, OrderStatus, OrderType, SimpleConsole, Token,
+    TraderOrder, Transaction, TransactionOptions,
+} from "../types";
 import { getTokenDetails } from "./balancesMethods";
 import { getGasPrice } from "./generalMethods";
 import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
@@ -48,7 +52,7 @@ export const getMinEthTradeVolume = async (sdk: RenExSDK): Promise<BigNumber> =>
     return Promise.resolve(new BigNumber(MIN_ETH_TRADE_VOLUME));
 };
 
-const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, baseToken: string, quoteToken: string, price: BigNumber) => {
+const calculateAbsoluteMinVolume = (minEthTradeVolume: BigNumber, baseToken: Token, quoteToken: Token, price: BigNumber) => {
     if (quoteToken === Token.BTC) {
         if (baseToken === Token.ETH) {
             return minEthTradeVolume;
@@ -107,12 +111,6 @@ export const openOrder = async (
         } else {
             throw new Error("Order inputs have not been normalized.");
         }
-    }
-
-    const orderSettlement = marketDetail.orderSettlement;
-
-    if (orderSettlement === OrderSettlement.RenEx) {
-        throw new Error(`RenEx order settlement no longer supported.`);
     }
 
     const quoteVolume = orderInputs.volume.times(orderInputs.price);
@@ -191,14 +189,12 @@ export const openOrder = async (
     const newOrder = ingress.createNewOrder(sdk, orderInputs, nonce);
     const orderID = new EncodedData(newOrder.id, Encodings.HEX);
 
-    if (orderSettlement === OrderSettlement.RenExAtomic) {
-        simpleConsole.log("Submitting order to SwapperD");
-        try {
-            await submitOrder(sdk, orderID, orderInputs);
-        } catch (error) {
-            simpleConsole.error(error.message || error);
-            throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
-        }
+    simpleConsole.log("Submitting order to SwapperD");
+    try {
+        await submitOrder(sdk, orderID, orderInputs);
+    } catch (error) {
+        simpleConsole.error(error.message || error);
+        throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
     }
 
     // Create order fragment mapping
@@ -276,7 +272,6 @@ export const openOrder = async (
             date: unixSeconds,
             feeAmount,
             feeToken,
-            orderSettlement,
             nonce,
         },
     };

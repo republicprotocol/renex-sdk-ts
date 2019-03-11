@@ -2,7 +2,7 @@ import axios from "axios";
 import Web3 from "web3";
 
 import { errors, responseError, updateError } from "../errors";
-import { TokenCode } from "../types";
+import { Token } from "../types";
 import { EncodedData } from "./encodedData";
 
 const API = "http://localhost:7928";
@@ -37,8 +37,8 @@ interface CostObject {
 
 export interface SwapObject {
     id: string;
-    sendToken: string;
-    receiveToken: string;
+    sendToken: Token;
+    receiveToken: Token;
     sendAmount: string;
     receiveAmount: string;
     sendCost: CostObject[];
@@ -129,8 +129,8 @@ export function toSwapStatus(num: number): SwapStatus {
 }
 interface SwapCore {
     id?: string;
-    sendToken: string;
-    receiveToken: string;
+    sendToken: Token;
+    receiveToken: Token;
     sendAmount: string;
     receiveAmount: string;
     delay?: boolean;
@@ -220,7 +220,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
     throw new Error(errors.UnableToFindMatchingSwap);
 }
 
-export async function getSwapperDAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
+export async function getSwapperDAddresses(tokens: Token[], options: { network: string }): Promise<string[]> {
 
     const addresses = await Promise.all(tokens.map(async (token) => {
         return (await axios.get(`${API}/addresses/${token}?network=${options.network}`)).data;

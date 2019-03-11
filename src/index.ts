@@ -4,6 +4,7 @@ import Web3 from "web3";
 import BN from "bn.js";
 import PromiEvent from "web3/promiEvent";
 
+import { OrderedMap } from "immutable";
 import { Provider } from "web3/providers";
 
 import LocalStorage from "./storage/localStorage";
@@ -16,9 +17,7 @@ import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { SwapObject } from "./lib/swapper";
-import { supportedTokens } from "./lib/tokens";
-import { updateAllBalanceActionStatuses, updateBalanceActionStatus, withdraw } from "./methods/balanceActionMethods";
-import { balances } from "./methods/balancesMethods";
+import { updateAllBalanceActionStatuses, updateBalanceActionStatus } from "./methods/balanceActionMethods";
 import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
 import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
@@ -28,7 +27,12 @@ import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, w
 import { FileSystemStorage } from "./storage/fileSystemStorage";
 import { StorageProvider } from "./storage/interface";
 import { MemoryStorage } from "./storage/memoryStorage";
-import { BalanceAction, BalanceDetails, Config, MarketDetails, MatchDetails, NumberInput, Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide, OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token, TokenCode, TraderOrder, Transaction, TransactionOptions, TransactionStatus, WBTCOrder, WithdrawTransactionOptions } from "./types";
+import {
+    BalanceAction, Config, MarketDetails, MarketPair, MatchDetails, NumberInput,
+    Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide,
+    OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token,
+    TraderOrder, Transaction, TransactionOptions, TransactionStatus, WBTCOrder,
+} from "./types";
 
 // Contract bindings
 import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
@@ -65,11 +69,11 @@ export class RenExSDK {
         renExBalances: RenExBalancesContract,
         orderbook: OrderbookContract,
         darknodeRegistry: DarknodeRegistryContract,
-        erc20: Map<TokenCode, ERC20Contract>,
+        erc20: Map<Token, ERC20Contract>,
         wyre: WyreContract,
     };
 
-    public _cachedTokenDetails: Map<TokenCode, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
+    public _cachedTokenDetails: Map<Token, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
 
     // Atomic functions
     public swapperD = {
@@ -80,12 +84,12 @@ export class RenExSDK {
         refreshStatus: (): Promise<SwapperDConnectionStatus> => refreshSwapperDConnectionStatus(this),
         resetStatus: (): Promise<SwapperDConnectionStatus> => resetSwapperDConnection(this),
         // authorize: (): Promise<SwapperDConnectionStatus> => authorizeSwapperD(this),
-        fetchBalances: (tokens: TokenCode[]): Promise<Map<TokenCode, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
+        fetchBalances: (tokens: Token[]): Promise<Map<Token, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
         fetchSwaps: (): Promise<SwapObject[]> => swapperDSwaps(this),
-        fetchAddresses: (tokens: TokenCode[]): Promise<string[]> => swapperDAddresses(this, tokens),
-        wrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => wrap(this, amount, token),
-        unwrap: (amount: NumberInput, token: TokenCode): Promise<WBTCOrder> => unwrap(this, amount, token),
-        getWrappingFees: (token: TokenCode): Promise<WrapFees> => getWrappingFees(this, token),
+        fetchAddresses: (tokens: Token[]): Promise<string[]> => swapperDAddresses(this, tokens),
+        wrap: (amount: NumberInput, token: Token): Promise<WBTCOrder> => wrap(this, amount, token),
+        unwrap: (amount: NumberInput, token: Token): Promise<WBTCOrder> => unwrap(this, amount, token),
+        getWrappingFees: (token: Token): Promise<WrapFees> => getWrappingFees(this, token),
     };
 
     public atom = this.swapperD;
@@ -162,12 +166,11 @@ export class RenExSDK {
             orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
             darknodeRegistry: new (withProvider(mainnetProvider || provider, DarknodeRegistry))("0x34bd421C7948Bc16f826Fd99f9B785929b121633"),
             renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
-            erc20: new Map<TokenCode, ERC20Contract>(),
+            erc20: new Map<Token, ERC20Contract>(),
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
 
-    public fetchBalances = (tokens: TokenCode[]): Promise<Map<TokenCode, BalanceDetails>> => balances(this, tokens);
     public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
     public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => fetchOrderStatus(this, orderID);
     public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails | undefined> => matchDetails(this, orderID);
@@ -175,16 +178,12 @@ export class RenExSDK {
     public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 
     // public fetchAtomicMarkets = ()
-    public fetchMarkets = (): Promise<MarketDetails[]> => fetchMarkets(this);
-    public fetchSupportedTokens = (): Promise<TokenCode[]> => supportedTokens(this);
-    public fetchSupportedSwapperDTokens = (): Promise<TokenCode[]> => supportedSwapperDTokens(this);
+    public fetchMarkets = (): Promise<OrderedMap<MarketPair, MarketDetails>> => fetchMarkets(this);
+    public fetchSupportedSwapperDTokens = (): Promise<Token[]> => supportedSwapperDTokens(this);
     // tslint:disable-next-line: member-ordering
     public fetchSupportedAtomicTokens = this.fetchSupportedSwapperDTokens;
 
     // Transaction Methods
-    public withdraw = (value: NumberInput, token: TokenCode, options?: WithdrawTransactionOptions):
-        Promise<{ balanceAction: BalanceAction, promiEvent: PromiEvent<Transaction> | null }> =>
-        withdraw(this, value, token, options)
     public openOrder = (order: OrderInputs, options?: TransactionOptions):
         Promise<{ traderOrder: TraderOrder }> =>
         openOrder(this, order, options)
@@ -193,8 +192,8 @@ export class RenExSDK {
         cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
-    public fetchWrappingFeePercent = (token: TokenCode): Promise<BigNumber> => wrappingFees(this, token);
-    public fetchUnwrappingFeePercent = (token: TokenCode): Promise<BigNumber> => unwrappingFees(this, token);
+    public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
+    public fetchUnwrappingFeePercent = (token: Token): Promise<BigNumber> => unwrappingFees(this, token);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
     public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
@@ -225,7 +224,7 @@ export class RenExSDK {
             orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
             darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
             renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
-            erc20: new Map<TokenCode, ERC20Contract>(),
+            erc20: new Map<Token, ERC20Contract>(),
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }

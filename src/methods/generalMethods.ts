@@ -8,10 +8,10 @@ import { ERC20Contract } from "../contracts/bindings/erc20";
 import { ERC20, withProvider } from "../contracts/contracts";
 import { errors, responseError } from "../errors";
 import { toSmallestUnit } from "../lib/tokens";
-import { Token, TokenCode } from "../types";
+import { Token } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
-export const transfer = async (sdk: RenExSDK, addr: string, token: TokenCode, valueBig: NumberInput): Promise<void> => {
+export const transfer = async (sdk: RenExSDK, addr: string, token: Token, valueBig: NumberInput): Promise<void> => {
     const gasPrice = await getGasPrice(sdk);
     const tokenDetails = await getTokenDetails(sdk, token);
     const value = toSmallestUnit(valueBig, tokenDetails).toFixed();

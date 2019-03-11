@@ -22,11 +22,6 @@ export enum OrderStatus {
     EXPIRED = "EXPIRED",
 }
 
-export enum OrderSettlement {
-    RenEx = "renex",
-    RenExAtomic = "atomic",
-}
-
 export enum OrderType {
     MIDPOINT = "midpoint", // FIXME: Unsupported
     LIMIT = "limit",
@@ -66,18 +61,14 @@ export enum MarketPair {
 }
 
 export interface MarketDetails {
-    symbol: MarketCode;
-    orderSettlement: OrderSettlement;
-    quote: TokenCode;
-    base: TokenCode;
+    symbol: MarketPair;
+    quote: Token;
+    base: Token;
 }
-
-export type TokenCode = string;
-export type MarketCode = string;
 
 export interface OrderInputs {
     // Required fields
-    symbol: MarketCode;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+    symbol: MarketPair;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
     side: OrderSide;            // Buy receives base token, sell receives quote token
     price: NumberInput;      // In quoteToken for 1 unit of baseToken
     volume: NumberInput;     // In baseToken
@@ -102,14 +93,13 @@ export interface OrderInputsAll extends OrderInputs {
 }
 
 export interface ComputedOrderDetails {
-    receiveToken: TokenCode;
-    spendToken: TokenCode;
+    receiveToken: Token;
+    spendToken: Token;
     receiveVolume: BigNumber;
     spendVolume: BigNumber;
     date: number;
     feeAmount: BigNumber;
-    feeToken: TokenCode;
-    orderSettlement: OrderSettlement;
+    feeToken: Token;
     nonce: BN;
 }
 
@@ -156,8 +146,8 @@ export interface MatchDetails {
     receivedVolume: BigNumber;
     spentVolume: BigNumber;
     fee: BigNumber;
-    receivedToken: TokenCode;
-    spentToken: TokenCode;
+    receivedToken: Token;
+    spentToken: Token;
 }
 
 export interface TokenDetails {
@@ -208,7 +198,7 @@ export interface BalanceAction {
     amount: BigNumber;
     time: number;
     status: TransactionStatus;
-    token: TokenCode;
+    token: Token;
     trader: string;
     txHash: string;
     nonce: number | undefined;
