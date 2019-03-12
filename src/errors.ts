@@ -50,5 +50,4 @@ export const errors = {
     InsufficientFunds: "Insufficient funds - please ensure you have enough ETH for the transaction fees",
     UnsupportedFilterStatus: "Unable to filter by specified status",
     UnknownOrderStatus: "Unknown order status",
-    InvalidStoragePath: "Storage path must start with either: '~/', './', or '/'",
 };

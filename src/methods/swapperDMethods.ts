@@ -11,7 +11,6 @@ import { OrderInputsAll, OrderSide, OrderStatus, SwapperDBalanceDetails, Swapper
 import { getTokenDetails } from "./balancesMethods";
 import { REN_NODE_URL } from "./orderbookMethods";
 import { darknodeFees } from "./settlementMethods";
-import { fetchTraderOrders } from "./storageMethods";
 
 /* SwapperD Connection */
 
@@ -89,53 +88,53 @@ export const swapperDAddresses = async (sdk: RenExSDK, tokens: Token[]): Promise
     return getSwapperDAddresses(tokens, { network: sdk._networkData.network });
 };
 
-const usedSwapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<BigNumber[]> => {
-    return fetchTraderOrders(sdk, { refresh: false }).then(orders => {
-        const usedFunds = new Map<Token, BigNumber>();
-        orders.forEach(order => {
-            if (
-                !order.swapServer &&
-                (
-                    order.status === OrderStatus.NOT_SUBMITTED ||
-                    order.status === OrderStatus.OPEN ||
-                    order.status === OrderStatus.CONFIRMED
-                )
-            ) {
-                const token = order.computedOrderDetails.spendToken;
-                const usedTokenBalance = usedFunds.get(token);
-                if (usedTokenBalance) {
-                    usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
-                } else {
-                    usedFunds.set(token, order.computedOrderDetails.spendVolume);
-                }
-            }
-        });
-        return tokens.map(token => {
-            const funds = usedFunds.get(token);
-            // For some reason orders can become corrupted so we also want to make sure
-            // that their values are proper values.
-            if (funds && funds.isFinite()) {
-                return funds;
-            }
-            return new BigNumber(0);
-        });
-    });
-};
+// const usedSwapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<BigNumber[]> => {
+//     return fetchTraderOrders(sdk, { refresh: false }).then(orders => {
+//         const usedFunds = new Map<Token, BigNumber>();
+//         orders.forEach(order => {
+//             if (
+//                 !order.swapServer &&
+//                 (
+//                     order.status === OrderStatus.NOT_SUBMITTED ||
+//                     order.status === OrderStatus.OPEN ||
+//                     order.status === OrderStatus.CONFIRMED
+//                 )
+//             ) {
+//                 const token = order.computedOrderDetails.spendToken;
+//                 const usedTokenBalance = usedFunds.get(token);
+//                 if (usedTokenBalance) {
+//                     usedFunds.set(token, usedTokenBalance.plus(order.computedOrderDetails.spendVolume));
+//                 } else {
+//                     usedFunds.set(token, order.computedOrderDetails.spendVolume);
+//                 }
+//             }
+//         });
+//         return tokens.map(token => {
+//             const funds = usedFunds.get(token);
+//             // For some reason orders can become corrupted so we also want to make sure
+//             // that their values are proper values.
+//             if (funds && funds.isFinite()) {
+//                 return funds;
+//             }
+//             return new BigNumber(0);
+//         });
+//     });
+// };
 
 export const swapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<Map<Token, SwapperDBalanceDetails>> => {
-    return Promise.all([retrieveSwapperDBalances(sdk, tokens), usedSwapperDBalances(sdk, tokens)]).then(([
+    return Promise.all([retrieveSwapperDBalances(sdk, tokens)]).then(([
         startingBalance,
-        usedBalance,
+        // usedBalance,
     ]) => {
         let swapperDBalance = new Map<Token, SwapperDBalanceDetails>();
         tokens.forEach((token, index) => {
-            let free: MaybeBigNumber = null;
-            if (startingBalance[index] !== null) {
-                free = BigNumber.max(new BigNumber(0), (startingBalance[index] as BigNumber).minus(usedBalance[index]));
-            }
+            // let free: MaybeBigNumber = null;
+            // if (startingBalance[index] !== null) {
+            //     free = BigNumber.max(new BigNumber(0), (startingBalance[index] as BigNumber).minus(usedBalance[index]));
+            // }
             swapperDBalance = swapperDBalance.set(token, {
-                used: usedBalance[index],
-                free,
+                used: new BigNumber(0), // usedBalance[index],
+                free: startingBalance[index],
             });
         });
         return swapperDBalance;

@@ -1,4 +1,3 @@
-import BN from "bn.js";
 import PromiEvent from "web3/promiEvent";
 
 import { BigNumber } from "bignumber.js";
@@ -11,16 +10,14 @@ import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import {
-    MarketDetails, NullConsole, Order, OrderbookFilter, OrderID, OrderInputs,
-    OrderInputsAll, OrderSide, OrderStatus, OrderType, SimpleConsole, Token,
+    MarketDetails, NullConsole, OrderID, OrderInputs,
+    OrderInputsAll, OrderSide, OrderStatus, OrderType, Token,
     TraderOrder, Transaction, TransactionOptions,
 } from "../types";
 import { getTokenDetails } from "./balancesMethods";
-import { getGasPrice } from "./generalMethods";
-import { darknodeFees, fetchOrderStatus } from "./settlementMethods";
-import { fetchTraderOrders } from "./storageMethods";
+// import { getGasPrice } from "./generalMethods";
+import { darknodeFees } from "./settlementMethods";
 import { submitOrder } from "./swapperDMethods";
 
 // TODO: Decide where this should go (network env, or passed in to constructor)
@@ -124,31 +121,8 @@ export const openOrder = async (
     const feeToken = receiveToken;
     const feeAmount = quoteVolume.times(feePercent);
 
-    // let balanceDetails: BalanceDetails | SwapperDBalanceDetails | undefined;
-    // let balance: BigNumber;
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
 
-    const { simpleConsole } = await defaultTransactionOptions(sdk, options);
-
-    // simpleConsole.log("Verifying trader balance");
-    // try {
-    //     if (orderSettlement === OrderSettlement.RenEx) {
-    //         balanceDetails = await balances(sdk, [spendToken]).then(bal => bal.get(spendToken));
-    //     } else {
-    //         balanceDetails = await swapperDBalances(sdk, [spendToken]).then(b => b.get(spendToken));
-    //     }
-    //     if (!balanceDetails || balanceDetails.free === null) {
-    //         simpleConsole.error(errors.FailedBalanceCheck);
-    //         throw new Error(errors.FailedBalanceCheck);
-    //     }
-    //     balance = balanceDetails.free;
-    // } catch (err) {
-    //     simpleConsole.error(err.message || err);
-    //     throw err;
-    // }
-    // if (spendVolume.gt(balance)) {
-    //     simpleConsole.error(errors.InsufficientBalance);
-    //     throw new Error(errors.InsufficientBalance);
-    // }
     if (orderInputs.price.lte(new BigNumber(0))) {
         simpleConsole.error(errors.InvalidPrice);
         throw new Error(errors.InvalidPrice);
@@ -237,28 +211,10 @@ export const openOrder = async (
     //     pods: podMap,
     // });
 
-    // // Submit order and the signature to the orderbook
-    // simpleConsole.log("Waiting for transaction signature");
-    // let txHash: string;
-    // let promiEvent;
-    // try {
-    //     ({ txHash, promiEvent } = await onTxHash(sdk._contracts.orderbook.openOrder(sdk.getWeb3().utils.toHex(1), signature.toString(), orderID.toHex(), { from: sdk.getAddress(), gasPrice })));
-    // } catch (err) {
-    //     simpleConsole.error(err.message || err);
-    //     throw err;
-    // }
-
     simpleConsole.log("Order submitted.");
-
-    // if (awaitConfirmation) {
-    //     simpleConsole.log("Waiting for order confirmation...");
-    //     await promiEvent;
-    //     simpleConsole.log("Order confirmed.");
-    // }
 
     const traderOrder: TraderOrder = {
         swapServer: undefined,
-        version: LATEST_TRADER_ORDER_VERSION,
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.getAddress(),
@@ -276,96 +232,14 @@ export const openOrder = async (
         },
     };
 
-    sdk._storage.setOrder(traderOrder).catch(console.error);
-
     return { traderOrder };
 };
 
 export const cancelOrder = async (
-    sdk: RenExSDK,
-    orderID: OrderID,
-    options?: TransactionOptions,
+    _sdk: RenExSDK,
+    _orderID: OrderID,
+    _options?: TransactionOptions,
 ): Promise<{ promiEvent: PromiEvent<Transaction> | null }> => {
-    const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
-    const { awaitConfirmation, gasPrice } = await defaultTransactionOptions(sdk, options);
-
-    const promiEvent = sdk._contracts.orderbook.cancelOrder(orderIDHex, { from: sdk.getAddress(), gasPrice });
-    if (awaitConfirmation) {
-        await promiEvent;
-    }
-    return {
-        promiEvent
-    };
-};
-
-export const getOrders = async (
-    sdk: RenExSDK,
-    filter: OrderbookFilter,
-): Promise<Order[]> => {
-    const filterableStatuses = [OrderStatus.NOT_SUBMITTED, OrderStatus.OPEN, OrderStatus.CONFIRMED];
-    if (filter.status && !filterableStatuses.includes(filter.status)) {
-        throw new Error(errors.UnsupportedFilterStatus);
-    }
-
-    let orders = await ingress.getOrders(sdk.getWeb3(), sdk._contracts.orderbook, filter.start, filter.limit);
-
-    if (filter.status) {
-        orders = orders.filter((order: [string, OrderStatus, string]) => order[1] === filter.status).toList();
-    }
-
-    const filterAddress = filter.address;
-    if (filterAddress) {
-        orders = orders.filter((order: [string, OrderStatus, string]) => order[2].toLowerCase() === filterAddress.toLowerCase()).toList();
-    }
-
-    return orders.map((order: [string, OrderStatus, string]) => {
-        const orderID = new EncodedData(order[0], Encodings.HEX).toBase64();
-        return {
-            id: orderID,
-            status: order[1],
-            trader: order[2],
-        };
-    }).toArray();
-};
-
-export const updateAllOrderStatuses = async (sdk: RenExSDK, orders?: TraderOrder[]): Promise<Map<string, OrderStatus>> => {
-    const newStatuses = new Map<string, OrderStatus>();
-    if (!orders) {
-        orders = await fetchTraderOrders(sdk);
-    }
-    await Promise.all(orders.map(async order => {
-        if (order.status === OrderStatus.NOT_SUBMITTED ||
-            order.status === OrderStatus.OPEN) {
-            const newStatus = await fetchOrderStatus(sdk, order.id, order);
-            if (newStatus !== order.status) {
-                newStatuses.set(order.id, newStatus);
-            }
-        }
-    }));
-    return newStatuses;
-};
-
-export const getOrderBlockNumber = async (sdk: RenExSDK, orderID: string): Promise<number> => {
-    const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
-    return new BN(await sdk._contracts.orderbook.orderBlockNumber(orderIDHex)).toNumber();
-};
-
-export const defaultTransactionOptions = async (sdk: RenExSDK, options?: TransactionOptions): Promise<{
-    awaitConfirmation: boolean;
-    gasPrice: number | undefined;
-    simpleConsole: SimpleConsole;
-}> => {
-    let awaitConfirmation = true;
-    let gasPrice;
-    let simpleConsole = NullConsole;
-    if (options) {
-        awaitConfirmation = options.awaitConfirmation !== undefined ? options.awaitConfirmation : awaitConfirmation;
-        gasPrice = options.gasPrice !== undefined ? options.gasPrice : await getGasPrice(sdk);
-        simpleConsole = options.simpleConsole !== undefined ? options.simpleConsole : simpleConsole;
-    }
-    return {
-        awaitConfirmation,
-        gasPrice,
-        simpleConsole,
-    };
+    throw new Error("Not implemented");
+    // const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 };

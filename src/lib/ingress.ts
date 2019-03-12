@@ -18,7 +18,7 @@ import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registr
 import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { responseError, updateError } from "../errors";
 import { REN_NODE_URL } from "../methods/orderbookMethods";
-import { OrderID, OrderInputsAll, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole, Token } from "../types";
+import { OrderID, OrderInputsAll, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
 import { MarketPairs } from "./market";
@@ -104,11 +104,6 @@ export class EncryptedShares extends Record({
 }) { }
 
 export type OpenOrderRequest = EncryptedShares;
-
-export class WithdrawRequest extends Record({
-    address: "",
-    tokenID: 0,
-}) { }
 
 export class OrderFragment extends Record({
     id: "",
@@ -299,20 +294,6 @@ export async function submitOrderFragments(
             throw error;
         }
     }
-}
-
-export async function requestWithdrawalSignature(ingressURL: string, address: string, token: Token): Promise<EncodedData> {
-    const request = new WithdrawRequest({
-        address: address.slice(2),
-        tokenID: tokenToID(token),
-    });
-
-    const resp = await axios.post(`${ingressURL}/withdrawals`, request.toJS());
-    if (resp.status !== 201) {
-        throw new Error("Unexpected status code: " + resp.status);
-    }
-
-    return new EncodedData(resp.data.signature, Encodings.BASE64);
 }
 
 async function ordersBatch(web3: Web3, orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {

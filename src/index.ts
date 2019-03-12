@@ -7,31 +7,24 @@ import PromiEvent from "web3/promiEvent";
 import { OrderedMap } from "immutable";
 import { Provider } from "web3/providers";
 
-import LocalStorage from "./storage/localStorage";
-
 import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
-import { errors, updateError } from "./errors";
+import { errors } from "./errors";
 import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
 import { SwapObject } from "./lib/swapper";
-import { updateAllBalanceActionStatuses, updateBalanceActionStatus } from "./methods/balanceActionMethods";
-import { getGasPrice } from "./methods/generalMethods";
-import { cancelOrder, getMinEthTradeVolume, getOrderBlockNumber, getOrders, openOrder, updateAllOrderStatuses } from "./methods/orderbookMethods";
-import { darknodeFees, fetchOrderStatus, matchDetails } from "./methods/settlementMethods";
-import { fetchBalanceActions, fetchTraderOrders } from "./methods/storageMethods";
+// import { getGasPrice } from "./methods/generalMethods";
+import { cancelOrder, getMinEthTradeVolume, openOrder } from "./methods/orderbookMethods";
+import { darknodeFees } from "./methods/settlementMethods";
 import { currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperDConnectionStatus, resetSwapperDConnection, supportedSwapperDTokens, swapperDAddresses, swapperDBalances, swapperDConnected, swapperDSwaps } from "./methods/swapperDMethods";
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapTokenMethods";
-import { FileSystemStorage } from "./storage/fileSystemStorage";
-import { StorageProvider } from "./storage/interface";
-import { MemoryStorage } from "./storage/memoryStorage";
 import {
-    BalanceAction, Config, MarketDetails, MarketPair, MatchDetails, NumberInput,
-    Options, Order, OrderbookFilter, OrderID, OrderInputs, OrderSide,
-    OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token,
-    TraderOrder, Transaction, TransactionOptions, TransactionStatus, WBTCOrder,
+    Config, MarketDetails, MarketPair, NumberInput,
+    Options, OrderID, OrderInputs, OrderSide,
+    SwapperDBalanceDetails, SwapperDConnectionStatus, Token,
+    TraderOrder, Transaction, TransactionOptions, WBTCOrder,
 } from "./types";
 
 // Contract bindings
@@ -47,8 +40,6 @@ import { WyreContract } from "./contracts/bindings/wyre";
 export * from "./types";
 export * from "./lib/swapper";
 export { errors } from "./errors";
-export { StorageProvider } from "./storage/interface";
-export { deserializeBalanceAction, deserializeTraderOrder, serializeBalanceAction, serializeTraderOrder } from "./storage/serializers";
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
@@ -62,7 +53,6 @@ export class RenExSDK {
     public _swapperDConnectionStatus: SwapperDConnectionStatus = SwapperDConnectionStatus.NotConnected;
     public _wrappingFees: WrapFeesMap = {};
 
-    public _storage: StorageProvider;
     public _contracts: {
         renExSettlement: RenExSettlementContract,
         renExTokens: RenExTokensContract,
@@ -153,8 +143,6 @@ export class RenExSDK {
             .set(Token.DAI, Promise.resolve({ addr: this._networkData.tokens.DAI, decimals: new BN(18), registered: true }))
             ;
 
-        this._storage = this.setupStorageProvider();
-
         // Hack to suppress web3 MaxListenersExceededWarning
         // This should be removed when issue is resolved upstream:
         // https://github.com/ethereum/web3.js/issues/1648
@@ -170,12 +158,6 @@ export class RenExSDK {
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
-
-    public fetchBalanceActionStatus = (txHash: string): Promise<TransactionStatus> => updateBalanceActionStatus(this, txHash);
-    public fetchOrderStatus = (orderID: OrderID): Promise<OrderStatus> => fetchOrderStatus(this, orderID);
-    public fetchMatchDetails = (orderID: OrderID): Promise<MatchDetails | undefined> => matchDetails(this, orderID);
-    public fetchOrderbook = (filter: OrderbookFilter): Promise<Order[]> => getOrders(this, filter);
-    public fetchOrderBlockNumber = (orderID: OrderID): Promise<number> => getOrderBlockNumber(this, orderID);
 
     // public fetchAtomicMarkets = ()
     public fetchMarkets = (): Promise<OrderedMap<MarketPair, MarketDetails>> => fetchMarkets(this);
@@ -195,13 +177,7 @@ export class RenExSDK {
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
     public fetchUnwrappingFeePercent = (token: Token): Promise<BigNumber> => unwrappingFees(this, token);
     public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
-    public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
-
-    // Storage functions
-    public fetchTraderOrders = (options = { refresh: true }): Promise<TraderOrder[]> => fetchTraderOrders(this, options);
-    public fetchBalanceActions = (options = { refresh: true }): Promise<BalanceAction[]> => fetchBalanceActions(this, options);
-    public refreshBalanceActionStatuses = async (): Promise<Map<string, TransactionStatus>> => updateAllBalanceActionStatuses(this);
-    public refreshOrderStatuses = async (): Promise<Map<string, OrderStatus>> => updateAllOrderStatuses(this);
+    // public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Provider / account functions
     public getWeb3 = (): Web3 => this._web3;
@@ -211,7 +187,6 @@ export class RenExSDK {
     public setAddress = (addr: string): void => {
         const address = addr === "" ? "" : new EncodedData(addr, Encodings.HEX).toHex();
         this._address = address;
-        this._storage = this.setupStorageProvider();
     }
 
     public updateProvider = (provider: Provider): void => {
@@ -228,28 +203,6 @@ export class RenExSDK {
             wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
         };
     }
-
-    private setupStorageProvider = (): StorageProvider => {
-        switch (this.getConfig().storageProvider) {
-            case "none":
-                return new MemoryStorage();
-            case "localStorage":
-                return new LocalStorage(this._address);
-            default:
-                try {
-                    if (typeof this.getConfig().storageProvider === "string") {
-                        // Use storageProvider as a path to FileSystemStorage
-                        return new FileSystemStorage(this.getConfig().storageProvider as string, this._address);
-                    } else {
-                        // storageProvider is an object so use it as is
-                        return this.getConfig().storageProvider as StorageProvider;
-                    }
-                } catch (error) {
-                    throw updateError(`Unsupported storage option: ${this.getConfig().storageProvider}: ${error.message || error}`, error);
-                }
-        }
-    }
-
 }
 
 export default RenExSDK;

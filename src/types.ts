@@ -1,7 +1,6 @@
 import BigNumber from "bignumber.js";
 
 import BN from "bn.js";
-import { StorageProvider } from "./storage/interface";
 
 export { NetworkData } from "./lib/network";
 
@@ -111,16 +110,12 @@ export interface Order {
 }
 
 export interface WBTCOrder extends Order {
-    readonly version?: number;
     readonly swapServer: true;
     readonly orderInputs: OrderInputs;
     readonly computedOrderDetails: ComputedOrderDetails;
 }
 
 export interface SwapOrder extends Order {
-    // Some older versions of TraderOrder do not have version
-    readonly version?: number;
-
     readonly swapServer: undefined;
 
     readonly computedOrderDetails: ComputedOrderDetails;
@@ -167,11 +162,6 @@ export interface SwapperDBalanceDetails {
     used: BigNumber | null;
 }
 
-export enum BalanceActionType {
-    Withdraw = "withdraw",
-    Deposit = "deposit",
-}
-
 export enum TransactionStatus {
     Pending = "pending",
     Done = "done",
@@ -185,36 +175,15 @@ export interface TransactionOptions {
     simpleConsole?: SimpleConsole;
 }
 
-export interface WithdrawTransactionOptions extends TransactionOptions {
-    withoutIngressSignature?: boolean;
-}
-
-// If BalanceAction is changed, then it's serialize / deserialize functions
-// should be updated as well.
-export interface BalanceAction {
-    // Some older versions of BalanceAction do not have version
-    version?: number;
-    action: BalanceActionType;
-    amount: BigNumber;
-    time: number;
-    status: TransactionStatus;
-    token: Token;
-    trader: string;
-    txHash: string;
-    nonce: number | undefined;
-}
-
 export interface Options {
     network?: Config["network"];
     autoNormalizeOrders?: Config["autoNormalizeOrders"];
-    storageProvider?: Config["storageProvider"];
 }
 
 // Extends Options but makes the optional parameters concrete
 export interface Config extends Options {
     network: string;
     autoNormalizeOrders: boolean;
-    storageProvider: string | StorageProvider;
 }
 
 export interface SimpleConsole {
@@ -223,8 +192,8 @@ export interface SimpleConsole {
 }
 
 export const NullConsole: SimpleConsole = {
-    error: (message) => null,
-    log: (message) => null,
+    error: (_message) => null,
+    log: (_message) => null,
 };
 
 export enum SwapperDConnectionStatus {

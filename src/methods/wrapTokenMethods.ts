@@ -7,7 +7,6 @@ import RenExSDK from "../index";
 import { errors, updateError } from "../errors";
 import { getSwapperDBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
-import { LATEST_TRADER_ORDER_VERSION } from "../storage/serializers";
 import { MarketPair, NumberInput, OrderInputs, OrderSide, OrderStatus, Token, WBTCOrder } from "../types";
 import { getTokenDetails } from "./balancesMethods";
 
@@ -172,7 +171,6 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
 
     const swap: WBTCOrder = {
         swapServer: true,
-        version: LATEST_TRADER_ORDER_VERSION,
         orderInputs,
         status: OrderStatus.CONFIRMED,
         trader: sdk.getAddress(),
@@ -188,8 +186,6 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
             nonce: new BN(0),
         },
     };
-
-    sdk._storage.setOrder(swap).catch(console.error);
 
     return swap;
 }
