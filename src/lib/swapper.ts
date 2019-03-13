@@ -4,6 +4,7 @@ import Web3 from "web3";
 import { errors, responseError, updateError } from "../errors";
 import { Token } from "../types";
 import { EncodedData } from "./encodedData";
+import { ReturnedSwap, SentSwap, SubmitImmediateResponse, SwapStatus, UnfixedReturnedSwap } from "./types/swapObject";
 
 const API = "http://localhost:7928";
 const SIGNATURE_PREFIX = "RenEx: swapperD: ";
@@ -31,27 +32,8 @@ export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
-interface CostObject {
-    [token: string]: string;
-}
-
-export interface SwapObject {
-    id: string;
-    sendToken: Token;
-    receiveToken: Token;
-    sendAmount: string;
-    receiveAmount: string;
-    sendCost: CostObject[];
-    receiveCost: CostObject[];
-    timestamp: number;
-    timeLock: number;
-    status: number;
-    delay: boolean;
-    active: boolean;
-}
-
 export interface SwapsResponse {
-    swaps: SwapObject[];
+    swaps: UnfixedReturnedSwap[];
 }
 
 export const fetchSwapperVersion = async (network: string): Promise<string> => {
@@ -84,20 +66,6 @@ export async function fetchSwapperStatus(network: string, ingress: string, getSw
     }
 }
 
-export enum SwapStatus {
-    INACTIVE = "inactive",
-    INITIATED = "initiated",
-    AUDITED = "audited",
-    AUDIT_PENDING = "audit_pending",
-    AUDIT_FAILED = "audit_failed",
-    REDEEMED = "redeemed",
-    AUDITED_SECRET = "audited_secret",
-    REFUNDED = "refunded",
-    REFUND_FAILED = "refund_failed",
-    CANCELLED = "cancelled",
-    EXPIRED = "expired",
-}
-
 export function toSwapStatus(num: number): SwapStatus {
 
     switch (num) {
@@ -127,56 +95,8 @@ export function toSwapStatus(num: number): SwapStatus {
             throw new Error(`Invalid SwapStatus number: ${num}`);
     }
 }
-interface SwapCore {
-    id?: string;
-    sendToken: Token;
-    receiveToken: Token;
-    sendAmount: string;
-    receiveAmount: string;
-    delay?: boolean;
-    // tslint:disable-next-line:no-any
-    delayInfo?: any;
-}
 
-export interface SwapBlob extends SwapCore {
-    minimumReceiveAmount?: string;
-    sendTo?: string;
-    receiveFrom?: string;
-    timeLock?: number;
-    secretHash?: string;
-    shouldInitiateFirst?: boolean;
-    delayCallbackUrl?: string;
-    brokerFee?: number;
-    sendFee?: string;
-    receiveFee?: string;
-    brokerSendTokenAddr?: string;
-    brokerReceiveTokenAddr?: string;
-}
-
-export interface SubmitImmediateResponse {
-    swap: SwapBlob;
-    signature: string;
-    id: string;
-}
-
-interface InnerSwapReceipt extends SwapCore {
-    // tslint:disable-next-line:no-any
-    sendCost: any;
-    // tslint:disable-next-line:no-any
-    receiveCost: any;
-    timestamp: number;
-    timeLock: number;
-    status: number;
-}
-
-/**
- * This replaces the InnerSwapReceipt status from type number to type SwapStatus
- */
-export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerSwapReceipt, "status">> {
-    status: SwapStatus;
-}
-
-export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitImmediateResponse> {
+export async function submitSwap(swap: SentSwap, network: string): Promise<boolean | SubmitImmediateResponse> {
     let resp;
 
     try {
@@ -199,8 +119,8 @@ export async function submitSwap(swap: SwapBlob, network: string): Promise<boole
     return resp.data as SubmitImmediateResponse;
 }
 
-export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => boolean, network: string): Promise<SwapReceipt> {
-    let response: { swaps: InnerSwapReceipt[] };
+export async function findMatchingReturnedSwap(check: (swap: ReturnedSwap) => boolean, network: string): Promise<ReturnedSwap> {
+    let response: { swaps: UnfixedReturnedSwap[] };
     try {
         response = (await axios.get(`${API}/swaps?network=${network}`)).data;
     } catch (error) {
@@ -208,7 +128,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
     }
 
     for (const innerSwap of response.swaps) {
-        const swap: SwapReceipt = fixSwapType(innerSwap);
+        const swap: ReturnedSwap = fixSwapType(innerSwap);
         try {
             if (check(swap)) {
                 return swap;
@@ -290,8 +210,8 @@ export async function generateSignature(
     return signMessage(web3, address, toSign);
 }
 
-function fixSwapType(swap: InnerSwapReceipt): SwapReceipt {
+export function fixSwapType(swap: UnfixedReturnedSwap): ReturnedSwap {
     const { status, ...details } = swap;
-    const result: SwapReceipt = Object.assign({ status: toSwapStatus(status) }, details);
+    const result: ReturnedSwap = Object.assign({ status: toSwapStatus(status) }, details);
     return result;
 }

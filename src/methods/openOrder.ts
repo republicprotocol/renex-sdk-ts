@@ -8,14 +8,15 @@ import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
+import { getSwapperDSwaps, submitSwap } from "../lib/swapper";
+import { toSmallestUnit } from "../lib/tokens";
+import { SentSwap, UnfixedReturnedSwap } from "../lib/types/swapObject";
 import {
-    MarketDetails, NullConsole, OrderID, OrderInputs,
+    MarketDetails, NullConsole, OrderInputs,
     OrderInputsAll, OrderSide, OrderStatus, OrderType, Token,
     TraderOrder, TransactionOptions,
 } from "../types";
-// import { getGasPrice } from "./generalMethods";
-import { darknodeFees } from "./settlementMethods";
-import { submitOrder } from "./swapperDMethods";
+import { swapperDAddresses } from "./swapperD";
 
 // TODO: Decide where this should go (network env, or passed in to constructor)
 export const REN_NODE_URL = "https://renex-testnet.herokuapp.com";
@@ -23,18 +24,27 @@ export const REN_NODE_URL = "https://renex-testnet.herokuapp.com";
 // TODO: Read these from the contract
 const MIN_ETH_TRADE_VOLUME = 1;
 
+export const darknodeFees = async (_sdk: RenExSDK): Promise<BigNumber> => {
+    return new BigNumber(2).dividedBy(1000);
+};
+
+export const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const second = 1000;
+
 const populateOrderDefaults = (
     orderInputs: OrderInputs,
     minEthTradeVolume: BigNumber,
     marketDetail: MarketDetails,
 ): OrderInputsAll => {
     const price = new BigNumber(orderInputs.price);
+    const volume = new BigNumber(orderInputs.volume);
     const minVolume = calculateAbsoluteMinVolume(minEthTradeVolume, marketDetail.base, marketDetail.quote, price);
     return {
         symbol: orderInputs.symbol,
         side: orderInputs.side.toLowerCase() as OrderSide,
         price,
-        volume: new BigNumber(orderInputs.volume),
+        volume,
+        priorityVolume: orderInputs.priorityVolume ? new BigNumber(orderInputs.priorityVolume) : volume.times(price),
 
         minVolume: orderInputs.minVolume ? new BigNumber(orderInputs.minVolume) : minVolume,
         expiry: 0,
@@ -111,7 +121,7 @@ export const openOrder = async (
         }
     }
 
-    const quoteVolume = orderInputs.volume.times(orderInputs.price);
+    const quoteVolume = orderInputs.priorityVolume;
 
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
     const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
@@ -164,9 +174,52 @@ export const openOrder = async (
     const newOrder = ingress.createNewOrder(sdk, orderInputs, nonce);
     const orderID = new EncodedData(newOrder.id, Encodings.HEX);
 
+    const _marketDetail = MarketPairs.get(orderInputs.symbol);
+    if (!_marketDetail) {
+        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
+    }
+    const _baseToken = _marketDetail.base;
+    const _quoteToken = _marketDetail.quote;
+    const _quoteVolume = orderInputs.priorityVolume;
+
+    const _spendToken = orderInputs.side === OrderSide.BUY ? _quoteToken : _baseToken;
+    const _receiveToken = orderInputs.side === OrderSide.BUY ? _baseToken : _quoteToken;
+    const _receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : _quoteVolume;
+    const _minimumReceiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.minVolume : orderInputs.price.times(orderInputs.minVolume);
+    const _spendVolume = orderInputs.side === OrderSide.BUY ? _quoteVolume : orderInputs.volume;
+    const _spendTokenDetails = sdk.tokenDetails.get(_spendToken);
+    if (!_spendTokenDetails) {
+        throw new Error(`Unknown token ${_spendToken}`);
+    }
+    const _receiveTokenDetails = sdk.tokenDetails.get(_receiveToken);
+    if (!_receiveTokenDetails) {
+        throw new Error(`Unknown token ${_receiveToken}`);
+    }
+    const _tokenAddress = await swapperDAddresses(sdk, [_spendToken, _receiveToken]);
+    // Convert the fee fraction to bips by multiplying by 10000
+    const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
+
+    const _swapBlob: SentSwap = {
+        sendToken: _spendToken,
+        receiveToken: _receiveToken,
+        sendAmount: toSmallestUnit(_spendVolume, _spendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
+        receiveAmount: toSmallestUnit(_receiveVolume, _receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(_minimumReceiveVolume, _receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        brokerFee: _brokerFee,
+        delay: true,
+        // delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
+        delayCallbackUrl: `${REN_NODE_URL}/swaps`,
+        delayInfo: {
+            orderID: orderID.toBase64(),
+            kycAddr: sdk.getAddress(),
+            sendTokenAddr: _tokenAddress[0],
+            receiveTokenAddr: _tokenAddress[1],
+        }
+    };
+
     simpleConsole.log("Submitting order to SwapperD");
     try {
-        await submitOrder(sdk, orderID, orderInputs);
+        await submitSwap(_swapBlob, sdk._networkData.network);
     } catch (error) {
         simpleConsole.error(error.message || error);
         throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
@@ -214,13 +267,30 @@ export const openOrder = async (
 
     simpleConsole.log("Order submitted.");
 
+    let timeout = 10;
+    let swapObject: UnfixedReturnedSwap | undefined;
+
+    console.log(`Looking for ${orderID.toBase64()}`);
+    while (!swapObject && timeout > 0) {
+        console.log("Nothing yet...");
+        const orders = await getSwapperDSwaps({ network: sdk._networkData.network });
+        for (const swaps of orders.swaps) {
+            console.log(swaps);
+        }
+        swapObject = orders.swaps.find((swap) => swap.id === orderID.toBase64());
+        timeout--;
+        await sleep(1 * second);
+    }
+
+    console.log("Got order!!!");
+    console.log(swapObject);
+
     const traderOrder: TraderOrder = {
         swapServer: undefined,
         orderInputs,
         status: OrderStatus.NOT_SUBMITTED,
         trader: sdk.getAddress(),
         id: orderID.toBase64(),
-        transactionHash: "", // txHash,
         computedOrderDetails: {
             spendToken,
             receiveToken,
@@ -234,13 +304,4 @@ export const openOrder = async (
     };
 
     return { traderOrder };
-};
-
-export const cancelOrder = async (
-    _sdk: RenExSDK,
-    _orderID: OrderID,
-    _options?: TransactionOptions,
-): Promise<void> => {
-    throw new Error("Not implemented");
-    // const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 };

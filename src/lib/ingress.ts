@@ -16,7 +16,7 @@ import * as shamir from "./shamir";
 import RenExSDK from "../index";
 
 import { responseError, updateError } from "../errors";
-import { REN_NODE_URL } from "../methods/orderbookMethods";
+import { REN_NODE_URL } from "../methods/openOrder";
 import { OrderInputsAll, OrderSide, OrderType as RenExOrderType, SimpleConsole } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";

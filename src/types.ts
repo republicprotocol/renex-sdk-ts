@@ -64,14 +64,15 @@ export interface MarketDetails {
 
 export interface OrderInputs {
     // Required fields
-    symbol: MarketPair;      // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-    side: OrderSide;            // Buy receives base token, sell receives quote token
-    price: NumberInput;      // In quoteToken for 1 unit of baseToken
-    volume: NumberInput;     // In baseToken
+    symbol: MarketPair;            // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
+    side: OrderSide;               // Buy receives base token, sell receives quote token
+    price: NumberInput;            // In quoteToken for 1 unit of baseToken
+    volume: NumberInput;           // In baseToken
+    priorityVolume?: NumberInput;   // In quoteToken
 
     // Optional fields
-    minVolume?: NumberInput; // In baseToken
-    type?: OrderInputsAll["type"];
+    minVolume?: NumberInput;       // In baseToken
+    type?: OrderInputsAll["type"]; // OrderType
 }
 
 // OrderInputsAll extends OrderInputs and sets optional fields to be required.
@@ -79,6 +80,7 @@ export interface OrderInputsAll extends OrderInputs {
     // Restrict type
     price: BigNumber;
     volume: BigNumber;
+    priorityVolume: BigNumber;
     side: OrderSide;
 
     // Change to non-optional
@@ -99,7 +101,7 @@ export interface ComputedOrderDetails {
     nonce: BN;
 }
 
-export interface Order {
+interface Order {
     readonly id: OrderID;
     readonly trader: string;
     status: OrderStatus;
@@ -117,7 +119,6 @@ export interface SwapOrder extends Order {
 
     readonly computedOrderDetails: ComputedOrderDetails;
     readonly orderInputs: OrderInputsAll;
-    readonly transactionHash: string;
 }
 
 // If TraderOrder is changed, then it's serialize / deserialize functions should

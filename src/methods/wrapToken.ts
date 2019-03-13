@@ -6,8 +6,9 @@ import { toWei } from "web3-utils";
 
 import RenExSDK from "../index";
 
+import { SentSwap, SubmitImmediateResponse } from "lib/types/swapObject";
 import { errors, updateError } from "../errors";
-import { getSwapperDBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
+import { getSwapperDBalances, submitSwap } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { MarketPair, NumberInput, OrderInputs, OrderSide, OrderStatus, Token, WBTCOrder } from "../types";
 
@@ -153,7 +154,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
     const brokerFee = conversionFeePercent.times(10000).toNumber();
 
-    const req: SwapBlob = {
+    const req: SentSwap = {
         sendTo: response[fromToken].address,
         receiveFrom: response[toToken].address,
         sendToken: fromToken,
@@ -165,6 +166,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
         brokerFee,
         brokerSendTokenAddr: response[fromToken].address,
         brokerReceiveTokenAddr: response[toToken].address,
+        delay: false,
     };
     const swapResponse: SubmitImmediateResponse = await submitSwap(req, sdk._networkData.network) as SubmitImmediateResponse;
     try {

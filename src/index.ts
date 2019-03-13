@@ -12,17 +12,17 @@ import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversio
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
-import { SwapObject } from "./lib/swapper";
+import { ReturnedSwap } from "./lib/types/swapObject";
+import { cancelOrder } from "./methods/cancelOrder";
 // import { getGasPrice } from "./methods/generalMethods";
-import { cancelOrder, getMinEthTradeVolume, openOrder } from "./methods/orderbookMethods";
-import { darknodeFees } from "./methods/settlementMethods";
+import { darknodeFees, getMinEthTradeVolume, openOrder } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
     refreshSwapperDConnectionStatus, resetSwapperDConnection,
     supportedSwapperDTokens, swapperDAddresses, swapperDBalances,
     swapperDConnected, swapperDSwaps
-} from "./methods/swapperDMethods";
-import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapTokenMethods";
+} from "./methods/swapperD";
+import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapToken";
 import {
     Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
     OrderInputs, OrderSide, SwapperDBalanceDetails, SwapperDConnectionStatus,
@@ -35,6 +35,7 @@ import DarknodeRegistryABI from "./ABIs/DarknodeRegistry.json";
 
 // Export all types
 export * from "./types";
+export * from "./lib/types/swapObject";
 export * from "./lib/swapper";
 export { errors } from "./errors";
 
@@ -68,7 +69,7 @@ export class RenExSDK {
         resetStatus: (): Promise<SwapperDConnectionStatus> => resetSwapperDConnection(this),
         // authorize: (): Promise<SwapperDConnectionStatus> => authorizeSwapperD(this),
         fetchBalances: (tokens: Token[]): Promise<Map<Token, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
-        fetchSwaps: (): Promise<SwapObject[]> => swapperDSwaps(this),
+        fetchSwaps: (): Promise<ReturnedSwap[]> => swapperDSwaps(this),
         fetchAddresses: (tokens: Token[]): Promise<string[]> => swapperDAddresses(this, tokens),
         wrap: (amount: NumberInput, token: Token): Promise<WBTCOrder> => wrap(this, amount, token),
         unwrap: (amount: NumberInput, token: Token): Promise<WBTCOrder> => unwrap(this, amount, token),

@@ -4,12 +4,14 @@ import RenExSDK from "../index";
 
 import { errors, updateError } from "../errors";
 import { EncodedData } from "../lib/encodedData";
-import { MarketPairs } from "../lib/market";
-import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperDAddresses, getSwapperDBalances, getSwapperDSwaps, submitSwap, SwapBlob, SwapObject, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
-import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
-import { OrderInputsAll, OrderSide, OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
-import { REN_NODE_URL } from "./orderbookMethods";
-import { darknodeFees } from "./settlementMethods";
+import {
+    fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion,
+    findMatchingReturnedSwap, fixSwapType, getSwapperDAddresses,
+    getSwapperDBalances, getSwapperDSwaps, SwapperConnectionStatus,
+} from "../lib/swapper";
+import { fromSmallestUnit } from "../lib/tokens";
+import { ReturnedSwap, SwapStatus } from "../lib/types/swapObject";
+import { OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
 
 /* SwapperD Connection */
 
@@ -142,62 +144,10 @@ export const swapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<
 
 /* SwapperD swaps */
 
-const retrieveSwapperDSwaps = async (sdk: RenExSDK): Promise<SwapObject[]> => {
+export const swapperDSwaps = async (sdk: RenExSDK): Promise<ReturnedSwap[]> => {
     return getSwapperDSwaps({ network: sdk._networkData.network }).then(swaps => {
-        return swaps.swaps;
+        return swaps.swaps.map(fixSwapType);
     });
-};
-
-export const swapperDSwaps = async (sdk: RenExSDK): Promise<SwapObject[]> => {
-    return retrieveSwapperDSwaps(sdk);
-};
-
-// tslint:disable-next-line:no-any
-export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInputs: OrderInputsAll): Promise<any> => {
-    const marketDetail = MarketPairs.get(orderInputs.symbol);
-    if (!marketDetail) {
-        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
-    }
-    const baseToken = marketDetail.base;
-    const quoteToken = marketDetail.quote;
-    const quoteVolume = orderInputs.volume.times(orderInputs.price);
-
-    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
-    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
-    const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
-    const minimumReceiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.minVolume : orderInputs.price.times(orderInputs.minVolume);
-    const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
-    const spendTokenDetails = sdk.tokenDetails.get(spendToken);
-    if (!spendTokenDetails) {
-        throw new Error(`Unknown token ${spendToken}`);
-    }
-    const receiveTokenDetails = sdk.tokenDetails.get(receiveToken);
-    if (!receiveTokenDetails) {
-        throw new Error(`Unknown token ${receiveToken}`);
-    }
-    const tokenAddress = await swapperDAddresses(sdk, [spendToken, receiveToken]);
-    // Convert the fee fraction to bips by multiplying by 10000
-    const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
-
-    const req: SwapBlob = {
-        sendToken: spendToken,
-        receiveToken,
-        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
-        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        brokerFee,
-        delay: true,
-        // delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
-        delayCallbackUrl: `${REN_NODE_URL}/swaps`,
-        delayInfo: {
-            orderID: orderID.toBase64(),
-            kycAddr: sdk.getAddress(),
-            sendTokenAddr: tokenAddress[0],
-            receiveTokenAddr: tokenAddress[1],
-        }
-    };
-
-    return submitSwap(req, sdk._networkData.network);
 };
 
 export async function fetchSwapperDOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
@@ -205,9 +155,9 @@ export async function fetchSwapperDOrderStatus(sdk: RenExSDK, orderID: EncodedDa
     return toOrderStatus(swap.status);
 }
 
-export async function fetchSwapperDOrder(sdk: RenExSDK, orderID: EncodedData): Promise<SwapReceipt> {
+export async function fetchSwapperDOrder(sdk: RenExSDK, orderID: EncodedData): Promise<ReturnedSwap> {
     try {
-        const swap = await findMatchingSwapReceipt((swapReceipt) => {
+        const swap = await findMatchingReturnedSwap((swapReceipt) => {
             if (swapReceipt.id === orderID.toBase64()) {
                 return true;
             } else if (
