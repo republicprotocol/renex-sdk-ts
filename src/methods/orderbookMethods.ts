@@ -1,5 +1,3 @@
-import PromiEvent from "web3/promiEvent";
-
 import { BigNumber } from "bignumber.js";
 
 import * as ingress from "../lib/ingress";
@@ -13,7 +11,7 @@ import { MarketPairs } from "../lib/market";
 import {
     MarketDetails, NullConsole, OrderID, OrderInputs,
     OrderInputsAll, OrderSide, OrderStatus, OrderType, Token,
-    TraderOrder, Transaction, TransactionOptions,
+    TraderOrder, TransactionOptions,
 } from "../types";
 // import { getGasPrice } from "./generalMethods";
 import { darknodeFees } from "./settlementMethods";
@@ -242,7 +240,7 @@ export const cancelOrder = async (
     _sdk: RenExSDK,
     _orderID: OrderID,
     _options?: TransactionOptions,
-): Promise<{ promiEvent: PromiEvent<Transaction> | null }> => {
+): Promise<void> => {
     throw new Error("Not implemented");
     // const orderIDHex = new EncodedData(orderID, Encodings.BASE64).toHex();
 };

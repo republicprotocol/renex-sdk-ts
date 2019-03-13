@@ -7,7 +7,7 @@
     ],
     "linterOptions": {
         "exclude": [
-            "src/contracts/ABIs/*.json",
+            "src/ABIs/*.json",
             "src/contracts/bindings/*.ts",
             "config/**/*.js",
             "node_modules/**/*.ts"

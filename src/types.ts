@@ -6,9 +6,6 @@ export { NetworkData } from "./lib/network";
 
 export type NumberInput = number | string | BigNumber;
 
-// tslint:disable-next-line:no-any
-export interface Transaction { receipt: any; tx: string; logs: any[]; }
-
 export type OrderID = string;
 export enum OrderStatus {
     NOT_SUBMITTED = "NOT_SUBMITTED",
@@ -161,16 +158,7 @@ export interface SwapperDBalanceDetails {
     used: BigNumber | null;
 }
 
-export enum TransactionStatus {
-    Pending = "pending",
-    Done = "done",
-    Failed = "failed",
-    Replaced = "replaced",
-}
-
 export interface TransactionOptions {
-    awaitConfirmation?: boolean;
-    gasPrice?: number | undefined;
     simpleConsole?: SimpleConsole;
 }
 

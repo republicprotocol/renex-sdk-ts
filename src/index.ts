@@ -2,7 +2,6 @@ import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
 import Contract from "web3/eth/contract";
-import PromiEvent from "web3/promiEvent";
 
 import { OrderedMap } from "immutable";
 import { Provider } from "web3/providers";
@@ -27,12 +26,12 @@ import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, w
 import {
     Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
     OrderInputs, OrderSide, SwapperDBalanceDetails, SwapperDConnectionStatus,
-    Token, TokenDetails, TraderOrder, Transaction, TransactionOptions,
+    Token, TokenDetails, TraderOrder, TransactionOptions,
     WBTCOrder,
 } from "./types";
 
 // Contract bindings
-import DarknodeRegistryABI from "./contracts/ABIs/DarknodeRegistry.json";
+import DarknodeRegistryABI from "./ABIs/DarknodeRegistry.json";
 
 // Export all types
 export * from "./types";
@@ -149,11 +148,13 @@ export class RenExSDK {
 
     // Transaction Methods
     public openOrder = (order: OrderInputs, options?: TransactionOptions):
-        Promise<{ traderOrder: TraderOrder }> =>
-        openOrder(this, order, options)
+        Promise<{ traderOrder: TraderOrder }> => openOrder(this, order, options)
+
+    /**
+     * Cancels some stuff.
+     */
     public cancelOrder = (orderID: OrderID, options?: TransactionOptions):
-        Promise<{ promiEvent: PromiEvent<Transaction> | null }> =>
-        cancelOrder(this, orderID, options)
+        Promise<void> => cancelOrder(this, orderID, options)
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
