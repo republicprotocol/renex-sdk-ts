@@ -1,24 +1,12 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
-import { NumberInput, Token, TokenDetails } from "../types";
+import { NumberInput, Token } from "../types";
 
-export function toSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
-    let decimals: number;
-    if (typeof tokenDetails === "number") {
-        decimals = tokenDetails;
-    } else {
-        decimals = tokenDetails.decimals;
-    }
+export function toSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
     return new BigNumber(amount).times(new BigNumber(10).exponentiatedBy(decimals));
 }
 
-export function fromSmallestUnit(amount: NumberInput, tokenDetails: TokenDetails | number): BigNumber {
-    let decimals: number;
-    if (typeof tokenDetails === "number") {
-        decimals = tokenDetails;
-    } else {
-        decimals = tokenDetails.decimals;
-    }
+export function fromSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
     return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
 }
 

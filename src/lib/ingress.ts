@@ -6,6 +6,7 @@ import * as NodeRSAType from "node-rsa";
 
 import BN from "bn.js";
 import Web3 from "web3";
+import Contract from "web3/eth/contract";
 
 import { BigNumber } from "bignumber.js";
 import { List, Map } from "immutable";
@@ -14,15 +15,12 @@ import * as shamir from "./shamir";
 
 import RenExSDK from "../index";
 
-import { DarknodeRegistryContract } from "../contracts/bindings/darknode_registry";
-import { OrderbookContract } from "../contracts/bindings/orderbook";
 import { responseError, updateError } from "../errors";
 import { REN_NODE_URL } from "../methods/orderbookMethods";
-import { OrderID, OrderInputsAll, OrderSide, OrderStatus, OrderType as RenExOrderType, SimpleConsole } from "../types";
+import { OrderInputsAll, OrderSide, OrderType as RenExOrderType, SimpleConsole } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
 import { MarketPairs } from "./market";
-import { orderbookStateToOrderStatus } from "./order";
 import { Record } from "./record";
 import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
 
@@ -130,74 +128,6 @@ export function randomNonce(): BN {
     return new BN(nonce.toFixed());
 }
 
-// export async function authorizeSwapper(ingressURL: string, request: SwapperDAuthorizationRequest): Promise<boolean> {
-//     try {
-//         const resp = await axios.post(`${ingressURL}/authorize`, request.toJS());
-//         if (resp.status === 201) {
-//             return true;
-//         }
-//         throw responseError(errors.CouldNotAuthorizeSwapper, resp);
-//     } catch (error) {
-//         if (error && error.response) {
-//             if (error.response.status === 401) {
-//                 throw updateError(`Could not authorize swapper. Address is not KYC'd. ${error.message || error}`, error);
-//             }
-//             throw updateError(`Could not authorize swapper. ${error.message || error}`, error);
-//         }
-//         throw error;
-//     }
-// }
-
-// export async function _authorizeSwapperD(web3: Web3, ingressURL: string, swapperDAddress: string, address: string): Promise<void> {
-//     const req = await getSwapperDAuthorizationRequest(web3, swapperDAddress, address);
-//     await authorizeSwapper(ingressURL, req);
-// }
-
-// async function getSwapperDAuthorizationRequest(web3: Web3, swapperDAddress: string, address: string): Promise<SwapperDAuthorizationRequest> {
-//     const checksumAddress = web3.utils.toChecksumAddress(swapperDAddress);
-//     const dataForSigning: string = web3.utils.toHex(`RenEx: authorize: ${checksumAddress}`);
-
-//     let signature: EncodedData;
-//     try {
-//         // tslint:disable-next-line:no-any
-//         signature = new EncodedData(await (web3.eth.personal.sign as any)(dataForSigning, address));
-//     } catch (error) {
-//         if (error.message.match(/User denied message signature/)) {
-//             return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
-//         }
-//         return Promise.reject(updateError(`${errors.UnsignedTransaction}: ${error.message || error}`, error));
-//     }
-
-//     const buff = signature.toBuffer();
-//     // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
-//     // but for future compatibility, we stick to one format)
-//     // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
-//     if (buff[64] === 27 || buff[64] === 28) {
-//         buff[64] = buff[64] - 27;
-//     }
-
-//     return new SwapperDAuthorizationRequest({ address: checksumAddress, signature: buff.toString("base64") });
-// }
-
-// export async function checkSwapperDAuthorization(
-//     ingressURL: string,
-//     address: string,
-//     expectedEthAddress: string,
-// ): Promise<boolean> {
-//     return axios.get(`${ingressURL}/authorized/${address}`)
-//         .then(resp => {
-//             if (resp.status !== 200) {
-//                 throw new Error("Unexpected status code: " + resp.status);
-//             }
-//             const approvedAddress = new EncodedData(resp.data.atomAddress, Encodings.HEX).toHex();
-//             return approvedAddress.toLowerCase() === expectedEthAddress.toLowerCase();
-//         })
-//         .catch(err => {
-//             console.error(err);
-//             return false;
-//         });
-// }
-
 export interface NewOrder {
     id: string;
     sendToken: number;
@@ -296,74 +226,6 @@ export async function submitOrderFragments(
     }
 }
 
-async function ordersBatch(web3: Web3, orderbook: OrderbookContract, offset: number, limit: number): Promise<List<[OrderID, OrderStatus, string]>> {
-    let orders;
-    try {
-        orders = await orderbook.getOrders(web3.utils.toHex(offset), web3.utils.toHex(limit));
-    } catch (error) {
-        console.error(`Failed to get call getOrders in ordersBatch`);
-        throw error;
-    }
-    const orderIDs = orders[0];
-    const tradersAddresses = orders[1];
-    const orderStatuses = orders[2];
-
-    let ordersList = List<[OrderID, OrderStatus, string]>();
-    for (let i = 0; i < orderIDs.length; i++) {
-        const status = orderbookStateToOrderStatus(new BN(orderStatuses[i]).toNumber());
-        ordersList = ordersList.push([orderIDs[i], status, tradersAddresses[i]]);
-    }
-    return ordersList;
-}
-
-export async function getOrders(web3: Web3, orderbook: OrderbookContract, startIn?: number, limitIn?: number): Promise<List<[OrderID, OrderStatus, string]>> {
-    let orderCount;
-    try {
-        orderCount = new BN(await orderbook.ordersCount()).toNumber();
-    } catch (error) {
-        console.error(`Failed to call orderCount in getOrders`);
-        throw error;
-    }
-
-    // If limit is 0 then we treat is as no limit
-    const limit = limitIn || orderCount - (startIn || 0);
-
-    // Start can be 0 so we compare against undefined instead
-    let start = startIn !== undefined ? startIn : Math.max(0, orderCount - limit);
-
-    // We only get at most 500 orders per batch
-    let batchLimit = Math.min(limit, 500);
-
-    // Indicates where to stop (non-inclusive)
-    const stop = limit ? start + Math.min(orderCount, limit) : orderCount;
-
-    let ordersList = List<[OrderID, OrderStatus, string]>();
-    while (true) {
-        // Check if the limit has been reached
-        if (start >= stop) {
-            return ordersList;
-        }
-
-        // Don't get more than required
-        batchLimit = Math.min(batchLimit, stop - start);
-
-        // Retrieve batch of orders and increment start
-        const batch = await ordersBatch(web3, orderbook, start, batchLimit);
-        ordersList = ordersList.concat(batch).toList();
-        start += batchLimit;
-    }
-}
-
-// export async function getOrder(wallet: Wallet, orderId: string): Promise<Order> {
-//     // FIXME: Unimplemented
-//     return Promise.resolve(new Order({}));
-// }
-
-// export async function getOrders(wallet: Wallet, order: Order): Promise<List<Order>> {
-//     // FIXME: Unimplemented
-//     return Promise.resolve(List<Order>());
-// }
-
 export function getOrderID(web3: Web3, order: Order): EncodedData {
     const [leftToken, rightToken] = splitTokenPairing(order.tokens);
     const adjustedTokens = order.parity === OrderParity.BUY ? order.tokens : generateTokenPairing(rightToken, leftToken);
@@ -382,7 +244,7 @@ export function getOrderID(web3: Web3, order: Order): EncodedData {
 }
 
 export async function buildOrderMapping(
-    web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, order: NewOrder, simpleConsole: SimpleConsole,
+    web3: Web3, darknodeRegistryContract: Contract, order: NewOrder, simpleConsole: SimpleConsole,
 ): Promise<Map<string, PodShares>> {
     const marketID = order.marketID;
     const pods = await getPods(web3, darknodeRegistryContract, simpleConsole, marketID);
@@ -569,13 +431,13 @@ export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shami
  * When the {start} value is not the NULL address, it is always returned as the
  * first entry so it should not be re-added to the list of all darknodes.
  */
-async function getAllDarknodes(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract): Promise<string[]> {
+async function getAllDarknodes(web3: Web3, darknodeRegistryContract: Contract): Promise<string[]> {
     const batchSize = web3.utils.toHex(50);
 
     const allDarknodes = [];
     let lastDarknode = NULL;
     do {
-        const darknodes = await darknodeRegistryContract.getDarknodes(lastDarknode, batchSize);
+        const darknodes: string[] = await darknodeRegistryContract.methods.getDarknodes(lastDarknode, batchSize).call();
         allDarknodes.push(...darknodes.filter(addr => addr !== NULL && addr !== lastDarknode));
         [lastDarknode] = darknodes.slice(-1);
     } while (lastDarknode !== NULL);
@@ -583,7 +445,7 @@ async function getAllDarknodes(web3: Web3, darknodeRegistryContract: DarknodeReg
     return allDarknodes;
 }
 
-async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole, marketID: string): Promise<List<Pod>> {
+async function getPods(web3: Web3, darknodeRegistryContract: Contract, simpleConsole: SimpleConsole, marketID: string): Promise<List<Pod>> {
     const res = await axios.get<string[]>(`${REN_NODE_URL}/pods?tokens=${marketID}`);
 
     const podsForPair = res.data;
@@ -596,11 +458,11 @@ async function getPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryCon
 /*
  * Calculate pod arrangement based on current epoch
  */
-async function getAllPods(web3: Web3, darknodeRegistryContract: DarknodeRegistryContract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
+async function getAllPods(web3: Web3, darknodeRegistryContract: Contract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
     const darknodes = await getAllDarknodes(web3, darknodeRegistryContract);
-    const minimumPodSize = new BN(await darknodeRegistryContract.minimumPodSize()).toNumber();
+    const minimumPodSize = new BN(await darknodeRegistryContract.methods.minimumPodSize().call()).toNumber();
     simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
-    const epoch = await darknodeRegistryContract.currentEpoch();
+    const epoch: [string, string] = await darknodeRegistryContract.methods.currentEpoch().call();
 
     if (!darknodes.length) {
         return Promise.reject(new Error("no darknodes in contract"));

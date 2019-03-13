@@ -2,13 +2,14 @@ import axios from "axios";
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
+import { toWei } from "web3-utils";
+
 import RenExSDK from "../index";
 
 import { errors, updateError } from "../errors";
 import { getSwapperDBalances, SubmitImmediateResponse, submitSwap, SwapBlob } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
 import { MarketPair, NumberInput, OrderInputs, OrderSide, OrderStatus, Token, WBTCOrder } from "../types";
-import { getTokenDetails } from "./balancesMethods";
 
 // Required ETH balance for fees
 const MIN_ETH_BALANCE = 0.005;
@@ -80,7 +81,7 @@ export async function getWrappingFees(sdk: RenExSDK, token: Token): Promise<Wrap
  * @param {BigNumber} amount in the smallest possible token unit
  * @param {string} fromToken
  */
-async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, response: BalanceResponse, toToken: Token, amountString: string): Promise<boolean> {
+async function checkSufficientServerBalance(amount: BigNumber, response: BalanceResponse, toToken: Token, amountString: string): Promise<boolean> {
     // The fee required to be in the server for initiation
     const initiateFee = new BigNumber(serverInitiateFeeSatoshi);
     const serverTokenBalance = BigNumber.max(0, new BigNumber(response[toToken].balance).minus(initiateFee));
@@ -95,7 +96,7 @@ async function checkSufficientServerBalance(sdk: RenExSDK, amount: BigNumber, re
         (error as any).amount = amount;
         throw error;
     }
-    if (serverEthBalance.lt(sdk.getWeb3().utils.toWei(MIN_ETH_BALANCE.toString()))) {
+    if (serverEthBalance.lt(toWei(MIN_ETH_BALANCE.toString()))) {
         err = `Swap server has insufficient Ethereum balance for transfer fees`;
         const error = new Error(err);
         // tslint:disable-next-line: no-any
@@ -143,9 +144,12 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     } catch (error) {
         throw updateError(errors.CouldNotConnectSwapServer, error);
     }
-    const fromTokenDetails = await getTokenDetails(sdk, fromToken);
-    const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails);
-    await checkSufficientServerBalance(sdk, amountBigNumber, response, toToken, orderInputs.volume.toString());
+    const fromTokenDetails = sdk.tokenDetails.get(fromToken);
+    if (!fromTokenDetails) {
+        throw new Error(`Unknown token ${fromToken}`);
+    }
+    const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails.decimals);
+    await checkSufficientServerBalance(amountBigNumber, response, toToken, orderInputs.volume.toString());
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
     const brokerFee = conversionFeePercent.times(10000).toNumber();
 

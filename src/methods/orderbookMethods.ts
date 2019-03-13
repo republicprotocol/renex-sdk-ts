@@ -15,7 +15,6 @@ import {
     OrderInputsAll, OrderSide, OrderStatus, OrderType, Token,
     TraderOrder, Transaction, TransactionOptions,
 } from "../types";
-import { getTokenDetails } from "./balancesMethods";
 // import { getGasPrice } from "./generalMethods";
 import { darknodeFees } from "./settlementMethods";
 import { submitOrder } from "./swapperDMethods";
@@ -96,7 +95,11 @@ export const openOrder = async (
 
     const baseToken = marketDetail.base;
     const quoteToken = marketDetail.quote;
-    const baseTokenDetails = await getTokenDetails(sdk, baseToken);
+    const baseTokenDetails = sdk.tokenDetails.get(baseToken);
+
+    if (!baseTokenDetails) {
+        throw new Error(`Unknown token ${baseToken}`);
+    }
 
     if (!isValidDecimals(orderInputs, baseTokenDetails.decimals)) {
         throw new Error(`Order volumes are invalid. ${baseToken} is limited to ${baseTokenDetails.decimals} decimal places.`);

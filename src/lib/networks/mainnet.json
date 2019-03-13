@@ -9,10 +9,6 @@
     "ethNetworkId": 1,
     "contracts": [{
         "darknodeRegistry": "0x3799006a87FDE3CCFC7666B3E6553B03ED341c2F",
-        "orderbook": "0x6b8bB175c092DE7d81860B18DB360B734A2598e0",
-        "renExTokens": "0x7cAde4fbc8761817bb62A080733D1B6CaD744ec4",
-        "renExBalances": "0x5eC18B477B20aF940807B5478dB5A64Cd4a77EFd",
-        "renExSettlement": "0x70bfE40F98C06A0ad60759bE8C4B1ECf0c354BAF",
         "wyre": "0x9f2a7b5E6280727cd6c8486f5F96E5f76164F2DF"
     }],
     "tokens": {

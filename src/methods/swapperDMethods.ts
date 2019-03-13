@@ -8,7 +8,6 @@ import { MarketPairs } from "../lib/market";
 import { fetchSwapperAddress, fetchSwapperStatus, fetchSwapperVersion, findMatchingSwapReceipt, getSwapperDAddresses, getSwapperDBalances, getSwapperDSwaps, submitSwap, SwapBlob, SwapObject, SwapperConnectionStatus, SwapReceipt, SwapStatus } from "../lib/swapper";
 import { fromSmallestUnit, toSmallestUnit } from "../lib/tokens";
 import { OrderInputsAll, OrderSide, OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
-import { getTokenDetails } from "./balancesMethods";
 import { REN_NODE_URL } from "./orderbookMethods";
 import { darknodeFees } from "./settlementMethods";
 
@@ -74,10 +73,10 @@ export const supportedSwapperDTokens = async (sdk: RenExSDK): Promise<Token[]> =
 const retrieveSwapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<MaybeBigNumber[]> => {
     return getSwapperDBalances({ network: sdk._networkData.network }).then(balances => {
         return Promise.all(tokens.map(async token => {
-            const tokenDetails = await getTokenDetails(sdk, token);
-            if (balances[token]) {
+            const tokenDetails = sdk.tokenDetails.get(token);
+            if (tokenDetails && balances[token]) {
                 const balance = balances[token].balance;
-                return fromSmallestUnit(balance, tokenDetails);
+                return fromSmallestUnit(balance, tokenDetails.decimals);
             }
             return null;
         }));
@@ -168,8 +167,14 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
     const minimumReceiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.minVolume : orderInputs.price.times(orderInputs.minVolume);
     const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
-    const spendTokenDetails = await getTokenDetails(sdk, spendToken);
-    const receiveTokenDetails = await getTokenDetails(sdk, receiveToken);
+    const spendTokenDetails = sdk.tokenDetails.get(spendToken);
+    if (!spendTokenDetails) {
+        throw new Error(`Unknown token ${spendToken}`);
+    }
+    const receiveTokenDetails = sdk.tokenDetails.get(receiveToken);
+    if (!receiveTokenDetails) {
+        throw new Error(`Unknown token ${receiveToken}`);
+    }
     const tokenAddress = await swapperDAddresses(sdk, [spendToken, receiveToken]);
     // Convert the fee fraction to bips by multiplying by 10000
     const brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
@@ -177,9 +182,9 @@ export const submitOrder = async (sdk: RenExSDK, orderID: EncodedData, orderInpu
     const req: SwapBlob = {
         sendToken: spendToken,
         receiveToken,
-        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
-        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        sendAmount: toSmallestUnit(spendVolume, spendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
+        receiveAmount: toSmallestUnit(receiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(minimumReceiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee,
         delay: true,
         // delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,

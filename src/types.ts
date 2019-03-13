@@ -148,7 +148,6 @@ export interface MatchDetails {
 export interface TokenDetails {
     address: string;
     decimals: number;
-    registered: boolean;
 }
 
 export interface BalanceDetails {

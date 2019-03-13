@@ -13,10 +13,6 @@ export interface NetworkData {
     contracts: [
         {
             darknodeRegistry: string;
-            orderbook: string;
-            renExTokens: string;
-            renExBalances: string;
-            renExSettlement: string;
             wyre: string;
         }
     ];

@@ -1,13 +1,12 @@
 import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
-import BN from "bn.js";
+import Contract from "web3/eth/contract";
 import PromiEvent from "web3/promiEvent";
 
 import { OrderedMap } from "immutable";
 import { Provider } from "web3/providers";
 
-import { DarknodeRegistry, Orderbook, RenExBalances, RenExSettlement, RenExTokens, withProvider, Wyre } from "./contracts/contracts";
 import { errors } from "./errors";
 import { generateConfig } from "./lib/config";
 import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversion";
@@ -18,28 +17,31 @@ import { SwapObject } from "./lib/swapper";
 // import { getGasPrice } from "./methods/generalMethods";
 import { cancelOrder, getMinEthTradeVolume, openOrder } from "./methods/orderbookMethods";
 import { darknodeFees } from "./methods/settlementMethods";
-import { currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion, refreshSwapperDConnectionStatus, resetSwapperDConnection, supportedSwapperDTokens, swapperDAddresses, swapperDBalances, swapperDConnected, swapperDSwaps } from "./methods/swapperDMethods";
+import {
+    currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
+    refreshSwapperDConnectionStatus, resetSwapperDConnection,
+    supportedSwapperDTokens, swapperDAddresses, swapperDBalances,
+    swapperDConnected, swapperDSwaps
+} from "./methods/swapperDMethods";
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapTokenMethods";
 import {
-    Config, MarketDetails, MarketPair, NumberInput,
-    Options, OrderID, OrderInputs, OrderSide,
-    SwapperDBalanceDetails, SwapperDConnectionStatus, Token,
-    TraderOrder, Transaction, TransactionOptions, WBTCOrder,
+    Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
+    OrderInputs, OrderSide, SwapperDBalanceDetails, SwapperDConnectionStatus,
+    Token, TokenDetails, TraderOrder, Transaction, TransactionOptions,
+    WBTCOrder,
 } from "./types";
 
 // Contract bindings
-import { DarknodeRegistryContract } from "./contracts/bindings/darknode_registry";
-import { ERC20Contract } from "./contracts/bindings/erc20";
-import { OrderbookContract } from "./contracts/bindings/orderbook";
-import { RenExBalancesContract } from "./contracts/bindings/ren_ex_balances";
-import { RenExSettlementContract } from "./contracts/bindings/ren_ex_settlement";
-import { RenExTokensContract } from "./contracts/bindings/ren_ex_tokens";
-import { WyreContract } from "./contracts/bindings/wyre";
+import DarknodeRegistryABI from "./contracts/ABIs/DarknodeRegistry.json";
 
 // Export all types
 export * from "./types";
 export * from "./lib/swapper";
 export { errors } from "./errors";
+
+interface ContractObject {
+    darknodeRegistry: Contract;
+}
 
 /**
  * This is the concrete class that implements the IRenExSDK interface.
@@ -53,19 +55,11 @@ export class RenExSDK {
     public _swapperDConnectionStatus: SwapperDConnectionStatus = SwapperDConnectionStatus.NotConnected;
     public _wrappingFees: WrapFeesMap = {};
 
-    public _contracts: {
-        renExSettlement: RenExSettlementContract,
-        renExTokens: RenExTokensContract,
-        renExBalances: RenExBalancesContract,
-        orderbook: OrderbookContract,
-        darknodeRegistry: DarknodeRegistryContract,
-        erc20: Map<Token, ERC20Contract>,
-        wyre: WyreContract,
-    };
+    public _contracts: ContractObject;
 
-    public _cachedTokenDetails: Map<Token, Promise<{ addr: string, decimals: string | number | BN, registered: boolean }>> = new Map();
+    public tokenDetails: Map<Token, TokenDetails>;
 
-    // Atomic functions
+    // SwapperD functions
     public swapperD = {
         getStatus: (): SwapperDConnectionStatus => currentSwapperDConnectionStatus(this),
         getID: (): Promise<string> => getSwapperID(this),
@@ -112,7 +106,6 @@ export class RenExSDK {
      * @memberof RenExSDK
      */
     constructor(provider: Provider, options?: Options, mainnetProvider?: Provider) {
-        this._web3 = new Web3(provider);
         this._config = generateConfig(options);
 
         switch (this.getConfig().network) {
@@ -126,6 +119,15 @@ export class RenExSDK {
                 throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
 
+        this.tokenDetails = new Map()
+            .set(Token.BTC, { addr: "0x0000000000000000000000000000000000000000", decimals: 8 })
+            .set(Token.ETH, { addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: 18 })
+            .set(Token.TUSD, { addr: this._networkData.tokens.TUSD, decimals: 18 })
+            .set(Token.DAI, { addr: this._networkData.tokens.DAI, decimals: 18 })
+            ;
+
+        [this._web3, this._contracts] = this.updateProvider(provider);
+
         // Show warning when the expected network ID is different from the provider network ID
         this._web3.eth.net.getId()
             // tslint:disable-next-line: no-any
@@ -136,34 +138,14 @@ export class RenExSDK {
             })
             .catch(console.error);
 
-        this._cachedTokenDetails = this._cachedTokenDetails
-            .set(Token.BTC, Promise.resolve({ addr: "0x0000000000000000000000000000000000000000", decimals: new BN(8), registered: true }))
-            .set(Token.ETH, Promise.resolve({ addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: new BN(18), registered: true }))
-            .set(Token.TUSD, Promise.resolve({ addr: this._networkData.tokens.TUSD, decimals: new BN(18), registered: true }))
-            .set(Token.DAI, Promise.resolve({ addr: this._networkData.tokens.DAI, decimals: new BN(18), registered: true }))
-            ;
-
         // Hack to suppress web3 MaxListenersExceededWarning
         // This should be removed when issue is resolved upstream:
         // https://github.com/ethereum/web3.js/issues/1648
         process.listeners("warning").forEach(listener => process.removeListener("warning", listener));
-
-        this._contracts = {
-            renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(mainnetProvider || provider, DarknodeRegistry))("0x34bd421C7948Bc16f826Fd99f9B785929b121633"),
-            renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
-            erc20: new Map<Token, ERC20Contract>(),
-            wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
-        };
     }
 
-    // public fetchAtomicMarkets = ()
     public fetchMarkets = (): Promise<OrderedMap<MarketPair, MarketDetails>> => fetchMarkets(this);
     public fetchSupportedSwapperDTokens = (): Promise<Token[]> => supportedSwapperDTokens(this);
-    // tslint:disable-next-line: member-ordering
-    public fetchSupportedAtomicTokens = this.fetchSupportedSwapperDTokens;
 
     // Transaction Methods
     public openOrder = (order: OrderInputs, options?: TransactionOptions):
@@ -189,19 +171,15 @@ export class RenExSDK {
         this._address = address;
     }
 
-    public updateProvider = (provider: Provider): void => {
+    public updateProvider = (provider: Provider): [Web3, ContractObject] => {
         this._web3 = new Web3(provider);
 
         // Update contract providers
         this._contracts = {
-            renExSettlement: new (withProvider(this.getWeb3().currentProvider, RenExSettlement))(this._networkData.contracts[0].renExSettlement),
-            renExBalances: new (withProvider(this.getWeb3().currentProvider, RenExBalances))(this._networkData.contracts[0].renExBalances),
-            orderbook: new (withProvider(this.getWeb3().currentProvider, Orderbook))(this._networkData.contracts[0].orderbook),
-            darknodeRegistry: new (withProvider(this.getWeb3().currentProvider, DarknodeRegistry))(this._networkData.contracts[0].darknodeRegistry),
-            renExTokens: new (withProvider(this.getWeb3().currentProvider, RenExTokens))(this._networkData.contracts[0].renExTokens),
-            erc20: new Map<Token, ERC20Contract>(),
-            wyre: new (withProvider(this.getWeb3().currentProvider, Wyre))(this._networkData.contracts[0].wyre),
+            darknodeRegistry: new this._web3.eth.Contract(DarknodeRegistryABI, this._networkData.contracts[0].darknodeRegistry),
         };
+
+        return [this._web3, this._contracts];
     }
 }
 
