@@ -13,8 +13,6 @@ import { List, Map } from "immutable";
 
 import * as shamir from "./shamir";
 
-import RenExSDK from "../index";
-
 import { responseError, updateError } from "../errors";
 import { REN_NODE_URL } from "../methods/openOrder";
 import { OrderInputsAll, OrderSide, OrderType as RenExOrderType, SimpleConsole } from "../types";
@@ -136,37 +134,6 @@ export interface NewOrder {
     price: number;
     volume: number;
     min_Volume: number;
-}
-
-export function createNewOrder(sdk: RenExSDK, orderInputs: OrderInputsAll, nonce?: BN): NewOrder {
-    const marketDetail = MarketPairs.get(orderInputs.symbol);
-    if (!marketDetail) {
-        throw new Error(`Couldn't find market information for market: ${orderInputs.symbol}`);
-    }
-    const baseToken = marketDetail.base;
-    const quoteToken = marketDetail.quote;
-    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
-    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
-
-    const price = new BigNumber(orderInputs.price).toNumber();
-    const volume = new BigNumber(orderInputs.volume).toNumber() * 100;
-    const minimumVolume = new BigNumber(orderInputs.minVolume).toNumber() * 100;
-
-    // let ingressOrder = createOrder(orderInputs, nonce);
-    // const orderID = getOrderID(sdk.getWeb3(), ingressOrder);
-    // ingressOrder = ingressOrder.set("id", orderID.toBase64());
-
-    const order: NewOrder = {
-        id: randomNonce().toString("hex"),
-        sendToken: tokenToID(spendToken),
-        receiveToken: tokenToID(receiveToken),
-        marketID: `${baseToken}-${quoteToken}`,
-        price, // 350,
-        volume, // 100,
-        min_Volume: minimumVolume, // 10,
-    };
-
-    return order;
 }
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {

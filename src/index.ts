@@ -12,7 +12,7 @@ import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversio
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
-import { ReturnedSwap } from "./lib/types/swapObject";
+import { ReturnedSwap, SentDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
 // import { getGasPrice } from "./methods/generalMethods";
 import { darknodeFees, getMinEthTradeVolume, openOrder } from "./methods/openOrder";
@@ -26,12 +26,13 @@ import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, w
 import {
     Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
     OrderInputs, OrderSide, SwapperDBalanceDetails, SwapperDConnectionStatus,
-    Token, TokenDetails, TraderOrder, TransactionOptions,
+    Token, TokenDetails, TransactionOptions,
     WBTCOrder,
 } from "./types";
 
 // Contract bindings
 import DarknodeRegistryABI from "./ABIs/DarknodeRegistry.json";
+import { NewOrder } from "./lib/ingress";
 
 // Export all types
 export * from "./types";
@@ -148,8 +149,11 @@ export class RenExSDK {
     public fetchSupportedSwapperDTokens = (): Promise<Token[]> => supportedSwapperDTokens(this);
 
     // Transaction Methods
-    public openOrder = (order: OrderInputs, options?: TransactionOptions):
-        Promise<{ traderOrder: TraderOrder }> => openOrder(this, order, options)
+    public openOrder = (
+        orderInputsIn: OrderInputs | undefined,
+        options?: TransactionOptions,
+        sentSwapIn?: [NewOrder, SentDelayedSwap],
+    ): Promise<SentDelayedSwap> => openOrder(this, orderInputsIn, options, sentSwapIn)
 
     /**
      * Cancels some stuff.

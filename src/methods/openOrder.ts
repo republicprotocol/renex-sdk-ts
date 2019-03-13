@@ -8,13 +8,12 @@ import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
 import { MarketPairs } from "../lib/market";
-import { getSwapperDSwaps, submitSwap } from "../lib/swapper";
-import { toSmallestUnit } from "../lib/tokens";
-import { SentSwap, UnfixedReturnedSwap } from "../lib/types/swapObject";
+import { submitSwap } from "../lib/swapper";
+import { tokenToID, toSmallestUnit } from "../lib/tokens";
+import { SentDelayedSwap, SentSwap } from "../lib/types/swapObject";
 import {
-    MarketDetails, NullConsole, OrderInputs,
-    OrderInputsAll, OrderSide, OrderStatus, OrderType, Token,
-    TraderOrder, TransactionOptions,
+    MarketDetails, NullConsole, OrderInputs, OrderInputsAll, OrderSide,
+    OrderType, Token, TransactionOptions,
 } from "../types";
 import { swapperDAddresses } from "./swapperD";
 
@@ -87,18 +86,18 @@ const isValidDecimals = (order: OrderInputsAll, decimals: number): boolean => {
     return volumeEq && minVolumeEq;
 };
 
-export const openOrder = async (
+export const validateSwap = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
     options?: TransactionOptions,
-): Promise<{ traderOrder: TraderOrder }> => {
+): Promise<[ingress.NewOrder, SentDelayedSwap]> => {
     const marketDetail = MarketPairs.get(orderInputsIn.symbol);
     if (!marketDetail) {
         throw new Error(`Unsupported market pair: ${orderInputsIn.symbol}`);
     }
 
     const minEthTradeVolume = await getMinEthTradeVolume(sdk);
-    const unixSeconds = Math.floor(new Date().getTime() / 1000);
+    // const unixSeconds = Math.floor(new Date().getTime() / 1000);
     let orderInputs = populateOrderDefaults(orderInputsIn, minEthTradeVolume, marketDetail);
 
     const baseToken = marketDetail.base;
@@ -121,16 +120,16 @@ export const openOrder = async (
         }
     }
 
-    const quoteVolume = orderInputs.priorityVolume;
+    // const quoteVolume = orderInputs.priorityVolume;
 
-    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
+    const sendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
     const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
-    const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
-    const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
+    // const receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : quoteVolume;
+    // const spendVolume = orderInputs.side === OrderSide.BUY ? quoteVolume : orderInputs.volume;
 
-    const feePercent = await darknodeFees(sdk);
-    const feeToken = receiveToken;
-    const feeAmount = quoteVolume.times(feePercent);
+    // const feePercent = await darknodeFees(sdk);
+    // const feeToken = receiveToken;
+    // const feeAmount = quoteVolume.times(feePercent);
 
     const simpleConsole = (options && options.simpleConsole) || NullConsole;
 
@@ -170,39 +169,37 @@ export const openOrder = async (
         throw new Error(errMsg);
     }
 
-    const nonce = ingress.randomNonce();
-    const newOrder = ingress.createNewOrder(sdk, orderInputs, nonce);
+    const newOrder: ingress.NewOrder = {
+        id: ingress.randomNonce().toString("hex"),
+        sendToken: tokenToID(sendToken),
+        receiveToken: tokenToID(receiveToken),
+        marketID: `${baseToken}-${quoteToken}`,
+        price: orderInputs.price.toNumber(), // 350,
+        volume: orderInputs.volume.toNumber() * 100, // 100,
+        min_Volume: orderInputs.minVolume.toNumber() * 100, // 10,
+    };
+
     const orderID = new EncodedData(newOrder.id, Encodings.HEX);
 
-    const _marketDetail = MarketPairs.get(orderInputs.symbol);
-    if (!_marketDetail) {
-        throw new Error(`Unsupported market pair: ${orderInputs.symbol}`);
-    }
-    const _baseToken = _marketDetail.base;
-    const _quoteToken = _marketDetail.quote;
-    const _quoteVolume = orderInputs.priorityVolume;
-
-    const _spendToken = orderInputs.side === OrderSide.BUY ? _quoteToken : _baseToken;
-    const _receiveToken = orderInputs.side === OrderSide.BUY ? _baseToken : _quoteToken;
-    const _receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : _quoteVolume;
+    const _receiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.volume : orderInputs.priorityVolume;
     const _minimumReceiveVolume = orderInputs.side === OrderSide.BUY ? orderInputs.minVolume : orderInputs.price.times(orderInputs.minVolume);
-    const _spendVolume = orderInputs.side === OrderSide.BUY ? _quoteVolume : orderInputs.volume;
-    const _spendTokenDetails = sdk.tokenDetails.get(_spendToken);
-    if (!_spendTokenDetails) {
-        throw new Error(`Unknown token ${_spendToken}`);
+    const _spendVolume = orderInputs.side === OrderSide.BUY ? orderInputs.priorityVolume : orderInputs.volume;
+    const _sendTokenDetails = sdk.tokenDetails.get(sendToken);
+    if (!_sendTokenDetails) {
+        throw new Error(`Unknown token ${sendToken}`);
     }
-    const _receiveTokenDetails = sdk.tokenDetails.get(_receiveToken);
+    const _receiveTokenDetails = sdk.tokenDetails.get(receiveToken);
     if (!_receiveTokenDetails) {
-        throw new Error(`Unknown token ${_receiveToken}`);
+        throw new Error(`Unknown token ${receiveToken}`);
     }
-    const _tokenAddress = await swapperDAddresses(sdk, [_spendToken, _receiveToken]);
+    const _tokenAddress = await swapperDAddresses(sdk, [sendToken, receiveToken]);
     // Convert the fee fraction to bips by multiplying by 10000
     const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
-    const _swapBlob: SentSwap = {
-        sendToken: _spendToken,
-        receiveToken: _receiveToken,
-        sendAmount: toSmallestUnit(_spendVolume, _spendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
+    const sentSwap: SentSwap = {
+        sendToken,
+        receiveToken,
+        sendAmount: toSmallestUnit(_spendVolume, _sendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
         receiveAmount: toSmallestUnit(_receiveVolume, _receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         minimumReceiveAmount: toSmallestUnit(_minimumReceiveVolume, _receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee: _brokerFee,
@@ -217,9 +214,31 @@ export const openOrder = async (
         }
     };
 
+    return [newOrder, sentSwap];
+};
+
+export const openOrder = async (
+    sdk: RenExSDK,
+    orderInputsIn: OrderInputs | undefined,
+    options?: TransactionOptions,
+    sentSwapIn?: [ingress.NewOrder, SentDelayedSwap],
+): Promise<SentDelayedSwap> => {
+
+    let sentSwap: SentDelayedSwap;
+    let newOrder: ingress.NewOrder;
+    if (orderInputsIn !== undefined) {
+        [newOrder, sentSwap] = await validateSwap(sdk, orderInputsIn, options);
+    } else if (sentSwapIn !== undefined) {
+        [newOrder, sentSwap] = sentSwapIn;
+    } else {
+        throw new Error(`No order inputs provided`);
+    }
+
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+
     simpleConsole.log("Submitting order to SwapperD");
     try {
-        await submitSwap(_swapBlob, sdk._networkData.network);
+        await submitSwap(sentSwap, sdk._networkData.network);
     } catch (error) {
         simpleConsole.error(error.message || error);
         throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
@@ -227,8 +246,6 @@ export const openOrder = async (
 
     // Create order fragment mapping
     simpleConsole.log("Building order mapping");
-
-    console.log(JSON.stringify(newOrder, null, "    "));
 
     let orderFragmentMappings;
     try {
@@ -239,13 +256,11 @@ export const openOrder = async (
     }
 
     const request = new ingress.EncryptedShares({
-        orderID: orderID.toBase64(),
+        orderID: sentSwap.delayInfo.orderID,
         sendToken: newOrder.sendToken,
         receiveToken: newOrder.receiveToken,
         pods: orderFragmentMappings,
     });
-
-    console.log(JSON.stringify(request.toJS(), null, "    "));
 
     simpleConsole.log("Sending order fragments");
     // let signature;
@@ -267,41 +282,38 @@ export const openOrder = async (
 
     simpleConsole.log("Order submitted.");
 
-    let timeout = 10;
-    let swapObject: UnfixedReturnedSwap | undefined;
+    // let timeout = 10;
+    // let swapObject: UnfixedReturnedSwap | undefined;
 
-    console.log(`Looking for ${orderID.toBase64()}`);
-    while (!swapObject && timeout > 0) {
-        console.log("Nothing yet...");
-        const orders = await getSwapperDSwaps({ network: sdk._networkData.network });
-        for (const swaps of orders.swaps) {
-            console.log(swaps);
-        }
-        swapObject = orders.swaps.find((swap) => swap.id === orderID.toBase64());
-        timeout--;
-        await sleep(1 * second);
-    }
+    // console.log(`Looking for ${sentSwap.delayInfo.orderID}`);
+    // while (!swapObject && timeout > 0) {
+    //     console.log("Nothing yet...");
+    //     const orders = await getSwapperDSwaps({ network: sdk._networkData.network });
+    //     for (const swaps of orders.swaps) {
+    //         console.log(swaps);
+    //     }
+    //     swapObject = orders.swaps.find((swap) => swap.delay === true && swap.delayInfo.message.orderID === sentSwap.delayInfo.orderID);
+    //     timeout--;
+    //     await sleep(1 * second);
+    // }
 
-    console.log("Got order!!!");
-    console.log(swapObject);
+    // const traderOrder: TraderOrder = {
+    //     swapServer: undefined,
+    //     orderInputs,
+    //     status: OrderStatus.NOT_SUBMITTED,
+    //     trader: sdk.getAddress(),
+    //     id: orderID.toBase64(),
+    //     computedOrderDetails: {
+    //         spendToken: sendToken,
+    //         receiveToken,
+    //         spendVolume,
+    //         receiveVolume,
+    //         date: unixSeconds,
+    //         feeAmount,
+    //         feeToken,
+    //         nonce,
+    //     },
+    // };
 
-    const traderOrder: TraderOrder = {
-        swapServer: undefined,
-        orderInputs,
-        status: OrderStatus.NOT_SUBMITTED,
-        trader: sdk.getAddress(),
-        id: orderID.toBase64(),
-        computedOrderDetails: {
-            spendToken,
-            receiveToken,
-            spendVolume,
-            receiveVolume,
-            date: unixSeconds,
-            feeAmount,
-            feeToken,
-            nonce,
-        },
-    };
-
-    return { traderOrder };
+    return sentSwap;
 };
