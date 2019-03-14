@@ -12,7 +12,7 @@ import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversio
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
-import { ReturnedSwap, SentDelayedSwap } from "./lib/types/swapObject";
+import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
 // import { getGasPrice } from "./methods/generalMethods";
 import { darknodeFees, getMinEthTradeVolume, openOrder } from "./methods/openOrder";
@@ -27,7 +27,6 @@ import {
     Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
     OrderInputs, OrderSide, SwapperDBalanceDetails, SwapperDConnectionStatus,
     Token, TokenDetails, TransactionOptions,
-    WBTCOrder,
 } from "./types";
 
 // Contract bindings
@@ -72,8 +71,8 @@ export class RenExSDK {
         fetchBalances: (tokens: Token[]): Promise<Map<Token, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
         fetchSwaps: (): Promise<ReturnedSwap[]> => swapperDSwaps(this),
         fetchAddresses: (tokens: Token[]): Promise<string[]> => swapperDAddresses(this, tokens),
-        wrap: (amount: NumberInput, token: Token): Promise<WBTCOrder> => wrap(this, amount, token),
-        unwrap: (amount: NumberInput, token: Token): Promise<WBTCOrder> => unwrap(this, amount, token),
+        wrap: (amount: NumberInput, token: Token): Promise<SentNonDelayedSwap> => wrap(this, amount, token),
+        unwrap: (amount: NumberInput, token: Token): Promise<SentNonDelayedSwap> => unwrap(this, amount, token),
         getWrappingFees: (token: Token): Promise<WrapFees> => getWrappingFees(this, token),
     };
 
@@ -127,7 +126,7 @@ export class RenExSDK {
             .set(Token.DAI, { addr: this._networkData.tokens.DAI, decimals: 18 })
             ;
 
-        [this._web3, this._contracts] = this.updateProvider(provider);
+        [this._web3, this._contracts] = this.updateProvider(provider, mainnetProvider);
 
         // Show warning when the expected network ID is different from the provider network ID
         this._web3.eth.net.getId()
@@ -177,12 +176,13 @@ export class RenExSDK {
         this._address = address;
     }
 
-    public updateProvider = (provider: Provider): [Web3, ContractObject] => {
+    public updateProvider = (provider: Provider, mainnetProvider?: Provider): [Web3, ContractObject] => {
         this._web3 = new Web3(provider);
+        const mainnetWeb3 = mainnetProvider ? new Web3(mainnetProvider) : this._web3;
 
         // Update contract providers
         this._contracts = {
-            darknodeRegistry: new this._web3.eth.Contract(DarknodeRegistryABI, this._networkData.contracts[0].darknodeRegistry),
+            darknodeRegistry: new mainnetWeb3.eth.Contract(DarknodeRegistryABI, this._networkData.contracts[0].darknodeRegistry),
         };
 
         return [this._web3, this._contracts];

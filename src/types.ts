@@ -1,7 +1,5 @@
 import BigNumber from "bignumber.js";
 
-import BN from "bn.js";
-
 export { NetworkData } from "./lib/network";
 
 export type NumberInput = number | string | BigNumber;
@@ -89,41 +87,6 @@ export interface OrderInputsAll extends OrderInputs {
     // This may have been set in the past but now defaults to zero
     expiry: number;
 }
-
-export interface ComputedOrderDetails {
-    receiveToken: Token;
-    spendToken: Token;
-    receiveVolume: BigNumber;
-    spendVolume: BigNumber;
-    date: number;
-    feeAmount: BigNumber;
-    feeToken: Token;
-    nonce: BN;
-}
-
-interface Order {
-    readonly id: OrderID;
-    readonly trader: string;
-    status: OrderStatus;
-    matchDetails?: MatchDetails;
-}
-
-export interface WBTCOrder extends Order {
-    readonly swapServer: true;
-    readonly orderInputs: OrderInputs;
-    readonly computedOrderDetails: ComputedOrderDetails;
-}
-
-export interface SwapOrder extends Order {
-    readonly swapServer: undefined;
-
-    readonly computedOrderDetails: ComputedOrderDetails;
-    readonly orderInputs: OrderInputsAll;
-}
-
-// If TraderOrder is changed, then it's serialize / deserialize functions should
-// be updated as well.
-export type TraderOrder = WBTCOrder | SwapOrder;
 
 export interface OrderbookFilter {
     address?: string;

@@ -1,16 +1,15 @@
 import axios from "axios";
 import BigNumber from "bignumber.js";
-import BN from "bn.js";
 
 import { toWei } from "web3-utils";
 
 import RenExSDK from "../index";
 
-import { SentSwap, SubmitImmediateResponse } from "lib/types/swapObject";
+import { SentNonDelayedSwap, SubmitImmediateResponse } from "lib/types/swapObject";
 import { errors, updateError } from "../errors";
 import { getSwapperDBalances, submitSwap } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
-import { MarketPair, NumberInput, OrderInputs, OrderSide, OrderStatus, Token, WBTCOrder } from "../types";
+import { MarketPair, NumberInput, OrderInputs, OrderSide, Token } from "../types";
 
 // Required ETH balance for fees
 const MIN_ETH_BALANCE = 0.005;
@@ -126,7 +125,7 @@ async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, from
 }
 
 // tslint:disable-next-line:no-any
-async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePercent: BigNumber): Promise<WBTCOrder> {
+async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePercent: BigNumber): Promise<SentNonDelayedSwap> {
     const tokens = orderInputs.symbol.split("/");
 
     let fromToken: Token;
@@ -154,7 +153,7 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
     const brokerFee = conversionFeePercent.times(10000).toNumber();
 
-    const req: SentSwap = {
+    const sentSwap: SentNonDelayedSwap = {
         sendTo: response[fromToken].address,
         receiveFrom: response[toToken].address,
         sendToken: fromToken,
@@ -168,36 +167,18 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
         brokerReceiveTokenAddr: response[toToken].address,
         delay: false,
     };
-    const swapResponse: SubmitImmediateResponse = await submitSwap(req, sdk._networkData.network) as SubmitImmediateResponse;
+    const swapResponse: SubmitImmediateResponse = await submitSwap(sentSwap, sdk._networkData.network) as SubmitImmediateResponse;
     try {
         await axios.post(`${sdk._networkData.wbtcKYCServer}/swaps`, swapResponse);
     } catch (error) {
         throw updateError(errors.CouldNotConnectSwapServer, error);
     }
 
-    const swap: WBTCOrder = {
-        swapServer: true,
-        orderInputs,
-        status: OrderStatus.CONFIRMED,
-        trader: sdk.getAddress(),
-        id: swapResponse.id,
-        computedOrderDetails: {
-            spendToken: fromToken,
-            receiveToken: toToken,
-            spendVolume: new BigNumber(orderInputs.volume),
-            receiveVolume: new BigNumber(orderInputs.volume),
-            date: Math.floor(new Date().getTime() / 1000),
-            feeAmount: new BigNumber(orderInputs.volume).times(conversionFeePercent),
-            feeToken: fromToken,
-            nonce: new BN(0),
-        },
-    };
-
-    return swap;
+    return sentSwap;
 }
 
 // tslint:disable-next-line:no-any
-export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<WBTCOrder> {
+export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<SentNonDelayedSwap> {
     const toToken = wrapped(fromToken);
 
     const orderDetails: OrderInputs = {
@@ -211,7 +192,7 @@ export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token)
 }
 
 // tslint:disable-next-line:no-any
-export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<WBTCOrder> {
+export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<SentNonDelayedSwap> {
     const toToken = unwrapped(fromToken);
 
     const orderDetails: OrderInputs = {
