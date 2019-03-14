@@ -15,12 +15,11 @@ import * as shamir from "./shamir";
 
 import { responseError, updateError } from "../errors";
 import { REN_NODE_URL } from "../methods/openOrder";
-import { OrderInputsAll, OrderSide, OrderType as RenExOrderType, SimpleConsole } from "../types";
+import { OrderInputsAll, OrderSide, SimpleConsole } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
-import { MarketPairs } from "./market";
 import { Record } from "./record";
-import { generateTokenPairing, splitTokenPairing, tokenToID } from "./tokens";
+import { generateTokenPairing, tokenToID } from "./tokens";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -34,18 +33,8 @@ export enum OrderType {
     LIMIT_IOC = 3,
 }
 
-function orderTypeMapper(orderType: RenExOrderType) {
-    switch (orderType) {
-        case RenExOrderType.MIDPOINT:
-            return OrderType.MIDPOINT;
-        case RenExOrderType.LIMIT:
-            return OrderType.LIMIT;
-        case RenExOrderType.MIDPOINT_IOC:
-            return OrderType.MIDPOINT_IOC;
-        case RenExOrderType.LIMIT_IOC:
-            return OrderType.LIMIT_IOC;
-    }
-}
+const orderTypeMapper = (orderInputs: OrderInputsAll) =>
+    orderInputs.immediateOrCancel ? OrderType.LIMIT_IOC : OrderType.LIMIT;
 
 export enum OrderParity {
     BUY = 0,
@@ -73,7 +62,6 @@ export class Order extends Record({
     id: "",
     type: OrderType.LIMIT,
     parity: OrderParity.BUY,
-    expiry: 0,
     tokens: new BN(0),
     price: new BN(0),
     volume: new BN(0),
@@ -131,32 +119,29 @@ export interface NewOrder {
     sendToken: number;
     receiveToken: number;
     marketID: string;
-    price: number;
-    volume: number;
-    min_Volume: number;
+    price: BN;
+    volume: BN;
+    min_Volume: BN;
 }
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
-    const marketDetail = MarketPairs.get(orderInputs.symbol);
-    if (!marketDetail) {
-        throw new Error(`Couldn't find market information for market: ${orderInputs.symbol}`);
-    }
-    const baseToken = marketDetail.base;
-    const quoteToken = marketDetail.quote;
+
+    const baseToken = orderInputs.marketDetails.base;
+    const quoteToken = orderInputs.marketDetails.quote;
     const marketID = `${baseToken}-${quoteToken}`;
     const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
     const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
-    const volume = adjustDecimals(orderInputs.volume, 0, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderInputs.minVolume, 0, VOLUME_OFFSET);
+    const volume = adjustDecimals(orderInputs.baseVolume, 0, VOLUME_OFFSET);
+    const minimumVolume = adjustDecimals(orderInputs.minBaseVolume, 0, VOLUME_OFFSET);
 
     const tokens = orderInputs.side === OrderSide.BUY ?
         generateTokenPairing(tokenToID(spendToken), tokenToID(receiveToken)) :
         generateTokenPairing(tokenToID(receiveToken), tokenToID(spendToken));
 
     const ingressOrder = new Order({
-        type: orderTypeMapper(orderInputs.type),
+        type: orderTypeMapper(orderInputs),
         nonce: nonce ? nonce : new BN(0),
 
         parity: orderParityMapper(orderInputs.side),
@@ -193,23 +178,6 @@ export async function submitOrderFragments(
     }
 }
 
-export function getOrderID(web3: Web3, order: Order): EncodedData {
-    const [leftToken, rightToken] = splitTokenPairing(order.tokens);
-    const adjustedTokens = order.parity === OrderParity.BUY ? order.tokens : generateTokenPairing(rightToken, leftToken);
-
-    const bytes = Buffer.concat([
-        // Prefix hash
-        new BN(order.type).toArrayLike(Buffer, "be", 1),
-        new BN(order.expiry).toArrayLike(Buffer, "be", 8),
-        order.nonce.toArrayLike(Buffer, "be", 8),
-        adjustedTokens.toArrayLike(Buffer, "be", 8),
-        new BN(order.price).toArrayLike(Buffer, "be", 32),
-        new BN(order.volume).toArrayLike(Buffer, "be", 32),
-        new BN(order.minimumVolume).toArrayLike(Buffer, "be", 32),
-    ]);
-    return new EncodedData(web3.utils.keccak256(`0x${bytes.toString("hex")}`), Encodings.HEX);
-}
-
 export async function buildOrderMapping(
     web3: Web3, darknodeRegistryContract: Contract, order: NewOrder, simpleConsole: SimpleConsole,
 ): Promise<Map<string, PodShares>> {
@@ -224,8 +192,6 @@ export async function buildOrderMapping(
         .map(async (pod: Pod): Promise<[string, PodShares]> => {
             const n = pod.darknodes.size;
             const k = Math.floor(((n * 2) / 3 + 1) / 2) - 1;
-
-            console.log(`Before was using ${Math.floor((2 * (n + 1)) / 3)}, now using ${k}`);
 
             simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
             const priceShares = shamir.split(n, k, new BN(10));

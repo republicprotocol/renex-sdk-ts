@@ -15,7 +15,7 @@ import { NetworkData, networks } from "./lib/network";
 import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
 // import { getGasPrice } from "./methods/generalMethods";
-import { darknodeFees, getMinEthTradeVolume, openOrder } from "./methods/openOrder";
+import { darknodeFees, enforcedMinQuoteVolume, openOrder, validateSwap } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
     refreshSwapperDConnectionStatus, resetSwapperDConnection,
@@ -25,19 +25,20 @@ import {
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapToken";
 import {
     Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
-    OrderInputs, OrderSide, SwapperDBalanceDetails, SwapperDConnectionStatus,
-    Token, TokenDetails, TransactionOptions,
+    OrderInputs, SwapperDBalanceDetails, SwapperDConnectionStatus, Token,
+    TokenDetails, TransactionOptions,
 } from "./types";
 
 // Contract bindings
 import DarknodeRegistryABI from "./ABIs/DarknodeRegistry.json";
-import { NewOrder } from "./lib/ingress";
 
 // Export all types
 export * from "./types";
 export * from "./lib/types/swapObject";
 export * from "./lib/swapper";
 export { errors } from "./errors";
+export { getMarket, MarketPairs } from "./lib/market";
+export { populateOrderDefaults } from "./methods/openOrder";
 
 interface ContractObject {
     darknodeRegistry: Contract;
@@ -84,15 +85,6 @@ export class RenExSDK {
         },
         normalizeVolume: (volume: NumberInput, roundUp?: boolean): NumberInput => {
             return toOriginalType(normalizeVolume(new BigNumber(volume), roundUp), volume);
-        },
-        normalizeOrder: (order: OrderInputs): OrderInputs => {
-            const newOrder: OrderInputs = Object.assign(order, {});
-            newOrder.price = this.utils.normalizePrice(order.price, order.side === OrderSide.SELL);
-            newOrder.volume = this.utils.normalizeVolume(order.volume);
-            if (order.minVolume) {
-                newOrder.minVolume = this.utils.normalizeVolume(order.minVolume);
-            }
-            return newOrder;
         },
     };
 
@@ -151,8 +143,13 @@ export class RenExSDK {
     public openOrder = (
         orderInputsIn: OrderInputs | undefined,
         options?: TransactionOptions,
-        sentSwapIn?: [NewOrder, SentDelayedSwap],
+        sentSwapIn?: SentDelayedSwap,
     ): Promise<SentDelayedSwap> => openOrder(this, orderInputsIn, options, sentSwapIn)
+
+    public validateSwap = (
+        orderInputsIn: OrderInputs,
+        options?: TransactionOptions,
+    ): Promise<SentDelayedSwap> => validateSwap(this, orderInputsIn, options)
 
     /**
      * Cancels some stuff.
@@ -163,7 +160,7 @@ export class RenExSDK {
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
     public fetchUnwrappingFeePercent = (token: Token): Promise<BigNumber> => unwrappingFees(this, token);
-    public fetchMinEthTradeVolume = (): Promise<BigNumber> => getMinEthTradeVolume(this);
+    public fetchMinQuoteVolume = (quoteToken: Token): BigNumber => enforcedMinQuoteVolume(quoteToken);
     // public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Provider / account functions

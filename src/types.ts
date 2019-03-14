@@ -16,13 +16,6 @@ export enum OrderStatus {
     EXPIRED = "EXPIRED",
 }
 
-export enum OrderType {
-    MIDPOINT = "midpoint", // FIXME: Unsupported
-    LIMIT = "limit",
-    MIDPOINT_IOC = "midpoint_ioc", // FIXME: Unsupported
-    LIMIT_IOC = "limit_ioc",
-}
-
 export type OrderSide = "buy" | "sell";
 export const OrderSide = {
     BUY: "buy" as OrderSide,
@@ -61,31 +54,38 @@ export interface MarketDetails {
 }
 
 export interface OrderInputs {
-    // Required fields
-    symbol: MarketPair;            // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-    side: OrderSide;               // Buy receives base token, sell receives quote token
-    price: NumberInput;            // In quoteToken for 1 unit of baseToken
-    volume: NumberInput;           // In baseToken
-    priorityVolume?: NumberInput;   // In quoteToken
+    sendToken: Token;
+    receiveToken: Token;
 
-    // Optional fields
-    minVolume?: NumberInput;       // In baseToken
-    type?: OrderInputsAll["type"]; // OrderType
+    sendVolume?: NumberInput;
+    receiveVolume?: NumberInput;
+    price?: NumberInput;
+
+    minQuoteVolume?: NumberInput;
+
+    allOrNothing?: boolean;
+    immediateOrCancel?: boolean;
 }
 
 // OrderInputsAll extends OrderInputs and sets optional fields to be required.
 export interface OrderInputsAll extends OrderInputs {
-    // Restrict type
+    receiveVolume: BigNumber;
+    sendVolume: BigNumber;
     price: BigNumber;
-    volume: BigNumber;
-    priorityVolume: BigNumber;
-    side: OrderSide;
 
-    // Change to non-optional
-    minVolume: BigNumber;
-    type: OrderType;
-    // This may have been set in the past but now defaults to zero
-    expiry: number;
+    minQuoteVolume: BigNumber;
+    minBaseVolume: BigNumber;
+
+    // Double ups
+    minReceiveVolume: BigNumber;
+    quoteToken: Token;
+    quoteVolume: BigNumber;
+    baseToken: Token;
+    baseVolume: BigNumber;
+
+    side: OrderSide;
+    marketPair: MarketPair;
+    marketDetails: MarketDetails;
 }
 
 export interface OrderbookFilter {

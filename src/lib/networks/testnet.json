@@ -8,8 +8,7 @@
     "ethNetworkLabel": "Kovan",
     "ethNetworkId": 42,
     "contracts": [{
-        "darknodeRegistry": "0x75Fa8349fc9C7C640A4e9F1A1496fBB95D2Dc3d5",
-        "wyre": "0xB14fA2276D8bD26713A6D98871b2d63Da9eefE6f"
+        "darknodeRegistry": "0x3799006a87FDE3CCFC7666B3E6553B03ED341c2F"
     }],
     "tokens": {
         "TUSD": "0x525389752ffe6487d33EF53FBcD4E5D3AD7937a0",

@@ -9,7 +9,8 @@ import { SentNonDelayedSwap, SubmitImmediateResponse } from "lib/types/swapObjec
 import { errors, updateError } from "../errors";
 import { getSwapperDBalances, submitSwap } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
-import { MarketPair, NumberInput, OrderInputs, OrderSide, Token } from "../types";
+import { NumberInput, OrderInputs, Token } from "../types";
+import { populateOrderDefaults } from "./openOrder";
 
 // Required ETH balance for fees
 const MIN_ETH_BALANCE = 0.005;
@@ -125,17 +126,11 @@ async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, from
 }
 
 // tslint:disable-next-line:no-any
-async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePercent: BigNumber): Promise<SentNonDelayedSwap> {
-    const tokens = orderInputs.symbol.split("/");
+async function convert(sdk: RenExSDK, orderInputsIn: OrderInputs, conversionFeePercent: BigNumber): Promise<SentNonDelayedSwap> {
+    const orderInputs = populateOrderDefaults(orderInputsIn);
 
-    let fromToken: Token;
-    let toToken: Token;
-    if (orderInputs.side === OrderSide.BUY) {
-        ([toToken, fromToken] = tokens as [Token, Token]);
-    } else if (orderInputs.side === OrderSide.SELL) {
-        ([fromToken, toToken] = tokens as [Token, Token]);
-    } else {
-        throw new Error(`Unknown order side: ${orderInputs.side}`);
+    if (!orderInputs.price.isEqualTo(1)) {
+        throw new Error("Invalid inputs: price must be 1.");
     }
 
     let response: BalanceResponse;
@@ -144,27 +139,27 @@ async function convert(sdk: RenExSDK, orderInputs: OrderInputs, conversionFeePer
     } catch (error) {
         throw updateError(errors.CouldNotConnectSwapServer, error);
     }
-    const fromTokenDetails = sdk.tokenDetails.get(fromToken);
+    const fromTokenDetails = sdk.tokenDetails.get(orderInputs.sendToken);
     if (!fromTokenDetails) {
-        throw new Error(`Unknown token ${fromToken}`);
+        throw new Error(`Unknown token ${orderInputs.sendToken}`);
     }
-    const amountBigNumber = toSmallestUnit(orderInputs.volume, fromTokenDetails.decimals);
-    await checkSufficientServerBalance(amountBigNumber, response, toToken, orderInputs.volume.toString());
-    await checkSufficientUserBalance(sdk, amountBigNumber, fromToken);
+    const amountBigNumber = toSmallestUnit(orderInputs.sendVolume, fromTokenDetails.decimals);
+    await checkSufficientServerBalance(amountBigNumber, response, orderInputs.receiveToken, orderInputs.sendVolume.toString());
+    await checkSufficientUserBalance(sdk, amountBigNumber, orderInputs.sendToken);
     const brokerFee = conversionFeePercent.times(10000).toNumber();
 
     const sentSwap: SentNonDelayedSwap = {
-        sendTo: response[fromToken].address,
-        receiveFrom: response[toToken].address,
-        sendToken: fromToken,
-        receiveToken: toToken,
+        sendTo: response[orderInputs.sendToken].address,
+        receiveFrom: response[orderInputs.receiveToken].address,
+        sendToken: orderInputs.sendToken,
+        receiveToken: orderInputs.receiveToken,
         sendAmount: amountBigNumber.toFixed(),
         receiveAmount: amountBigNumber.toFixed(),
         shouldInitiateFirst: true,
         // FIXME: The broker is currently the KYC swap server but in the future it could be different
         brokerFee,
-        brokerSendTokenAddr: response[fromToken].address,
-        brokerReceiveTokenAddr: response[toToken].address,
+        brokerSendTokenAddr: response[orderInputs.sendToken].address,
+        brokerReceiveTokenAddr: response[orderInputs.receiveToken].address,
         delay: false,
     };
     const swapResponse: SubmitImmediateResponse = await submitSwap(sentSwap, sdk._networkData.network) as SubmitImmediateResponse;
@@ -182,10 +177,10 @@ export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token)
     const toToken = wrapped(fromToken);
 
     const orderDetails: OrderInputs = {
-        symbol: `${toToken}/${fromToken}` as MarketPair, // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-        side: OrderSide.BUY,
+        sendToken: fromToken,
+        receiveToken: toToken,
         price: 1,
-        volume: amount,
+        sendVolume: amount,
     };
 
     return convert(sdk, orderDetails, await wrappingFees(sdk, toToken));
@@ -196,10 +191,10 @@ export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: Toke
     const toToken = unwrapped(fromToken);
 
     const orderDetails: OrderInputs = {
-        symbol: `${fromToken}/${toToken}` as MarketPair, // The trading pair symbol e.g. "ETH/BTC" in base token / quote token
-        side: OrderSide.SELL,
+        sendToken: fromToken,
+        receiveToken: toToken,
         price: 1,
-        volume: amount,
+        sendVolume: amount,
     };
 
     return convert(sdk, orderDetails, await unwrappingFees(sdk, fromToken));
