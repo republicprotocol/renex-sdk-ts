@@ -35,8 +35,8 @@ export enum MarketPair {
 
 export const MarketPairs = OrderedMap<MarketPair, MarketDetails>()
     // DAI pairs
-    .set(MarketPair.BTC_DAI, { symbol: MarketPair.BTC_DAI, quote: Token.DAI, base: Token.BTC })
-    .set(MarketPair.ETH_DAI, { symbol: MarketPair.ETH_DAI, quote: Token.DAI, base: Token.ETH })
+    .set(MarketPair.BTC_DAI, { symbol: MarketPair.BTC_DAI, base: Token.DAI, quote: Token.BTC })
+    .set(MarketPair.ETH_DAI, { symbol: MarketPair.ETH_DAI, base: Token.DAI, quote: Token.ETH })
     .set(MarketPair.REN_DAI, { symbol: MarketPair.REN_DAI, quote: Token.DAI, base: Token.REN })
     .set(MarketPair.TUSD_DAI, { symbol: MarketPair.TUSD_DAI, quote: Token.DAI, base: Token.TUSD })
 
