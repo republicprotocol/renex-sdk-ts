@@ -107,7 +107,8 @@ export interface MatchDetails {
 }
 
 export interface TokenDetails {
-    address: string;
+    name: string;
+    symbol: Token;
     decimals: number;
 }
 

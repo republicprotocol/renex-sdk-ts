@@ -12,9 +12,9 @@ import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversio
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
+import { Tokens } from "./lib/tokens";
 import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
-// import { getGasPrice } from "./methods/generalMethods";
 import { darknodeFees, enforcedMinQuoteVolume, openOrder, validateSwap } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
@@ -39,6 +39,7 @@ export * from "./lib/swapper";
 export { errors } from "./errors";
 export { getMarket, MarketPairs } from "./lib/market";
 export { populateOrderDefaults } from "./methods/openOrder";
+export { Tokens } from "./lib/tokens";
 
 interface ContractObject {
     darknodeRegistry: Contract;
@@ -58,7 +59,7 @@ export class RenExSDK {
 
     public _contracts: ContractObject;
 
-    public tokenDetails: Map<Token, TokenDetails>;
+    public tokenDetails: Map<Token, TokenDetails> = Tokens;
 
     // SwapperD functions
     public swapperD = {
@@ -68,7 +69,6 @@ export class RenExSDK {
         isConnected: (): boolean => swapperDConnected(this),
         refreshStatus: (): Promise<SwapperDConnectionStatus> => refreshSwapperDConnectionStatus(this),
         resetStatus: (): Promise<SwapperDConnectionStatus> => resetSwapperDConnection(this),
-        // authorize: (): Promise<SwapperDConnectionStatus> => authorizeSwapperD(this),
         fetchBalances: (tokens: Token[]): Promise<Map<Token, SwapperDBalanceDetails>> => swapperDBalances(this, tokens),
         fetchSwaps: (): Promise<ReturnedSwap[]> => swapperDSwaps(this),
         fetchAddresses: (tokens: Token[]): Promise<string[]> => swapperDAddresses(this, tokens),
@@ -91,7 +91,6 @@ export class RenExSDK {
     private _web3: Web3;
     private _address: string = "";
     private _config: Config;
-
     /**
      * Creates an instance of RenExSDK.
      * @param {Provider} provider
@@ -110,13 +109,6 @@ export class RenExSDK {
             default:
                 throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
-
-        this.tokenDetails = new Map()
-            .set(Token.BTC, { addr: "0x0000000000000000000000000000000000000000", decimals: 8 })
-            .set(Token.ETH, { addr: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", decimals: 18 })
-            .set(Token.TUSD, { addr: this._networkData.tokens.TUSD, decimals: 18 })
-            .set(Token.DAI, { addr: this._networkData.tokens.DAI, decimals: 18 })
-            ;
 
         [this._web3, this._contracts] = this.updateProvider(provider, mainnetProvider);
 
@@ -161,7 +153,6 @@ export class RenExSDK {
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
     public fetchUnwrappingFeePercent = (token: Token): Promise<BigNumber> => unwrappingFees(this, token);
     public fetchMinQuoteVolume = (quoteToken: Token): BigNumber => enforcedMinQuoteVolume(quoteToken);
-    // public fetchGasPrice = (): Promise<number | undefined> => getGasPrice(this);
 
     // Provider / account functions
     public getWeb3 = (): Web3 => this._web3;

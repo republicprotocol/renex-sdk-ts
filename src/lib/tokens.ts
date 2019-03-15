@@ -1,6 +1,64 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
-import { NumberInput, Token } from "../types";
+import { NumberInput, Token, TokenDetails } from "../types";
+
+export const Tokens = new Map<Token, TokenDetails>()
+    .set(Token.BTC, { symbol: Token.BTC, name: "Bitcoin", decimals: 8 })
+    .set(Token.ETH, { symbol: Token.ETH, name: "Ethereum", decimals: 18 })
+    .set(Token.TUSD, { symbol: Token.TUSD, name: "TrueUSD", decimals: 18 })
+    .set(Token.DAI, { symbol: Token.DAI, name: "Dai", decimals: 18 })
+    .set(Token.WBTC, { symbol: Token.WBTC, name: "Wrapped Bitcoin", decimals: 8 })
+    ;
+
+// TokenDetails = TokenDetails.set(Token.WBTC, {
+//     name: "Wrapped Bitcoin",
+//     symbol: "WBTC",
+//     icon: "wbtc.svg",
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 8,
+//     cmcID: 1, // for now, we use bitcoin price because WBTC isn't tracked yet
+//     coingeckoID: "bitcoin",
+// });
+
+// TokenDetails = TokenDetails.set(Token.DGX, {
+//     name: "Digix Gold Token",
+//     symbol: "DGX",
+//     icon: "dgx.svg",
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 9,
+//     cmcID: 2739,
+//     coingeckoID: "digix-gold",
+// });
+
+// TokenDetails = TokenDetails.set(Token.REN, {
+//     name: "Republic Protocol",
+//     symbol: "REN",
+//     icon: "ren.svg",
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 18,
+//     cmcID: 2539,
+//     coingeckoID: "republic-protocol",
+// });
+
+// TokenDetails = TokenDetails.set(Token.OMG, {
+//     name: "OmiseGo",
+//     symbol: "OMG",
+//     icon: "omg.svg",
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 18,
+//     cmcID: 1808,
+//     coingeckoID: "omisego",
+// });
+
+// TokenDetails = TokenDetails.set(Token.ZRX, {
+//     name: "0x",
+//     symbol: "ZRX",
+//     icon: "zrx.svg",
+//     pairs: OrderedMap<Token, Pair>(),
+//     digits: 18,
+//     cmcID: 1896,
+//     coingeckoID: "0x",
+// });
 
 export function toSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
     return new BigNumber(amount).times(new BigNumber(10).exponentiatedBy(decimals));

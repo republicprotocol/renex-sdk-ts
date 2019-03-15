@@ -9,9 +9,5 @@
     "ethNetworkId": 42,
     "contracts": [{
         "darknodeRegistry": "0x3799006a87FDE3CCFC7666B3E6553B03ED341c2F"
-    }],
-    "tokens": {
-        "TUSD": "0x525389752ffe6487d33EF53FBcD4E5D3AD7937a0",
-        "DAI": "0xc4375b7de8af5a38a93548eb8453a498222c4ff2"
-    }
+    }]
 }

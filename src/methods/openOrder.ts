@@ -33,8 +33,6 @@ export const populateOrderDefaults = (
     orderInputs: OrderInputs,
 ): OrderInputsAll => {
 
-    console.log(orderInputs);
-
     const definedDetails =
         (orderInputs.sendVolume === undefined ? 0 : 1) +
         (orderInputs.receiveVolume === undefined ? 0 : 1) +

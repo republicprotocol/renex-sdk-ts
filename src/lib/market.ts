@@ -8,6 +8,7 @@ export const MarketPairs = OrderedMap<MarketPair, MarketDetails>()
     .set(MarketPair.ETH_BTC, { symbol: MarketPair.ETH_BTC, quote: Token.BTC, base: Token.ETH })
     // .set(MarketPair.REN_BTC, { symbol: MarketPair.REN_BTC, quote: Token.BTC, base: Token.REN })
     .set(MarketPair.TUSD_BTC, { symbol: MarketPair.TUSD_BTC, quote: Token.BTC, base: Token.TUSD })
+    .set(MarketPair.WBTC_BTC, { symbol: MarketPair.WBTC_BTC, quote: Token.BTC, base: Token.WBTC })
     // ETH pairs
     // .set(MarketPair.DGX_ETH, { symbol: MarketPair.DGX_ETH, quote: Token.ETH, base: Token.DGX })
     .set(MarketPair.TUSD_ETH, { symbol: MarketPair.TUSD_ETH, quote: Token.ETH, base: Token.TUSD })

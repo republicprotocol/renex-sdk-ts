@@ -13,13 +13,8 @@ export interface NetworkData {
     contracts: [
         {
             darknodeRegistry: string;
-            wyre: string;
         }
     ];
-    tokens: {
-        TUSD: string;
-        DAI: string;
-    };
 }
 
 export const networks = {

@@ -5,10 +5,10 @@ import { toWei } from "web3-utils";
 
 import RenExSDK from "../index";
 
-import { SentNonDelayedSwap, SubmitImmediateResponse } from "lib/types/swapObject";
 import { errors, updateError } from "../errors";
 import { getSwapperDBalances, submitSwap } from "../lib/swapper";
 import { toSmallestUnit } from "../lib/tokens";
+import { SentNonDelayedSwap, SubmitImmediateResponse } from "../lib/types/swapObject";
 import { NumberInput, OrderInputs, Token } from "../types";
 import { populateOrderDefaults } from "./openOrder";
 
