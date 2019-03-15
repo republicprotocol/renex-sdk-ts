@@ -79,6 +79,7 @@ export const populateOrderDefaults = (
         orderInputs.minQuoteVolume ? new BigNumber(orderInputs.minQuoteVolume) : enforcedMinQuoteVolume(marketDetails.quote);
     const minBaseVolume = minQuoteVolume.div(price);
     const minReceiveVolume = orderInputs.receiveToken === quoteToken ? minQuoteVolume : minBaseVolume;
+    const minSendVolume = orderInputs.sendToken === quoteToken ? minQuoteVolume : minBaseVolume;
 
     return {
         ...orderInputs,
@@ -92,6 +93,7 @@ export const populateOrderDefaults = (
         receiveVolume,
         minQuoteVolume,
         minBaseVolume,
+        minSendVolume,
 
         baseToken,
         baseVolume,
@@ -113,13 +115,75 @@ export const enforcedMinQuoteVolume = (quoteToken: Token) => {
     }
 };
 
+export const validateUserInputs = (
+    orderInputsIn: OrderInputs,
+    sendTokenBalance: BigNumber | null | undefined,
+    options?: TransactionOptions,
+    all = false,
+): OrderInputsAll => {
+
+    const inputs = populateOrderDefaults(orderInputsIn);
+
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+
+    if (inputs.price.lt(new BigNumber(0))) {
+        simpleConsole.error(errors.InvalidPrice);
+        throw new Error(errors.InvalidPrice);
+    }
+    if (inputs.sendVolume.lt(new BigNumber(0))) {
+        simpleConsole.error(errors.InvalidVolume);
+        throw new Error(errors.InvalidVolume);
+    }
+    if (inputs.receiveVolume.lt(new BigNumber(0))) {
+        simpleConsole.error(errors.InvalidMinimumVolume);
+        throw new Error(errors.InvalidMinimumVolume);
+    }
+
+    if (sendTokenBalance) {
+        if (inputs.sendVolume.gt(sendTokenBalance)) {
+            const errorMessage = "Insufficient balance";
+            simpleConsole.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+    }
+
+    return inputs;
+};
+
 export const validateSwap = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
     options?: TransactionOptions,
 ): Promise<SentDelayedSwap> => {
 
-    const inputs = populateOrderDefaults(orderInputsIn);
+    const balances = await sdk.swapperD.fetchBalances([orderInputsIn.sendToken, orderInputsIn.receiveToken]);
+    const sendBalance = balances.get(orderInputsIn.sendToken);
+
+    const inputs = validateUserInputs(orderInputsIn, sendBalance && sendBalance.free, options);
+
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+
+    // Check that the quote volume is greater than the minimum quote volume
+    if (inputs.sendVolume.lt(inputs.minSendVolume)) {
+        const errMsg = `Volume must be at least ${inputs.minSendVolume} ${inputs.sendToken}`;
+        simpleConsole.error(errMsg);
+        throw new Error(errMsg);
+    }
+
+    // Check that the minimum quote volume is greater than the enforced minimum
+    // (this implies that the quote volume is also greater by previous check)
+    const enforcedQuoteVolume = enforcedMinQuoteVolume(inputs.quoteToken);
+    const enforcedSendVolume = inputs.sendToken === inputs.quoteToken ? enforcedQuoteVolume : enforcedQuoteVolume.div(inputs.price);
+
+    if (inputs.sendVolume.lt(enforcedSendVolume)) {
+        const errMsg = `Volume must be at least ${enforcedSendVolume} ${inputs.sendToken}`;
+        simpleConsole.error(errMsg);
+        throw new Error(errMsg);
+    }
+
+    const _tokenAddress = await swapperDAddresses(sdk, [inputs.sendToken, inputs.receiveToken]);
+    // Convert the fee fraction to bips by multiplying by 10000
+    const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
     const sendTokenDetails = sdk.tokenDetails.get(inputs.sendToken);
     if (!sendTokenDetails) {
@@ -129,45 +193,6 @@ export const validateSwap = async (
     if (!receiveTokenDetails) {
         throw new Error(`Unknown token ${inputs.receiveToken}`);
     }
-
-    // const feePercent = await darknodeFees(sdk);
-    // const feeToken = receiveToken;
-    // const feeAmount = quoteVolume.times(feePercent);
-
-    const simpleConsole = (options && options.simpleConsole) || NullConsole;
-
-    if (inputs.price.lte(new BigNumber(0))) {
-        simpleConsole.error(errors.InvalidPrice);
-        throw new Error(errors.InvalidPrice);
-    }
-    if (inputs.sendVolume.lte(new BigNumber(0))) {
-        simpleConsole.error(errors.InvalidVolume);
-        throw new Error(errors.InvalidVolume);
-    }
-    if (inputs.receiveVolume.lte(new BigNumber(0))) {
-        simpleConsole.error(errors.InvalidMinimumVolume);
-        throw new Error(errors.InvalidMinimumVolume);
-    }
-
-    // Check that the quote volume is greater than the minimum quote volume
-    if (inputs.quoteVolume.lt(inputs.minQuoteVolume)) {
-        const errMsg = `Quote volume must be at least ${inputs.minQuoteVolume} ${inputs.quoteToken}`;
-        simpleConsole.error(errMsg);
-        throw new Error(errMsg);
-    }
-
-    // Check that the minimum quote volume is greater than the enforced minimum
-    // (this implies that the quote volume is also greater by previous check)
-    const minQuote = enforcedMinQuoteVolume(inputs.quoteToken);
-    if (inputs.minQuoteVolume.lt(minQuote)) {
-        const errMsg = `Minimum quote volume must be at least ${minQuote} ${inputs.quoteToken}`;
-        simpleConsole.error(errMsg);
-        throw new Error(errMsg);
-    }
-
-    const _tokenAddress = await swapperDAddresses(sdk, [inputs.sendToken, inputs.receiveToken]);
-    // Convert the fee fraction to bips by multiplying by 10000
-    const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
     const sentSwap: SentSwap = {
         sendToken: inputs.sendToken,

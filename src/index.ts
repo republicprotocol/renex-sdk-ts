@@ -38,7 +38,7 @@ export * from "./lib/swapper";
 export { errors } from "./errors";
 export { getMarket } from "./lib/market";
 export { MarketPairs } from "./lib/tokens";
-export { populateOrderDefaults } from "./methods/openOrder";
+export { populateOrderDefaults, validateUserInputs } from "./methods/openOrder";
 export { MarketPair, Token, Tokens } from "./lib/tokens";
 
 interface ContractObject {

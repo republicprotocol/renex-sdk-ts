@@ -54,6 +54,7 @@ export interface OrderInputsAll extends OrderInputs {
 
     // Double ups
     minReceiveVolume: BigNumber;
+    minSendVolume: BigNumber;
     quoteToken: Token;
     quoteVolume: BigNumber;
     baseToken: Token;
