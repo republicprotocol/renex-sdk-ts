@@ -9,13 +9,12 @@ import RenExSDK from "../index";
 import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
 import { EncodedData, Encodings } from "../lib/encodedData";
-import { getMarket, MarketPairs } from "../lib/market";
+import { getMarket } from "../lib/market";
 import { submitSwap } from "../lib/swapper";
-import { tokenToID, toSmallestUnit } from "../lib/tokens";
+import { MarketPairs, Token, Tokens, toSmallestUnit } from "../lib/tokens";
 import { SentDelayedSwap, SentSwap } from "../lib/types/swapObject";
 import {
-    NullConsole, OrderInputs, OrderInputsAll, OrderSide,
-    Token, TransactionOptions,
+    NullConsole, OrderInputs, OrderInputsAll, OrderSide, TransactionOptions,
 } from "../types";
 import { swapperDAddresses } from "./swapperD";
 
@@ -122,9 +121,13 @@ export const validateSwap = async (
 
     const inputs = populateOrderDefaults(orderInputsIn);
 
-    const baseTokenDetails = sdk.tokenDetails.get(inputs.baseToken);
-    if (!baseTokenDetails) {
-        throw new Error(`Unknown token ${inputs.baseToken}`);
+    const sendTokenDetails = sdk.tokenDetails.get(inputs.sendToken);
+    if (!sendTokenDetails) {
+        throw new Error(`Unknown token ${inputs.sendToken}`);
+    }
+    const receiveTokenDetails = sdk.tokenDetails.get(inputs.receiveToken);
+    if (!receiveTokenDetails) {
+        throw new Error(`Unknown token ${inputs.receiveToken}`);
     }
 
     // const feePercent = await darknodeFees(sdk);
@@ -157,19 +160,11 @@ export const validateSwap = async (
     // (this implies that the quote volume is also greater by previous check)
     const minQuote = enforcedMinQuoteVolume(inputs.quoteToken);
     if (inputs.minQuoteVolume.lt(minQuote)) {
-        const errMsg = `Quote volume must be at least ${minQuote} ${inputs.quoteToken}`;
+        const errMsg = `Minimum quote volume must be at least ${minQuote} ${inputs.quoteToken}`;
         simpleConsole.error(errMsg);
         throw new Error(errMsg);
     }
 
-    const _sendTokenDetails = sdk.tokenDetails.get(inputs.sendToken);
-    if (!_sendTokenDetails) {
-        throw new Error(`Unknown token ${inputs.sendToken}`);
-    }
-    const _receiveTokenDetails = sdk.tokenDetails.get(inputs.receiveToken);
-    if (!_receiveTokenDetails) {
-        throw new Error(`Unknown token ${inputs.receiveToken}`);
-    }
     const _tokenAddress = await swapperDAddresses(sdk, [inputs.sendToken, inputs.receiveToken]);
     // Convert the fee fraction to bips by multiplying by 10000
     const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
@@ -177,12 +172,11 @@ export const validateSwap = async (
     const sentSwap: SentSwap = {
         sendToken: inputs.sendToken,
         receiveToken: inputs.receiveToken,
-        sendAmount: toSmallestUnit(inputs.sendVolume, _sendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
-        receiveAmount: toSmallestUnit(inputs.receiveVolume, _receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        minimumReceiveAmount: toSmallestUnit(inputs.minReceiveVolume, _receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        sendAmount: toSmallestUnit(inputs.sendVolume, sendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
+        receiveAmount: toSmallestUnit(inputs.receiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(inputs.minReceiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee: _brokerFee,
         delay: true,
-        // delayCallbackUrl: `${sdk._networkData.ingress}/swapperD/cb`,
         delayCallbackUrl: `${REN_NODE_URL}/swaps`,
         delayInfo: {
             orderID: new EncodedData(ingress.randomNonce().toString("hex"), Encodings.HEX).toBase64(),
@@ -243,10 +237,20 @@ export const openOrder = async (
     // tslint:disable-next-line: variable-name
     const min_Volume = side === OrderSide.BUY ? minReceiveVolume : minReceiveVolume.div(price);
 
+    const sendTokenDetails = Tokens.get(sentSwap.sendToken);
+    if (!sendTokenDetails) {
+        throw new Error(`Unsupported token: ${sentSwap.sendToken}`);
+    }
+
+    const receiveTokenDetails = Tokens.get(sentSwap.receiveToken);
+    if (!receiveTokenDetails) {
+        throw new Error(`Unsupported token: ${sentSwap.receiveToken}`);
+    }
+
     const newOrder: ingress.NewOrder = {
         id: new EncodedData(sentSwap.delayInfo.orderID).toHex(),
-        sendToken: tokenToID(sentSwap.sendToken),
-        receiveToken: tokenToID(sentSwap.receiveToken),
+        sendToken: sendTokenDetails.priority,
+        receiveToken: receiveTokenDetails.priority,
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
         volume,
         price, // 350,

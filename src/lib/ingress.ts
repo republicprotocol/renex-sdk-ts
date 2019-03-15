@@ -19,7 +19,7 @@ import { OrderInputsAll, OrderSide, SimpleConsole } from "../types";
 import { adjustDecimals } from "./balances";
 import { EncodedData, Encodings } from "./encodedData";
 import { Record } from "./record";
-import { generateTokenPairing, tokenToID } from "./tokens";
+import { generateTokenPairing, Tokens } from "./tokens";
 
 // TODO: Read these from the contract
 const PRICE_OFFSET = 12;
@@ -126,19 +126,23 @@ export interface NewOrder {
 
 export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
 
-    const baseToken = orderInputs.marketDetails.base;
-    const quoteToken = orderInputs.marketDetails.quote;
-    const marketID = `${baseToken}-${quoteToken}`;
-    const spendToken = orderInputs.side === OrderSide.BUY ? quoteToken : baseToken;
-    const receiveToken = orderInputs.side === OrderSide.BUY ? baseToken : quoteToken;
+    const marketID = `${orderInputs.baseToken}-${orderInputs.quoteToken}`;
+
+    const quoteTokenDetails = Tokens.get(orderInputs.quoteToken);
+    if (!quoteTokenDetails) {
+        throw new Error(`Unsupported token: ${orderInputs.quoteToken}`);
+    }
+
+    const baseTokenDetails = Tokens.get(orderInputs.baseToken);
+    if (!baseTokenDetails) {
+        throw new Error(`Unsupported token: ${orderInputs.baseToken}`);
+    }
 
     const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
     const volume = adjustDecimals(orderInputs.baseVolume, 0, VOLUME_OFFSET);
     const minimumVolume = adjustDecimals(orderInputs.minBaseVolume, 0, VOLUME_OFFSET);
 
-    const tokens = orderInputs.side === OrderSide.BUY ?
-        generateTokenPairing(tokenToID(spendToken), tokenToID(receiveToken)) :
-        generateTokenPairing(tokenToID(receiveToken), tokenToID(spendToken));
+    const tokens = generateTokenPairing(quoteTokenDetails.priority, baseTokenDetails.priority);
 
     const ingressOrder = new Order({
         type: orderTypeMapper(orderInputs),

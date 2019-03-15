@@ -9,9 +9,9 @@ import {
     findMatchingReturnedSwap, fixSwapType, getSwapperDAddresses,
     getSwapperDBalances, getSwapperDSwaps, SwapperConnectionStatus,
 } from "../lib/swapper";
-import { fromSmallestUnit } from "../lib/tokens";
+import { fromSmallestUnit, Token } from "../lib/tokens";
 import { ReturnedSwap, SwapStatus } from "../lib/types/swapObject";
-import { OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus, Token } from "../types";
+import { OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus } from "../types";
 
 /* SwapperD Connection */
 
@@ -69,8 +69,6 @@ export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
 };
 
 /* SwapperD balances */
-
-export const supportedSwapperDTokens = async (_sdk: RenExSDK): Promise<Token[]> => [Token.BTC, Token.ETH, Token.TUSD, Token.DAI, Token.WBTC];
 
 const retrieveSwapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<MaybeBigNumber[]> => {
     return getSwapperDBalances({ network: sdk._networkData.network }).then(balances => {

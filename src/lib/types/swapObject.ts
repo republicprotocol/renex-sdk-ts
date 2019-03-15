@@ -2,7 +2,7 @@
  * ReturnedSwap is returned back by the GET /swaps endpoint
  */
 
-import { Token } from "../../types";
+import { Token } from "../tokens";
 
 interface CostObject {
     [token: string]: string;

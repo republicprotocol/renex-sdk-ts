@@ -2,8 +2,8 @@ import axios from "axios";
 import Web3 from "web3";
 
 import { errors, responseError, updateError } from "../errors";
-import { Token } from "../types";
 import { EncodedData } from "./encodedData";
+import { Token } from "./tokens";
 import { ReturnedSwap, SentSwap, SubmitImmediateResponse, SwapStatus, UnfixedReturnedSwap } from "./types/swapObject";
 
 const API = "http://localhost:7928";

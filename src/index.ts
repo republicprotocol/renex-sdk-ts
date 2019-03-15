@@ -12,20 +12,19 @@ import { normalizePrice, normalizeVolume, toOriginalType } from "./lib/conversio
 import { EncodedData, Encodings } from "./lib/encodedData";
 import { fetchMarkets } from "./lib/market";
 import { NetworkData, networks } from "./lib/network";
-import { Tokens } from "./lib/tokens";
+import { MarketPair, Token, Tokens } from "./lib/tokens";
 import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
 import { darknodeFees, enforcedMinQuoteVolume, openOrder, validateSwap } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
     refreshSwapperDConnectionStatus, resetSwapperDConnection,
-    supportedSwapperDTokens, swapperDAddresses, swapperDBalances,
-    swapperDConnected, swapperDSwaps
+    swapperDAddresses, swapperDBalances, swapperDConnected, swapperDSwaps,
 } from "./methods/swapperD";
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapToken";
 import {
-    Config, MarketDetails, MarketPair, NumberInput, Options, OrderID,
-    OrderInputs, SwapperDBalanceDetails, SwapperDConnectionStatus, Token,
+    Config, MarketDetails, NumberInput, Options, OrderID,
+    OrderInputs, SwapperDBalanceDetails, SwapperDConnectionStatus,
     TokenDetails, TransactionOptions,
 } from "./types";
 
@@ -37,9 +36,10 @@ export * from "./types";
 export * from "./lib/types/swapObject";
 export * from "./lib/swapper";
 export { errors } from "./errors";
-export { getMarket, MarketPairs } from "./lib/market";
+export { getMarket } from "./lib/market";
+export { MarketPairs } from "./lib/tokens";
 export { populateOrderDefaults } from "./methods/openOrder";
-export { Tokens } from "./lib/tokens";
+export { MarketPair, Token, Tokens } from "./lib/tokens";
 
 interface ContractObject {
     darknodeRegistry: Contract;
@@ -129,7 +129,6 @@ export class RenExSDK {
     }
 
     public fetchMarkets = (): Promise<OrderedMap<MarketPair, MarketDetails>> => fetchMarkets(this);
-    public fetchSupportedSwapperDTokens = (): Promise<Token[]> => supportedSwapperDTokens(this);
 
     // Transaction Methods
     public openOrder = (

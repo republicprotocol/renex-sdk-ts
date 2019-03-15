@@ -7,9 +7,9 @@ import RenExSDK from "../index";
 
 import { errors, updateError } from "../errors";
 import { getSwapperDBalances, submitSwap } from "../lib/swapper";
-import { toSmallestUnit } from "../lib/tokens";
+import { Token, toSmallestUnit } from "../lib/tokens";
 import { SentNonDelayedSwap, SubmitImmediateResponse } from "../lib/types/swapObject";
-import { NumberInput, OrderInputs, Token } from "../types";
+import { NumberInput, OrderInputs } from "../types";
 import { populateOrderDefaults } from "./openOrder";
 
 // Required ETH balance for fees

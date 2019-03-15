@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js";
+import { MarketPair, Token } from "lib/tokens";
 
 export { NetworkData } from "./lib/network";
 
@@ -21,31 +22,6 @@ export const OrderSide = {
     BUY: "buy" as OrderSide,
     SELL: "sell" as OrderSide,
 };
-
-export enum Token {
-    BTC = "BTC",
-    ETH = "ETH",
-    DGX = "DGX",
-    TUSD = "TUSD",
-    DAI = "DAI",
-    REN = "REN",
-    ZRX = "ZRX",
-    OMG = "OMG",
-    WBTC = "WBTC",
-}
-
-export enum MarketPair {
-    WBTC_BTC = "WBTC/BTC",
-    ETH_BTC = "ETH/BTC",
-    REN_BTC = "REN/BTC",
-    TUSD_BTC = "TUSD/BTC",
-    DGX_ETH = "DGX/ETH",
-    TUSD_ETH = "TUSD/ETH",
-    DAI_ETH = "DAI/ETH",
-    REN_ETH = "REN/ETH",
-    ZRX_ETH = "ZRX/ETH",
-    OMG_ETH = "OMG/ETH",
-}
 
 export interface MarketDetails {
     symbol: MarketPair;
@@ -110,6 +86,7 @@ export interface TokenDetails {
     name: string;
     symbol: Token;
     decimals: number;
+    priority: number;
 }
 
 export interface BalanceDetails {

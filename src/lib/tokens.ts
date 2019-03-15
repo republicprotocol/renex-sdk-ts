@@ -1,13 +1,50 @@
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
-import { NumberInput, Token, TokenDetails } from "../types";
+import { OrderedMap } from "immutable";
+import { MarketDetails, NumberInput, TokenDetails } from "../types";
+
+export enum Token {
+    DAI = "DAI",
+    BTC = "BTC",
+    ETH = "ETH",
+    REN = "REN",
+    TUSD = "TUSD",
+    WBTC = "WBTC",
+}
 
 export const Tokens = new Map<Token, TokenDetails>()
-    .set(Token.BTC, { symbol: Token.BTC, name: "Bitcoin", decimals: 8 })
-    .set(Token.ETH, { symbol: Token.ETH, name: "Ethereum", decimals: 18 })
-    .set(Token.TUSD, { symbol: Token.TUSD, name: "TrueUSD", decimals: 18 })
-    .set(Token.DAI, { symbol: Token.DAI, name: "Dai", decimals: 18 })
-    .set(Token.WBTC, { symbol: Token.WBTC, name: "Wrapped Bitcoin", decimals: 8 })
+    .set(Token.DAI, { symbol: Token.DAI, name: "Dai", decimals: 18, priority: 100 })
+    .set(Token.BTC, { symbol: Token.BTC, name: "Bitcoin", decimals: 8, priority: 200 })
+    .set(Token.ETH, { symbol: Token.ETH, name: "Ethereum", decimals: 18, priority: 1024 })
+    .set(Token.REN, { symbol: Token.REN, name: "Ren", decimals: 18, priority: 1025 })
+    .set(Token.TUSD, { symbol: Token.TUSD, name: "TrueUSD", decimals: 18, priority: 1026 })
+    .set(Token.WBTC, { symbol: Token.WBTC, name: "Wrapped Bitcoin", decimals: 8, priority: 201 })
+    ;
+
+export enum MarketPair {
+    BTC_DAI = "BTC/DAI",
+    ETH_DAI = "ETH/DAI",
+    REN_DAI = "REN/DAI",
+    TUSD_DAI = "TUSD/DAI",
+
+    ETH_BTC = "ETH/BTC",
+    REN_BTC = "REN/BTC",
+    TUSD_BTC = "TUSD/BTC",
+    WBTC_BTC = "BTC/WBTC",
+}
+
+export const MarketPairs = OrderedMap<MarketPair, MarketDetails>()
+    // DAI pairs
+    .set(MarketPair.BTC_DAI, { symbol: MarketPair.BTC_DAI, quote: Token.DAI, base: Token.BTC })
+    .set(MarketPair.ETH_DAI, { symbol: MarketPair.ETH_DAI, quote: Token.DAI, base: Token.ETH })
+    .set(MarketPair.REN_DAI, { symbol: MarketPair.REN_DAI, quote: Token.DAI, base: Token.REN })
+    .set(MarketPair.TUSD_DAI, { symbol: MarketPair.TUSD_DAI, quote: Token.DAI, base: Token.TUSD })
+
+    // BTC pairs
+    .set(MarketPair.ETH_BTC, { symbol: MarketPair.ETH_BTC, quote: Token.BTC, base: Token.ETH })
+    .set(MarketPair.REN_BTC, { symbol: MarketPair.REN_BTC, quote: Token.BTC, base: Token.REN })
+    .set(MarketPair.TUSD_BTC, { symbol: MarketPair.TUSD_BTC, quote: Token.BTC, base: Token.TUSD })
+    .set(MarketPair.WBTC_BTC, { symbol: MarketPair.WBTC_BTC, quote: Token.BTC, base: Token.WBTC })
     ;
 
 // TokenDetails = TokenDetails.set(Token.WBTC, {
@@ -66,52 +103,6 @@ export function toSmallestUnit(amount: NumberInput, decimals: number): BigNumber
 
 export function fromSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
     return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
-}
-
-export function tokenToID(token: Token): number {
-    switch (token) {
-        case Token.BTC:
-            return 0;
-        case Token.ETH:
-            return 1;
-        case Token.DGX:
-            return 256;
-        case Token.TUSD:
-            return 257;
-        case Token.DAI:
-            return 258;
-        case Token.REN:
-            return 65536;
-        case Token.ZRX:
-            return 65537;
-        case Token.OMG:
-            return 65538;
-        case Token.WBTC:
-            return 65539;
-    }
-    throw new Error(`Invalid token: ${token}`);
-}
-
-export function idToToken(token: number): Token {
-    switch (token) {
-        case 0:
-            return Token.BTC;
-        case 1:
-            return Token.ETH;
-        case 256:
-            return Token.DGX;
-        case 257:
-            return Token.TUSD;
-        case 65536:
-            return Token.REN;
-        case 65537:
-            return Token.ZRX;
-        case 65538:
-            return Token.OMG;
-        case 65539:
-            return Token.WBTC;
-    }
-    throw new Error(`Invalid token ID: ${token}`);
 }
 
 /**
