@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
-import BN from "bn.js";
+
 import { OrderedMap } from "immutable";
+
 import { MarketDetails, NumberInput, TokenDetails } from "../types";
 
 export enum Token {
@@ -103,20 +104,4 @@ export function toSmallestUnit(amount: NumberInput, decimals: number): BigNumber
 
 export function fromSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
     return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
-}
-
-/**
- * Combine two 32-bit token identifiers into a single 64-bit number.
- *
- * @param {number} leftToken 32-bit token identifier.
- * @param {number} rightToken 32-bit token identifier.
- * @returns {BN} 64-bit market identifier.
- */
-export function generateTokenPairing(leftToken: number, rightToken: number): BN {
-    // Convert individual tokens to 32 bit numbers
-    const leftTokenBuffer = new BN(leftToken).toArrayLike(Buffer, "be", 4);
-    const rightTokenBuffer = new BN(rightToken).toArrayLike(Buffer, "be", 4);
-
-    // Return the token pair as a 64 bit number
-    return new BN(Buffer.concat([leftTokenBuffer, rightTokenBuffer]));
 }

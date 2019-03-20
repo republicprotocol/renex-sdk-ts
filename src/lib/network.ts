@@ -3,7 +3,7 @@ import testnet from "./networks/testnet.json";
 
 export interface NetworkData {
     network: string;
-    ingress: string;
+    renexNode: string;
     infura: string;
     etherscan: string;
     wbtcKYCServer: string;

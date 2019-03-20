@@ -44,13 +44,13 @@ export const fetchSwapperAddress = async (network: string): Promise<string> => {
     return (await axios.get(`${API}/id/eth?network=${network}`)).data;
 };
 
-export async function fetchSwapperStatus(network: string, ingress: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> {
+export async function fetchSwapperStatus(network: string, renexNode: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> {
     try {
         const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
         if (response.bootloaded) {
             // try {
             //     const swapperID = await getSwapperID();
-            //     await axios.get(`${ingress}/kyc/${swapperID}`);
+            //     await axios.get(`${renexNode}/kyc/${swapperID}`);
             // } catch (error) {
             //     return SwapperConnectionStatus.NotAuthorized;
             // }

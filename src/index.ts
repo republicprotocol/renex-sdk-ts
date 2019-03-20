@@ -15,7 +15,7 @@ import { NetworkData, networks } from "./lib/network";
 import { MarketPair, Token, Tokens } from "./lib/tokens";
 import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
-import { darknodeFees, enforcedMinQuoteVolume, openOrder, validateSwap } from "./methods/openOrder";
+import { darknodeFees, minimumQuoteVolume, openOrder, validateSwap } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
     refreshSwapperDConnectionStatus, resetSwapperDConnection,
@@ -151,7 +151,7 @@ export class RenExSDK {
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
     public fetchUnwrappingFeePercent = (token: Token): Promise<BigNumber> => unwrappingFees(this, token);
-    public fetchMinQuoteVolume = (quoteToken: Token): BigNumber => enforcedMinQuoteVolume(quoteToken);
+    public fetchMininimumQuoteVolume = (quoteToken: Token): BigNumber => minimumQuoteVolume(quoteToken);
 
     // Provider / account functions
     public getWeb3 = (): Web3 => this._web3;

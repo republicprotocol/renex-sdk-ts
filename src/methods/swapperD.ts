@@ -39,7 +39,7 @@ export const refreshSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<Sw
 };
 
 const getSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
-    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.ingress, () => getSwapperID(sdk));
+    const swapperStatus = await fetchSwapperStatus(sdk._networkData.network, sdk._networkData.renexNode, () => getSwapperID(sdk));
     switch (swapperStatus) {
         case SwapperConnectionStatus.NotConnected:
             return SwapperDConnectionStatus.NotConnected;
@@ -56,7 +56,7 @@ const getSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConne
 
 // export const authorizeSwapperD = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
 //     const address = await getSwapperID(sdk);
-//     await _authorizeSwapperD(sdk.getWeb3(), sdk._networkData.ingress, address, sdk.getAddress());
+//     await _authorizeSwapperD(sdk.getWeb3(), sdk._networkData.renexNode, address, sdk.getAddress());
 //     return refreshSwapperDConnectionStatus(sdk);
 // };
 

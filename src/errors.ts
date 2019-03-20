@@ -35,7 +35,7 @@ export const errors = {
     UserRejectedSwap: "User rejected the swap",
     InvalidPrice: "Invalid price",
     InvalidVolume: "Invalid volume",
-    InvalidMinimumVolume: "Invalid minimum volume",
+    InvalidMinimumFill: "Invalid minimum fill",
     EthGasStationError: "Cannot retrieve gas price from Eth Gas Station",
     CouldNotConnectSwapServer: "Could not connect to swap server",
     Unimplemented: "Method not implemented.",

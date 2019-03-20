@@ -2,7 +2,7 @@ import BN from "bn.js";
 
 import { BigNumber } from "bignumber.js";
 
-import * as ingress from "../lib/ingress";
+import * as renexNode from "../lib/renexNode";
 
 import RenExSDK from "../index";
 
@@ -17,9 +17,6 @@ import {
     NullConsole, OrderInputs, OrderInputsAll, OrderSide, TransactionOptions,
 } from "../types";
 import { swapperDAddresses } from "./swapperD";
-
-// TODO: Decide where this should go (network env, or passed in to constructor)
-export const REN_NODE_URL = "https://renex-testnet.herokuapp.com";
 
 export const darknodeFees = async (_sdk: RenExSDK): Promise<BigNumber> => {
     return new BigNumber(2).dividedBy(1000);
@@ -75,11 +72,11 @@ export const populateOrderDefaults = (
     const quoteToken = marketDetails.quote;
     const quoteVolume = orderInputs.sendToken === quoteToken ? sendVolume : receiveVolume;
 
-    const minQuoteVolume = orderInputs.allOrNothing ? quoteVolume :
-        orderInputs.minQuoteVolume ? new BigNumber(orderInputs.minQuoteVolume) : enforcedMinQuoteVolume(marketDetails.quote);
-    const minBaseVolume = minQuoteVolume.div(price);
-    const minReceiveVolume = orderInputs.receiveToken === quoteToken ? minQuoteVolume : minBaseVolume;
-    const minSendVolume = orderInputs.sendToken === quoteToken ? minQuoteVolume : minBaseVolume;
+    const mininimumQuoteFill = orderInputs.allOrNothing ? quoteVolume :
+        orderInputs.mininimumQuoteFill ? new BigNumber(orderInputs.mininimumQuoteFill) : minimumQuoteVolume(marketDetails.quote);
+    const mininimumBaseFill = mininimumQuoteFill.div(price);
+    const mininimumReceiveFill = orderInputs.receiveToken === quoteToken ? mininimumQuoteFill : mininimumBaseFill;
+    const mininimumSendFill = orderInputs.sendToken === quoteToken ? mininimumQuoteFill : mininimumBaseFill;
 
     return {
         ...orderInputs,
@@ -91,19 +88,19 @@ export const populateOrderDefaults = (
         price,
         sendVolume,
         receiveVolume,
-        minQuoteVolume,
-        minBaseVolume,
-        minSendVolume,
+        mininimumQuoteFill,
+        mininimumBaseFill,
+        mininimumSendFill,
 
         baseToken,
         baseVolume,
         quoteToken,
         quoteVolume,
-        minReceiveVolume,
+        mininimumReceiveFill,
     };
 };
 
-export const enforcedMinQuoteVolume = (quoteToken: Token) => {
+export const minimumQuoteVolume = (quoteToken: Token) => {
     if (quoteToken === Token.BTC) {
         return new BigNumber(0.003);
     } else if (quoteToken === Token.ETH) {
@@ -119,7 +116,6 @@ export const validateUserInputs = (
     orderInputsIn: OrderInputs,
     sendTokenBalance: BigNumber | null | undefined,
     options?: TransactionOptions,
-    all = false,
 ): OrderInputsAll => {
 
     const inputs = populateOrderDefaults(orderInputsIn);
@@ -135,8 +131,8 @@ export const validateUserInputs = (
         throw new Error(errors.InvalidVolume);
     }
     if (inputs.receiveVolume.lt(new BigNumber(0))) {
-        simpleConsole.error(errors.InvalidMinimumVolume);
-        throw new Error(errors.InvalidMinimumVolume);
+        simpleConsole.error(errors.InvalidMinimumFill);
+        throw new Error(errors.InvalidMinimumFill);
     }
 
     if (sendTokenBalance) {
@@ -164,15 +160,15 @@ export const validateSwap = async (
     const simpleConsole = (options && options.simpleConsole) || NullConsole;
 
     // Check that the quote volume is greater than the minimum quote volume
-    if (inputs.sendVolume.lt(inputs.minSendVolume)) {
-        const errMsg = `Volume must be at least ${inputs.minSendVolume} ${inputs.sendToken}`;
+    if (inputs.sendVolume.lt(inputs.mininimumSendFill)) {
+        const errMsg = `Volume must be at least ${inputs.mininimumSendFill} ${inputs.sendToken}`;
         simpleConsole.error(errMsg);
         throw new Error(errMsg);
     }
 
     // Check that the minimum quote volume is greater than the enforced minimum
     // (this implies that the quote volume is also greater by previous check)
-    const enforcedQuoteVolume = enforcedMinQuoteVolume(inputs.quoteToken);
+    const enforcedQuoteVolume = minimumQuoteVolume(inputs.quoteToken);
     const enforcedSendVolume = inputs.sendToken === inputs.quoteToken ? enforcedQuoteVolume : enforcedQuoteVolume.div(inputs.price);
 
     if (inputs.sendVolume.lt(enforcedSendVolume)) {
@@ -199,12 +195,12 @@ export const validateSwap = async (
         receiveToken: inputs.receiveToken,
         sendAmount: toSmallestUnit(inputs.sendVolume, sendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
         receiveAmount: toSmallestUnit(inputs.receiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        minimumReceiveAmount: toSmallestUnit(inputs.minReceiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveFill: toSmallestUnit(inputs.mininimumReceiveFill, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee: _brokerFee,
         delay: true,
-        delayCallbackUrl: `${REN_NODE_URL}/swaps`,
+        delayCallbackUrl: `${sdk._networkData.renexNode}/swaps`,
         delayInfo: {
-            orderID: new EncodedData(ingress.randomNonce().toString("hex"), Encodings.HEX).toBase64(),
+            orderID: new EncodedData(renexNode.randomNonce().toString("hex"), Encodings.HEX).toBase64(),
             kycAddr: sdk.getAddress(),
             sendTokenAddr: _tokenAddress[0],
             receiveTokenAddr: _tokenAddress[1],
@@ -255,12 +251,12 @@ export const openOrder = async (
     const volume = new BN(side === OrderSide.BUY ? sentSwap.receiveAmount : sentSwap.sendAmount);
     const receiveVolume = new BN(sentSwap.receiveAmount);
     const sendVolume = new BN(sentSwap.sendAmount);
-    const minReceiveVolume = new BN(sentSwap.minimumReceiveAmount || "0");
+    const mininimumReceiveFill = new BN(sentSwap.minimumReceiveFill || "0");
 
     // TODO: Correct this.
     const price = side === OrderSide.BUY ? receiveVolume.div(sendVolume) : sendVolume.div(receiveVolume);
     // tslint:disable-next-line: variable-name
-    const min_Volume = side === OrderSide.BUY ? minReceiveVolume : minReceiveVolume.div(price);
+    const min_Volume = side === OrderSide.BUY ? mininimumReceiveFill : mininimumReceiveFill.div(price);
 
     const sendTokenDetails = Tokens.get(sentSwap.sendToken);
     if (!sendTokenDetails) {
@@ -272,10 +268,7 @@ export const openOrder = async (
         throw new Error(`Unsupported token: ${sentSwap.receiveToken}`);
     }
 
-    const newOrder: ingress.NewOrder = {
-        id: new EncodedData(sentSwap.delayInfo.orderID).toHex(),
-        sendToken: sendTokenDetails.priority,
-        receiveToken: receiveTokenDetails.priority,
+    const newOrder: renexNode.NewOrder = {
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
         volume,
         price, // 350,
@@ -287,71 +280,34 @@ export const openOrder = async (
 
     let orderFragmentMappings;
     try {
-        orderFragmentMappings = await ingress.buildOrderMapping(sdk.getWeb3(), sdk._contracts.darknodeRegistry, newOrder, simpleConsole);
+        orderFragmentMappings = await renexNode.buildOrderMapping(
+            sdk.getWeb3(),
+            sdk._networkData.renexNode,
+            sdk._contracts.darknodeRegistry,
+            newOrder,
+            simpleConsole,
+        );
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
     }
 
-    const request = new ingress.EncryptedShares({
+    const request = new renexNode.EncryptedShares({
         orderID: sentSwap.delayInfo.orderID,
-        sendToken: newOrder.sendToken,
-        receiveToken: newOrder.receiveToken,
+        sendToken: sendTokenDetails.symbol,
+        receiveToken: receiveTokenDetails.symbol,
         pods: orderFragmentMappings,
     });
 
     simpleConsole.log("Sending order fragments");
-    // let signature;
     try {
-        await ingress.submitOrderFragments(sdk._networkData.ingress, request);
+        await renexNode.submitOrderFragments(sdk._networkData.renexNode, request);
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
     }
 
-    // const podMap = Map<string, PodShares>();
-
-    // let encryptedShares = new EncryptedShares({
-    //     orderID: order.id,
-    //     sendToken: order.sendToken,
-    //     receiveToken: order.receiveToken,
-    //     pods: podMap,
-    // });
-
     simpleConsole.log("Order submitted.");
-
-    // let timeout = 10;
-    // let swapObject: UnfixedReturnedSwap | undefined;
-
-    // console.log(`Looking for ${sentSwap.delayInfo.orderID}`);
-    // while (!swapObject && timeout > 0) {
-    //     console.log("Nothing yet...");
-    //     const orders = await getSwapperDSwaps({ network: sdk._networkData.network });
-    //     for (const swaps of orders.swaps) {
-    //         console.log(swaps);
-    //     }
-    //     swapObject = orders.swaps.find((swap) => swap.delay === true && swap.delayInfo.message.orderID === sentSwap.delayInfo.orderID);
-    //     timeout--;
-    //     await sleep(1 * second);
-    // }
-
-    // const traderOrder: TraderOrder = {
-    //     swapServer: undefined,
-    //     orderInputs,
-    //     status: OrderStatus.NOT_SUBMITTED,
-    //     trader: sdk.getAddress(),
-    //     id: orderID.toBase64(),
-    //     computedOrderDetails: {
-    //         spendToken: sendToken,
-    //         receiveToken,
-    //         spendVolume,
-    //         receiveVolume,
-    //         date: unixSeconds,
-    //         feeAmount,
-    //         feeToken,
-    //         nonce,
-    //     },
-    // };
 
     return sentSwap;
 };

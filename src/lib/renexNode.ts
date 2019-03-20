@@ -1,9 +1,8 @@
-import axios from "axios";
-
 // tsc complains about importing NodeRSA normally
 import * as NodeRSAType from "node-rsa";
 // const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
+import axios from "axios";
 import BN from "bn.js";
 import Web3 from "web3";
 import Contract from "web3/eth/contract";
@@ -14,61 +13,14 @@ import { List, Map } from "immutable";
 import * as shamir from "./shamir";
 
 import { responseError, updateError } from "../errors";
-import { REN_NODE_URL } from "../methods/openOrder";
-import { OrderInputsAll, OrderSide, SimpleConsole } from "../types";
-import { adjustDecimals } from "./balances";
+import { SimpleConsole } from "../types";
 import { EncodedData, Encodings } from "./encodedData";
 import { Record } from "./record";
-import { generateTokenPairing, Tokens } from "./tokens";
 
 // TODO: Read these from the contract
-const PRICE_OFFSET = 12;
-const VOLUME_OFFSET = 12;
+// const PRICE_OFFSET = 12;
+// const VOLUME_OFFSET = 12;
 const NULL = "0x0000000000000000000000000000000000000000";
-
-export enum OrderType {
-    MIDPOINT = 0, // FIXME: Unsupported
-    LIMIT = 1,
-    MIDPOINT_IOC = 2, // FIXME: Unsupported
-    LIMIT_IOC = 3,
-}
-
-const orderTypeMapper = (orderInputs: OrderInputsAll) =>
-    orderInputs.immediateOrCancel ? OrderType.LIMIT_IOC : OrderType.LIMIT;
-
-export enum OrderParity {
-    BUY = 0,
-    SELL = 1,
-}
-
-function orderParityMapper(orderSide: OrderSide) {
-    switch (orderSide) {
-        case OrderSide.BUY:
-            return OrderParity.BUY;
-        case OrderSide.SELL:
-            return OrderParity.SELL;
-        default:
-            throw new Error(`Unknown order side: ${orderSide}`);
-    }
-}
-
-export class Tuple extends Record({
-    c: 0,
-    q: 0,
-}) { }
-
-export class Order extends Record({
-    signature: "",
-    id: "",
-    type: OrderType.LIMIT,
-    parity: OrderParity.BUY,
-    tokens: new BN(0),
-    price: new BN(0),
-    volume: new BN(0),
-    minimumVolume: new BN(0),
-    nonce: new BN(0),
-    marketID: null as string | null,
-}) { }
 
 export class SwapperDAuthorizationRequest extends Record({
     address: "",
@@ -78,35 +30,20 @@ export class SwapperDAuthorizationRequest extends Record({
 export class PodShares extends Record({
     price: List<string>(),
     volume: List<string>(),
-    minVolume: List<string>(),
+    minimumFill: List<string>(),
 }) { }
 export class EncryptedShares extends Record({
     orderID: "",
-    sendToken: 0,
-    receiveToken: 0,
+    sendToken: "",
+    receiveToken: "",
     pods: Map<string, PodShares>(),
 }) { }
 
 export type OpenOrderRequest = EncryptedShares;
 
-export class OrderFragment extends Record({
-    id: "",
-    orderId: "",
-    orderType: OrderType.LIMIT,
-    orderParity: OrderParity.BUY,
-    orderExpiry: 0,
-    tokens: "",
-    price: ["", ""],
-    volume: ["", ""],
-    minimumVolume: ["", ""],
-    nonce: "",
-    index: 0,
-}) { }
-
 export class Pod extends Record({
     id: "",
     darknodes: List<string>(),
-    orderFragments: List<OrderFragment>(),
 }) { }
 
 export function randomNonce(): BN {
@@ -115,55 +52,18 @@ export function randomNonce(): BN {
 }
 
 export interface NewOrder {
-    id: string;
-    sendToken: number;
-    receiveToken: number;
     marketID: string;
     price: BN;
     volume: BN;
     min_Volume: BN;
 }
 
-export function createOrder(orderInputs: OrderInputsAll, nonce?: BN): Order {
-
-    const marketID = `${orderInputs.baseToken}-${orderInputs.quoteToken}`;
-
-    const quoteTokenDetails = Tokens.get(orderInputs.quoteToken);
-    if (!quoteTokenDetails) {
-        throw new Error(`Unsupported token: ${orderInputs.quoteToken}`);
-    }
-
-    const baseTokenDetails = Tokens.get(orderInputs.baseToken);
-    if (!baseTokenDetails) {
-        throw new Error(`Unsupported token: ${orderInputs.baseToken}`);
-    }
-
-    const price = adjustDecimals(orderInputs.price, 0, PRICE_OFFSET);
-    const volume = adjustDecimals(orderInputs.baseVolume, 0, VOLUME_OFFSET);
-    const minimumVolume = adjustDecimals(orderInputs.minBaseVolume, 0, VOLUME_OFFSET);
-
-    const tokens = generateTokenPairing(quoteTokenDetails.priority, baseTokenDetails.priority);
-
-    const ingressOrder = new Order({
-        type: orderTypeMapper(orderInputs),
-        nonce: nonce ? nonce : new BN(0),
-
-        parity: orderParityMapper(orderInputs.side),
-        tokens,
-        price,
-        volume,
-        minimumVolume,
-        marketID,
-    });
-    return ingressOrder;
-}
-
 export async function submitOrderFragments(
-    ingressURL: string,
+    renexNode: string,
     request: OpenOrderRequest,
 ): Promise<void> {
     try {
-        const resp = await axios.post(`${REN_NODE_URL}/order`, request.toJS());
+        const resp = await axios.post(`${renexNode}/order`, request.toJS());
         if (resp.status !== 200) {
             throw responseError("Unexpected status code returned by Ingress", resp);
         }
@@ -183,14 +83,14 @@ export async function submitOrderFragments(
 }
 
 export async function buildOrderMapping(
-    web3: Web3, darknodeRegistryContract: Contract, order: NewOrder, simpleConsole: SimpleConsole,
+    web3: Web3,
+    renexNode: string,
+    darknodeRegistryContract: Contract,
+    order: NewOrder,
+    simpleConsole: SimpleConsole,
 ): Promise<Map<string, PodShares>> {
     const marketID = order.marketID;
-    const pods = await getPods(web3, darknodeRegistryContract, simpleConsole, marketID);
-
-    // const priceCoExp = priceToCoExp(order.price);
-    // const volumeCoExp = volumeToCoExp(order.volume);
-    // const minVolumeCoExp = volumeToCoExp(order.minimumVolume);
+    const pods = await getPods(web3, renexNode, darknodeRegistryContract, simpleConsole, marketID);
 
     const fragmentPromises = (pods)
         .map(async (pod: Pod): Promise<[string, PodShares]> => {
@@ -200,12 +100,12 @@ export async function buildOrderMapping(
             simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
             const priceShares = shamir.split(n, k, new BN(10));
             const volumeShares = shamir.split(n, k, new BN(10));
-            const minimumVolumeShares = shamir.split(n, k, new BN(10));
+            const minimumFillShares = shamir.split(n, k, new BN(10));
 
             const podShares = new PodShares({
                 price: priceShares.map((share) => shareToBuffer(share, 8).toBase64()),
                 volume: volumeShares.map((share) => shareToBuffer(share, 8).toBase64()),
-                minVolume: minimumVolumeShares.map((share) => shareToBuffer(share, 8).toBase64()),
+                minimumFill: minimumFillShares.map((share) => shareToBuffer(share, 8).toBase64()),
             });
 
             return [pod.id, podShares];
@@ -231,25 +131,23 @@ export async function buildOrderMapping(
             //     const [
             //         priceShare,
             //         volumeShare,
-            //         minimumVolumeShare,
+            //         minimumFillShare,
             //     ] = [
             //             priceShares.get(i),
             //             volumeShares.get(i),
-            //             minimumVolumeShares.get(i),
+            //             minimumFillShares.get(i),
             //         ];
 
             //     if (
             //         priceShare === undefined ||
             //         volumeShare === undefined ||
-            //         minimumVolumeShare === undefined
+            //         minimumFillShare === undefined
             //     ) {
             //         throw new Error("invalid share access");
             //     }
 
             //     // let orderFragment = new OrderFragment({
             //     //     orderId: order.id,
-            //     //     orderType: order.type,
-            //     //     orderParity: order.parity,
             //     //     orderSettlement: order.orderSettlement,
             //     //     tokens: encryptForDarknode(darknodeKey, tokenShare, 8).toBase64(),
             //     //     price: [
@@ -260,9 +158,9 @@ export async function buildOrderMapping(
             //     //         encryptForDarknode(darknodeKey, volumeCoShare, 8).toBase64(),
             //     //         encryptForDarknode(darknodeKey, volumeExpShare, 8).toBase64()
             //     //     ],
-            //     //     minimumVolume: [
-            //     //         encryptForDarknode(darknodeKey, minimumVolumeCoShare, 8).toBase64(),
-            //     //         encryptForDarknode(darknodeKey, minimumVolumeExpShare, 8).toBase64()
+            //     //     minimumFill: [
+            //     //         encryptForDarknode(darknodeKey, minimumFillCoShare, 8).toBase64(),
+            //     //         encryptForDarknode(darknodeKey, minimumFillExpShare, 8).toBase64()
             //     //     ],
             //     //     nonce: encryptForDarknode(darknodeKey, nonceShare, 8).toBase64(),
             //     //     index: i + 1,
@@ -382,8 +280,14 @@ async function getAllDarknodes(web3: Web3, darknodeRegistryContract: Contract): 
     return allDarknodes;
 }
 
-async function getPods(web3: Web3, darknodeRegistryContract: Contract, simpleConsole: SimpleConsole, marketID: string): Promise<List<Pod>> {
-    const res = await axios.get<string[]>(`${REN_NODE_URL}/pods?tokens=${marketID}`);
+async function getPods(
+    web3: Web3,
+    renexNode: string,
+    darknodeRegistryContract: Contract,
+    simpleConsole: SimpleConsole,
+    marketID: string,
+): Promise<List<Pod>> {
+    const res = await axios.get<string[]>(`${renexNode}/pods?pair=${marketID}`);
 
     const podsForPair = res.data;
 

@@ -56,7 +56,7 @@ export type UnfixedReturnedSwap = ReturnedNonDelayedSwap | ReturnedDelayedSwap;
 
 export interface SentSwapCore extends SwapCore {
     id?: string;
-    minimumReceiveAmount?: string;
+    minimumReceiveFill?: string;
     sendTo?: string;
     receiveFrom?: string;
     timeLock?: number;

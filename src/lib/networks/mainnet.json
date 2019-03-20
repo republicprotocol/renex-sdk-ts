@@ -1,6 +1,6 @@
 {
     "network": "mainnet",
-    "ingress": "https://renex-ingress-mainnet.herokuapp.com",
+    "renexNode": "https://renex-mainnet.herokuapp.com",
     "infura": "https://mainnet.infura.io/v3",
     "etherscan": "https://etherscan.io",
     "wbtcKYCServer": "https://swapperD-kyc-server.herokuapp.com",
