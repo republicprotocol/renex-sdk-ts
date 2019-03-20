@@ -33,7 +33,8 @@
     "test": "./node_modules/ts-mocha/bin/ts-mocha --timeout 180000 --paths -p ./tsconfig.json ./test/*.spec.ts ./test/**/*.spec.ts",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run lint",
-    "prepare": "npm run build:prod"
+    "prepare": "npm run build:prod",
+    "postinstall": "npm run build:prod"
   },
   "devDependencies": {
     "@babel/core": "^7.3.4",
