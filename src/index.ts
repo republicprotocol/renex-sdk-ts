@@ -130,10 +130,10 @@ export class RenExSDK {
 
     public fetchMarkets = (): Promise<OrderedMap<MarketPair, MarketDetails>> => fetchMarkets(this);
 
-    // Transaction Methods
+    // Order Methods
     public openOrder = (
         orderInputsIn: OrderInputs | undefined,
-        options?: TransactionOptions,
+        options: TransactionOptions,
         sentSwapIn?: SentDelayedSwap,
     ): Promise<SentDelayedSwap> => openOrder(this, orderInputsIn, options, sentSwapIn)
 
@@ -142,11 +142,10 @@ export class RenExSDK {
         options?: TransactionOptions,
     ): Promise<SentDelayedSwap> => validateSwap(this, orderInputsIn, options)
 
-    /**
-     * Cancels some stuff.
-     */
-    public cancelOrder = (orderID: OrderID, options?: TransactionOptions):
+    public cancelOrder = (orderID: OrderID, options: TransactionOptions):
         Promise<void> => cancelOrder(this, orderID, options)
+
+    // Return details
 
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);

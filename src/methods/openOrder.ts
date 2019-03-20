@@ -213,7 +213,7 @@ export const validateSwap = async (
 export const openOrder = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs | undefined,
-    options?: TransactionOptions,
+    options: TransactionOptions,
     sentSwapIn?: SentDelayedSwap,
 ): Promise<SentDelayedSwap> => {
 
@@ -256,7 +256,7 @@ export const openOrder = async (
     // TODO: Correct this.
     const price = side === OrderSide.BUY ? receiveVolume.div(sendVolume) : sendVolume.div(receiveVolume);
     // tslint:disable-next-line: variable-name
-    const min_Volume = side === OrderSide.BUY ? mininimumReceiveFill : mininimumReceiveFill.div(price);
+    const minimumFill = side === OrderSide.BUY ? mininimumReceiveFill : mininimumReceiveFill.div(price);
 
     const sendTokenDetails = Tokens.get(sentSwap.sendToken);
     if (!sendTokenDetails) {
@@ -272,7 +272,7 @@ export const openOrder = async (
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
         volume,
         price, // 350,
-        min_Volume, // 10,
+        minimumFill, // 10,
     };
 
     // Create order fragment mapping
@@ -301,7 +301,7 @@ export const openOrder = async (
 
     simpleConsole.log("Sending order fragments");
     try {
-        await renexNode.submitOrderFragments(sdk._networkData.renexNode, request);
+        await renexNode.submitOrderFragments(sdk._networkData.renexNode, request, options.token);
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;

@@ -103,6 +103,7 @@ export interface SwapperDBalanceDetails {
 
 export interface TransactionOptions {
     simpleConsole?: SimpleConsole;
+    token: string;
 }
 
 export interface Options {

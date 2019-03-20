@@ -2,7 +2,7 @@
 import * as NodeRSAType from "node-rsa";
 // const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import BN from "bn.js";
 import Web3 from "web3";
 import Contract from "web3/eth/contract";
@@ -51,30 +51,40 @@ export function randomNonce(): BN {
     return new BN(nonce.toFixed());
 }
 
+const authConfig = (token: string): AxiosRequestConfig => {
+    return {
+        withCredentials: true,
+        headers: {
+            Authorization: `Bearer ${token}`,
+        }
+    };
+};
+
 export interface NewOrder {
     marketID: string;
     price: BN;
     volume: BN;
-    min_Volume: BN;
+    minimumFill: BN;
 }
 
 export async function submitOrderFragments(
     renexNode: string,
     request: OpenOrderRequest,
+    token: string,
 ): Promise<void> {
     try {
-        const resp = await axios.post(`${renexNode}/order`, request.toJS());
+        const resp = await axios.post(`${renexNode}/order`, request.toJS(), authConfig(token));
         if (resp.status !== 200) {
-            throw responseError("Unexpected status code returned by Ingress", resp);
+            throw responseError("Unexpected status code returned by RenEx node", resp);
         }
         return;
         // return new EncodedData(resp.data.signature, Encodings.BASE64);
     } catch (error) {
         if (error.response) {
             if (error.response.status === 401) {
-                throw updateError("KYC verification failed in Ingress", error);
+                throw updateError("Authentication failed in RenEx node", error);
             } else {
-                throw new Error(`Ingress returned status ${error.response.status} with reason: ${error.response.data}`);
+                throw new Error(`RenEx node returned status ${error.response.status} with reason: ${error.response.data}`);
             }
         } else {
             throw error;
@@ -82,6 +92,32 @@ export async function submitOrderFragments(
     }
 }
 
+export async function cancelOrder(
+    renexNode: string,
+    orderID: string,
+    token: string,
+): Promise<void> {
+    try {
+        const resp = await axios.delete(`${renexNode}/order?id=${orderID}`, authConfig(token));
+        if (resp.status !== 200) {
+            throw responseError("Unexpected status code returned by RenEx node", resp);
+        }
+        return;
+        // return new EncodedData(resp.data.signature, Encodings.BASE64);
+    } catch (error) {
+        if (error.response) {
+            if (error.response.status === 401) {
+                throw updateError("Authentication failed in RenEx node", error);
+            } else {
+                throw new Error(`RenEx node returned status ${error.response.status} with reason: ${error.response.data}`);
+            }
+        } else {
+            throw error;
+        }
+    }
+}
+
+const shift = new BN(10).pow(new BN(8));
 export async function buildOrderMapping(
     web3: Web3,
     renexNode: string,
@@ -98,9 +134,9 @@ export async function buildOrderMapping(
             const k = Math.floor(((n * 2) / 3 + 1) / 2) - 1;
 
             simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
-            const priceShares = shamir.split(n, k, new BN(10));
-            const volumeShares = shamir.split(n, k, new BN(10));
-            const minimumFillShares = shamir.split(n, k, new BN(10));
+            const priceShares = shamir.split(n, k, new BN(order.price).mul(shift));
+            const volumeShares = shamir.split(n, k, new BN(order.volume).mul(shift));
+            const minimumFillShares = shamir.split(n, k, new BN(order.minimumFill).mul(shift));
 
             const podShares = new PodShares({
                 price: priceShares.map((share) => shareToBuffer(share, 8).toBase64()),
