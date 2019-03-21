@@ -149,7 +149,15 @@ export async function buildOrderMapping(
 
             const darknodeKeys = pod.darknodes.map(async (darknode) => await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole));
 
-            const transform = (shares: List<shamir.Share>) => promiseAll(shares.zip(darknodeKeys).map(encryptForDarknode).map(async data => (await data).toBase64()), "");
+            const transform = (shares: List<shamir.Share>) => promiseAll(
+                shares
+                    .zip(darknodeKeys)
+                    // .map(encryptForDarknode)
+                    .map(shareToEncodedData)
+                    .map(async data => (await data).toBase64())
+                ,
+                ""
+            );
 
             const podShares = new PodShares({
                 price: await transform(priceShares),
@@ -290,12 +298,13 @@ function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
         64bit: value
         */
 
+        // TODO: Calculate length of prime and value
         const indexBytes = new BN(share.index).toArrayLike(Buffer, "be", byteCount);
         const shareLengthBytes = new BN(byteCount + byteCount + 4 + 4).toArrayLike(Buffer, "be", byteCount);
-        const primeLengthBytes = new BN(4).toArrayLike(Buffer, "be", byteCount);
-        const primeBytes = shamir.PRIME.toArrayLike(Buffer, "be", 4);
-        const shareValueLengthBytes = new BN(4).toArrayLike(Buffer, "be", byteCount);
-        const shareValueBytes = share.value.toArrayLike(Buffer, "be", 4);
+        const primeLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
+        const primeBytes = shamir.PRIME.toArrayLike(Buffer, "be", 8);
+        const shareValueLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
+        const shareValueBytes = share.value.toArrayLike(Buffer, "be", 8);
 
         const bytes = Buffer.concat([indexBytes, shareLengthBytes, primeLengthBytes, primeBytes, shareValueLengthBytes, shareValueBytes]);
 
@@ -315,6 +324,10 @@ export const encryptForDarknode = async ([share, darknodeKeyP]: [shamir.Share, P
     const bytes = shareToBuffer(share, 8);
 
     return new EncodedData(darknodeKey.encrypt(bytes.toBuffer(), "buffer"), Encodings.BUFFER);
+};
+
+export const shareToEncodedData = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
+    return shareToBuffer(share, 8);
 };
 
 /*
