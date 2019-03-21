@@ -2,7 +2,7 @@ import BN from "bn.js";
 import crypto from "crypto";
 import { List } from "immutable";
 
-export const PRIME: BN = new BN("4294967291");
+export const PRIME: BN = new BN("18446744073709551557");
 
 export class Share {
     public index: number;

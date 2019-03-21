@@ -271,12 +271,11 @@ export const openOrder = async (
         newOrderMinimumFill = shift(mininimumReceiveFillBig, 8);
     }
 
-    // TODO: FIXME: Remove the shifting!!!
     const newOrder: renexNode.NewOrder = {
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
-        volume: new BN(shift(newOrderVolume, -4).decimalPlaces(BigNumber.ROUND_DOWN).toFixed()),
-        price: new BN(shift(newOrderPrice, -4).decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 350,
-        minimumFill: new BN(shift(newOrderMinimumFill, -4).decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 10,
+        volume: new BN(newOrderVolume.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()),
+        price: new BN(newOrderPrice.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 350,
+        minimumFill: new BN(newOrderMinimumFill.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 10,
     };
 
     simpleConsole.log("Submitting order to SwapperD");
