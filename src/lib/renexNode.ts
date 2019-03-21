@@ -124,8 +124,7 @@ const promiseAll = async <a>(list: List<Promise<a>>, defaultValue: a): Promise<L
             newList = newList.push(defaultValue);
         }
     }
-
-    throw new Error("Not implemented");
+    return newList;
 };
 
 export async function buildOrderMapping(
