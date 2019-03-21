@@ -273,7 +273,7 @@ export const openOrder = async (
 
     // TODO: FIXME: Remove the shifting!!!
     const newOrder: renexNode.NewOrder = {
-        marketID: `${marketDetails.quote}-${marketDetails.base}`,
+        marketID: `${marketDetails.base}-${marketDetails.quote}`,
         volume: new BN(shift(newOrderVolume, -4).decimalPlaces(BigNumber.ROUND_DOWN).toFixed()),
         price: new BN(shift(newOrderPrice, -4).decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 350,
         minimumFill: new BN(shift(newOrderMinimumFill, -4).decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 10,
