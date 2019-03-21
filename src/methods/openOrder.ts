@@ -8,7 +8,6 @@ import RenExSDK from "../index";
 
 import { errors, updateError } from "../errors";
 import { normalizePrice, normalizeVolume } from "../lib/conversion";
-import { EncodedData, Encodings } from "../lib/encodedData";
 import { getMarket } from "../lib/market";
 import { submitSwap } from "../lib/swapper";
 import { MarketPairs, Token, Tokens, toSmallestUnit } from "../lib/tokens";
@@ -200,7 +199,7 @@ export const validateSwap = async (
         delay: true,
         delayCallbackUrl: `${sdk._networkData.renexNode}/swaps`,
         delayInfo: {
-            orderID: new EncodedData(renexNode.randomNonce().toString("hex"), Encodings.HEX).toBase64(),
+            orderID: renexNode.randomNonce().toString("hex"),
             kycAddr: sdk.getAddress(),
             sendTokenAddr: _tokenAddress[0],
             receiveTokenAddr: _tokenAddress[1],
@@ -228,14 +227,6 @@ export const openOrder = async (
 
     const simpleConsole = (options && options.simpleConsole) || NullConsole;
 
-    simpleConsole.log("Submitting order to SwapperD");
-    try {
-        await submitSwap(sentSwap, sdk._networkData.network);
-    } catch (error) {
-        simpleConsole.error(error.message || error);
-        throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
-    }
-
     const marketPair = getMarket(sentSwap.receiveToken, sentSwap.sendToken);
     if (!marketPair) {
         throw new Error(`Unsupported market pair: ${sentSwap.receiveToken}/${sentSwap.sendToken}`);
@@ -248,16 +239,6 @@ export const openOrder = async (
 
     const side = sentSwap.receiveToken === marketDetails.base ? OrderSide.BUY : OrderSide.SELL;
 
-    const volume = new BN(side === OrderSide.BUY ? sentSwap.receiveAmount : sentSwap.sendAmount);
-    const receiveVolume = new BN(sentSwap.receiveAmount);
-    const sendVolume = new BN(sentSwap.sendAmount);
-    const mininimumReceiveFill = new BN(sentSwap.minimumReceiveFill || "0");
-
-    // TODO: Correct this.
-    const price = side === OrderSide.BUY ? receiveVolume.div(sendVolume) : sendVolume.div(receiveVolume);
-    // tslint:disable-next-line: variable-name
-    const minimumFill = side === OrderSide.BUY ? mininimumReceiveFill : mininimumReceiveFill.div(price);
-
     const sendTokenDetails = Tokens.get(sentSwap.sendToken);
     if (!sendTokenDetails) {
         throw new Error(`Unsupported token: ${sentSwap.sendToken}`);
@@ -268,12 +249,42 @@ export const openOrder = async (
         throw new Error(`Unsupported token: ${sentSwap.receiveToken}`);
     }
 
+    let newOrderPrice: BigNumber;
+    let newOrderVolume: BigNumber;
+    let newOrderMinimumFill: BigNumber;
+
+    const shift = (n: BigNumber, e: number) => n.times(new BigNumber(10).exponentiatedBy(e));
+
+    const receiveVolumeBig = shift(new BigNumber(sentSwap.receiveAmount), -receiveTokenDetails.decimals);
+    const sendVolumeBig = shift(new BigNumber(sentSwap.sendAmount), -sendTokenDetails.decimals);
+    const mininimumReceiveFillBig = shift(new BigNumber(sentSwap.minimumReceiveFill || "0"), -receiveTokenDetails.decimals);
+    // const minimum
+
+    if (side === OrderSide.BUY) {
+        newOrderPrice = shift(sendVolumeBig.dividedBy(receiveVolumeBig), 8);
+        newOrderVolume = shift(sendVolumeBig, 8);
+        newOrderMinimumFill = mininimumReceiveFillBig.times(newOrderPrice); // Don't shift because price is shifted
+
+    } else {
+        newOrderPrice = shift(receiveVolumeBig.dividedBy(sendVolumeBig), 8);
+        newOrderVolume = shift(receiveVolumeBig, 8);
+        newOrderMinimumFill = shift(mininimumReceiveFillBig, 8);
+    }
+
     const newOrder: renexNode.NewOrder = {
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
-        volume,
-        price, // 350,
-        minimumFill, // 10,
+        volume: new BN(newOrderVolume.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()),
+        price: new BN(newOrderPrice.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 350,
+        minimumFill: new BN(newOrderMinimumFill.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 10,
     };
+
+    simpleConsole.log("Submitting order to SwapperD");
+    try {
+        await submitSwap(sentSwap, sdk._networkData.network);
+    } catch (error) {
+        simpleConsole.error(error.message || error);
+        throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
+    }
 
     // Create order fragment mapping
     simpleConsole.log("Building order mapping");
@@ -292,22 +303,19 @@ export const openOrder = async (
         throw err;
     }
 
-    const request = new renexNode.EncryptedShares({
+    const request = new renexNode.OpenOrderRequest({
         orderID: sentSwap.delayInfo.orderID,
         sendToken: sendTokenDetails.symbol,
         receiveToken: receiveTokenDetails.symbol,
-        pods: orderFragmentMappings,
+        encryptedShares: orderFragmentMappings,
     });
 
-    simpleConsole.log("Sending order fragments");
     try {
         await renexNode.submitOrderFragments(sdk._networkData.renexNode, request, options.token);
     } catch (err) {
         simpleConsole.error(err.message || err);
         throw err;
     }
-
-    simpleConsole.log("Order submitted.");
 
     return sentSwap;
 };

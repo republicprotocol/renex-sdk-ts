@@ -166,6 +166,8 @@ export class RenExSDK {
         this._web3 = new Web3(provider);
         const mainnetWeb3 = mainnetProvider ? new Web3(mainnetProvider) : this._web3;
 
+        console.log(mainnetProvider);
+
         // Update contract providers
         this._contracts = {
             darknodeRegistry: new mainnetWeb3.eth.Contract(DarknodeRegistryABI, this._networkData.contracts[0].darknodeRegistry),

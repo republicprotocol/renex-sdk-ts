@@ -1,6 +1,6 @@
 // tsc complains about importing NodeRSA normally
 import * as NodeRSAType from "node-rsa";
-// const NodeRSA = require("node-rsa") as new () => NodeRSAType;
+const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
 import axios, { AxiosRequestConfig } from "axios";
 import BN from "bn.js";
@@ -32,14 +32,12 @@ export class PodShares extends Record({
     volume: List<string>(),
     minimumFill: List<string>(),
 }) { }
-export class EncryptedShares extends Record({
+export class OpenOrderRequest extends Record({
     orderID: "",
     sendToken: "",
     receiveToken: "",
-    pods: Map<string, PodShares>(),
+    encryptedShares: Map<string, PodShares>(),
 }) { }
-
-export type OpenOrderRequest = EncryptedShares;
 
 export class Pod extends Record({
     id: "",
@@ -117,7 +115,19 @@ export async function cancelOrder(
     }
 }
 
-const shift = new BN(10).pow(new BN(8));
+const promiseAll = async <a>(list: List<Promise<a>>, defaultValue: a): Promise<List<a>> => {
+    let newList = List<a>();
+    for (const entryP of list) {
+        try {
+            newList = newList.push(await entryP);
+        } catch (error) {
+            newList = newList.push(defaultValue);
+        }
+    }
+
+    throw new Error("Not implemented");
+};
+
 export async function buildOrderMapping(
     web3: Web3,
     renexNode: string,
@@ -134,14 +144,18 @@ export async function buildOrderMapping(
             const k = Math.floor(((n * 2) / 3 + 1) / 2) - 1;
 
             simpleConsole.log(`Splitting secret shares for pod ${pod.id.slice(0, 8)}...`);
-            const priceShares = shamir.split(n, k, new BN(order.price).mul(shift));
-            const volumeShares = shamir.split(n, k, new BN(order.volume).mul(shift));
-            const minimumFillShares = shamir.split(n, k, new BN(order.minimumFill).mul(shift));
+            const priceShares = shamir.split(n, k, order.price);
+            const volumeShares = shamir.split(n, k, order.volume);
+            const minimumFillShares = shamir.split(n, k, order.minimumFill);
+
+            const darknodeKeys = pod.darknodes.map(async (darknode) => await getDarknodePublicKey(darknodeRegistryContract, darknode, simpleConsole));
+
+            const transform = (shares: List<shamir.Share>) => promiseAll(shares.zip(darknodeKeys).map(encryptForDarknode).map(async data => (await data).toBase64()), "");
 
             const podShares = new PodShares({
-                price: priceShares.map((share) => shareToBuffer(share, 8).toBase64()),
-                volume: volumeShares.map((share) => shareToBuffer(share, 8).toBase64()),
-                minimumFill: minimumFillShares.map((share) => shareToBuffer(share, 8).toBase64()),
+                price: await transform(priceShares),
+                volume: await transform(volumeShares),
+                minimumFill: await transform(minimumFillShares),
             });
 
             return [pod.id, podShares];
@@ -153,6 +167,8 @@ export async function buildOrderMapping(
             //         throw new Error("invalid darknode access");
             //     }
             //     simpleConsole.log(`Encrypting for darknode ${new EncodedData("0x1b14" + darknode.slice(2), Encodings.HEX).toBase58().slice(0, 8)}...`);
+
+            // }
 
             //     // Retrieve darknode RSA public key from Darknode contract
             //     // let darknodeKey = null;
@@ -210,8 +226,13 @@ export async function buildOrderMapping(
     return fragmentPromises.reduce(
         async (fragmentMappingsPromise: Promise<Map<string, PodShares>>, podPromise: Promise<[string, PodShares]>) => {
             const fragmentMappings = await fragmentMappingsPromise;
-            const [podID, podShares] = await podPromise;
-            return fragmentMappings.set(podID, podShares);
+            try {
+                const [podID, podShares] = await podPromise;
+                return fragmentMappings.set(podID, podShares);
+            } catch (error) {
+                console.error(error);
+                return fragmentMappings;
+            }
         },
         Promise.resolve(Map<string, PodShares>())
     );
@@ -222,39 +243,39 @@ export async function buildOrderMapping(
 //     return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
 // }
 
-// async function getDarknodePublicKey(
-//     darknodeRegistryContract: DarknodeRegistryContract, darknode: string, simpleConsole: SimpleConsole,
-// ): Promise<NodeRSAType | null> {
-//     const darknodeKeyHex: string | null = await darknodeRegistryContract.getDarknodePublicKey(darknode);
+async function getDarknodePublicKey(
+    darknodeRegistryContract: Contract, darknode: string, simpleConsole: SimpleConsole,
+): Promise<NodeRSAType | null> {
+    const darknodeKeyHex: string | null = await darknodeRegistryContract.methods.getDarknodePublicKey(darknode).call();
 
-//     if (darknodeKeyHex as (string | null) === null || darknodeKeyHex.length === 0) {
-//         simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
-//         return null;
-//     }
+    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
+        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
+        return null;
+    }
 
-//     const darknodeKey = Buffer.from(darknodeKeyHex.slice(2), "hex");
+    const darknodeKey = Buffer.from(darknodeKeyHex.slice(2), "hex");
 
-//     // We require the exponent E to fit into 32 bytes.
-//     // Since it is stored at 64 bytes, we ignore the first 32 bytes.
-//     // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
-//     const e = darknodeKey.slice(0, 8).readUInt32BE(4);
-//     const n = darknodeKey.slice(8);
+    // We require the exponent E to fit into 32 bytes.
+    // Since it is stored at 64 bytes, we ignore the first 32 bytes.
+    // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
+    const e = darknodeKey.slice(0, 8).readUInt32BE(4);
+    const n = darknodeKey.slice(8);
 
-//     const key = new NodeRSA();
-//     key.importKey({
-//         n,
-//         e,
-//     });
+    const key = new NodeRSA();
+    key.importKey({
+        n,
+        e,
+    });
 
-//     key.setOptions({
-//         encryptionScheme: {
-//             scheme: "pkcs1_oaep",
-//             hash: "sha1"
-//         }
-//     });
+    key.setOptions({
+        encryptionScheme: {
+            scheme: "pkcs1_oaep",
+            hash: "sha1"
+        }
+    });
 
-//     return key;
-// }
+    return key;
+}
 
 function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
     // TODO: Check that bignumber isn't bigger than 8 bytes (64 bits)
@@ -285,15 +306,17 @@ function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
     }
 }
 
-export function encryptForDarknode(darknodeKey: NodeRSAType | null, share: shamir.Share, byteCount: number): EncodedData {
+export const encryptForDarknode = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
+    const darknodeKey = await darknodeKeyP;
+
     if (darknodeKey === null) {
-        return new EncodedData("", Encodings.BASE64);
+        throw new Error("Darknode key is null");
     }
 
-    const bytes = shareToBuffer(share, byteCount);
+    const bytes = shareToBuffer(share, 8);
 
     return new EncodedData(darknodeKey.encrypt(bytes.toBuffer(), "buffer"), Encodings.BUFFER);
-}
+};
 
 /*
  * Retrieve all the darknodes registered in the current epoch.
@@ -326,8 +349,12 @@ async function getPods(
     const res = await axios.get<string[]>(`${renexNode}/pods?pair=${marketID}`);
 
     const podsForPair = res.data;
+    console.log("podsForPair:");
+    console.log(podsForPair);
 
     const allPods = await getAllPods(web3, darknodeRegistryContract, simpleConsole);
+    console.log("allPods:");
+    console.log(allPods.toJS());
 
     return allPods.filter((pod: Pod) => podsForPair.includes(pod.id));
 }
@@ -366,7 +393,7 @@ async function getAllPods(web3: Web3, darknodeRegistryContract: Contract, simple
         pods = pods.push(new Pod());
     }
 
-    for (let i = 0; i < darknodes.length; i++) {
+    for (let i = 0; i < numberOfPods * minimumPodSize; i++) {
         while (positionInOcean.get(x.toNumber()) !== -1) {
             x = x.add(new BN(1));
             x = x.mod(numberOfDarknodes);
