@@ -300,7 +300,7 @@ function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
 
         // TODO: Calculate length of prime and value
         const indexBytes = new BN(share.index).toArrayLike(Buffer, "be", byteCount);
-        const shareLengthBytes = new BN(byteCount + byteCount + 4 + 4).toArrayLike(Buffer, "be", byteCount);
+        const shareLengthBytes = new BN(byteCount + byteCount + 8 + 8).toArrayLike(Buffer, "be", byteCount);
         const primeLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
         const primeBytes = shamir.PRIME.toArrayLike(Buffer, "be", 8);
         const shareValueLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
