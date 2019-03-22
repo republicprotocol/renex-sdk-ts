@@ -29,16 +29,15 @@ export function split(n: number, k: number, secret: BN): List<Share> {
         throw new Error("finite field error: secret is too big");
     }
 
-    const coefficients = new Array(k);
+    const coefficients = new Array<BN>(k);
     coefficients[0] = secret;
 
     for (let i = 1; i < k; i++) {
+        // 8 bytes for a 64-bit number
+        const coefficientSize = 64;
         let coefficient = new BN(0);
-        const words = new Int32Array(2);
         do {
-            const bytes = crypto.randomBytes(words.length);
-            words.set(bytes);
-            coefficient = new BN(Math.abs(words[0])).pow(new BN(2)).add(new BN(Math.abs(words[1])));
+            coefficient = new BN(crypto.randomBytes(coefficientSize / 8));
         } while (coefficient.gte(PRIME));
         coefficients[i] = coefficient;
     }

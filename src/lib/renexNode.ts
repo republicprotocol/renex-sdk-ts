@@ -361,13 +361,7 @@ async function getPods(
     const res = await axios.get<string[]>(`${renexNode}/pods?pair=${marketID}`);
 
     const podsForPair = res.data;
-    console.log("podsForPair:");
-    console.log(podsForPair);
-
     const allPods = await getAllPods(web3, darknodeRegistryContract, simpleConsole);
-    console.log("allPods:");
-    console.log(allPods.toJS());
-
     return allPods.filter((pod: Pod) => podsForPair.includes(pod.id));
 }
 

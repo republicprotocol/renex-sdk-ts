@@ -310,6 +310,8 @@ export const openOrder = async (
         encryptedShares: orderFragmentMappings,
     });
 
+    console.log(JSON.stringify(request.toJS(), null, "    "));
+
     try {
         await renexNode.submitOrderFragments(sdk._networkData.renexNode, request, options.token);
     } catch (err) {
