@@ -1,12 +1,18 @@
-import { BN } from "bn.js";
+import BN from "bn.js";
 import { expect } from "chai";
-import { randomBytes } from "crypto";
 import { List, Map } from "immutable";
 import * as shamir from "../../src/lib/shamir";
+import { EncodedData, Encodings } from "../../src/lib/encodedData";
 
 // tslint:disable:no-unused-expression
 
 describe("Shamir's Secret Sharing", () => {
+
+    it("decode", () => {
+        const x = "AAAAAAAAAAEAAAAAAAAAIAAAAAAAAAAI/////////8UAAAAAAAAACMqmzYfQMk3l";
+        console.log(new EncodedData(x, Encodings.BASE64).toBuffer());
+    });
+
     it("should return the correct number of shares", () => {
         const n = 100;
         const k = 50;

@@ -3,7 +3,7 @@
 
 const {
     RenExSDK
-// @ts-ignore
+    // @ts-ignore
 } = require("@renex/renex");
 
 const Web3 = require("web3");
