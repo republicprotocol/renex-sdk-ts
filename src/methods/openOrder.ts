@@ -273,9 +273,9 @@ export const openOrder = async (
 
     const newOrder: renexNode.NewOrder = {
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
-        volume: new BN(newOrderVolume.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()),
-        price: new BN(newOrderPrice.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 350,
-        minimumFill: new BN(newOrderMinimumFill.decimalPlaces(BigNumber.ROUND_DOWN).toFixed()), // 10,
+        volume: new BN(newOrderVolume.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()),
+        price: new BN(newOrderPrice.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()), // 350,
+        minimumFill: new BN(newOrderMinimumFill.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()), // 10,
     };
 
     simpleConsole.log("Submitting order to SwapperD");
