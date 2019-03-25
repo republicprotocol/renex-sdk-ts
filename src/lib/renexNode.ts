@@ -22,6 +22,9 @@ import { Record } from "./record";
 // const VOLUME_OFFSET = 12;
 const NULL = "0x0000000000000000000000000000000000000000";
 
+// The amount of precision available for Darknodes to match
+export const DECIMAL_PRECISION = 8;
+
 export class SwapperDAuthorizationRequest extends Record({
     address: "",
     signature: "",

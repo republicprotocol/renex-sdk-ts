@@ -7,7 +7,7 @@ import * as renexNode from "../lib/renexNode";
 import RenExSDK from "../index";
 
 import { errors, updateError } from "../errors";
-import { normalizePrice, normalizeVolume } from "../lib/conversion";
+import { normalizePrice, normalizeVolume, shiftDecimals } from "../lib/conversion";
 import { getMarket } from "../lib/market";
 import { submitSwap } from "../lib/swapper";
 import { MarketPairs, Token, Tokens, toSmallestUnit } from "../lib/tokens";
@@ -253,22 +253,20 @@ export const openOrder = async (
     let newOrderVolume: BigNumber;
     let newOrderMinimumFill: BigNumber;
 
-    const shift = (n: BigNumber, e: number) => n.times(new BigNumber(10).exponentiatedBy(e));
-
-    const receiveVolumeBig = shift(new BigNumber(sentSwap.receiveAmount), -receiveTokenDetails.decimals);
-    const sendVolumeBig = shift(new BigNumber(sentSwap.sendAmount), -sendTokenDetails.decimals);
-    const mininimumReceiveFillBig = shift(new BigNumber(sentSwap.minimumReceiveAmount || "0"), -receiveTokenDetails.decimals);
+    const receiveVolumeBig = shiftDecimals(new BigNumber(sentSwap.receiveAmount), -receiveTokenDetails.decimals);
+    const sendVolumeBig = shiftDecimals(new BigNumber(sentSwap.sendAmount), -sendTokenDetails.decimals);
+    const mininimumReceiveFillBig = shiftDecimals(new BigNumber(sentSwap.minimumReceiveAmount || "0"), -receiveTokenDetails.decimals);
     // const minimum
 
     if (side === OrderSide.BUY) {
-        newOrderPrice = shift(sendVolumeBig.dividedBy(receiveVolumeBig), 8);
-        newOrderVolume = shift(sendVolumeBig, 8);
+        newOrderPrice = shiftDecimals(sendVolumeBig.dividedBy(receiveVolumeBig), renexNode.DECIMAL_PRECISION);
+        newOrderVolume = shiftDecimals(sendVolumeBig, renexNode.DECIMAL_PRECISION);
         newOrderMinimumFill = mininimumReceiveFillBig.times(newOrderPrice); // Don't shift because price is shifted
 
     } else {
-        newOrderPrice = shift(receiveVolumeBig.dividedBy(sendVolumeBig), 8);
-        newOrderVolume = shift(receiveVolumeBig, 8);
-        newOrderMinimumFill = shift(mininimumReceiveFillBig, 8);
+        newOrderPrice = shiftDecimals(receiveVolumeBig.dividedBy(sendVolumeBig), renexNode.DECIMAL_PRECISION);
+        newOrderVolume = shiftDecimals(receiveVolumeBig, renexNode.DECIMAL_PRECISION);
+        newOrderMinimumFill = shiftDecimals(mininimumReceiveFillBig, renexNode.DECIMAL_PRECISION);
     }
 
     const newOrder: renexNode.NewOrder = {

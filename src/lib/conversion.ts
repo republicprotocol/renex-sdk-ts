@@ -23,3 +23,8 @@ export function toOriginalType(converted: BigNumber, original: NumberInput): Num
             throw new Error(`Could not convert ${typeof original} to original type`);
     }
 }
+
+/***
+ * Shift decimals places by 10^exponent
+ */
+export const shiftDecimals = (num: BigNumber, exponent: number): BigNumber => num.times(new BigNumber(10).exponentiatedBy(exponent));
