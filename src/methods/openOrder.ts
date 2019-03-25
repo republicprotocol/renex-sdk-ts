@@ -194,7 +194,7 @@ export const validateSwap = async (
         receiveToken: inputs.receiveToken,
         sendAmount: toSmallestUnit(inputs.sendVolume, sendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
         receiveAmount: toSmallestUnit(inputs.receiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        minimumReceiveFill: toSmallestUnit(inputs.mininimumReceiveFill, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(inputs.mininimumReceiveFill, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee: _brokerFee,
         delay: true,
         delayCallbackUrl: `${sdk._networkData.renexNode}/swaps`,
@@ -257,7 +257,7 @@ export const openOrder = async (
 
     const receiveVolumeBig = shift(new BigNumber(sentSwap.receiveAmount), -receiveTokenDetails.decimals);
     const sendVolumeBig = shift(new BigNumber(sentSwap.sendAmount), -sendTokenDetails.decimals);
-    const mininimumReceiveFillBig = shift(new BigNumber(sentSwap.minimumReceiveFill || "0"), -receiveTokenDetails.decimals);
+    const mininimumReceiveFillBig = shift(new BigNumber(sentSwap.minimumReceiveAmount || "0"), -receiveTokenDetails.decimals);
     // const minimum
 
     if (side === OrderSide.BUY) {
