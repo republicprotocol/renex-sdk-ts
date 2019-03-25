@@ -34,8 +34,8 @@ export enum MarketPair {
     ETH_BTC = "ETH/BTC",
     REN_BTC = "REN/BTC",
     TUSD_BTC = "TUSD/BTC",
+    WBTC_BTC = "WBTC/BTC",
     ZEC_BTC = "ZEC/BTC",
-    WBTC_BTC = "BTC/WBTC",
 }
 
 export const MarketPairs = OrderedMap<MarketPair, MarketDetails>()
