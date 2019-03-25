@@ -259,14 +259,14 @@ export const openOrder = async (
     // const minimum
 
     if (side === OrderSide.BUY) {
-        newOrderPrice = shiftDecimals(sendVolumeBig.dividedBy(receiveVolumeBig), 8);
-        newOrderVolume = shiftDecimals(sendVolumeBig, 8);
+        newOrderPrice = shiftDecimals(sendVolumeBig.dividedBy(receiveVolumeBig), renexNode.DECIMAL_PRECISION);
+        newOrderVolume = shiftDecimals(sendVolumeBig, renexNode.DECIMAL_PRECISION);
         newOrderMinimumFill = mininimumReceiveFillBig.times(newOrderPrice); // Don't shift because price is shifted
 
     } else {
-        newOrderPrice = shiftDecimals(receiveVolumeBig.dividedBy(sendVolumeBig), 8);
-        newOrderVolume = shiftDecimals(receiveVolumeBig, 8);
-        newOrderMinimumFill = shiftDecimals(mininimumReceiveFillBig, 8);
+        newOrderPrice = shiftDecimals(receiveVolumeBig.dividedBy(sendVolumeBig), renexNode.DECIMAL_PRECISION);
+        newOrderVolume = shiftDecimals(receiveVolumeBig, renexNode.DECIMAL_PRECISION);
+        newOrderMinimumFill = shiftDecimals(mininimumReceiveFillBig, renexNode.DECIMAL_PRECISION);
     }
 
     const newOrder: renexNode.NewOrder = {
