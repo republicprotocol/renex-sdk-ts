@@ -262,7 +262,6 @@ export const openOrder = async (
         newOrderPrice = shiftDecimals(sendVolumeBig.dividedBy(receiveVolumeBig), renexNode.DECIMAL_PRECISION);
         newOrderVolume = shiftDecimals(sendVolumeBig, renexNode.DECIMAL_PRECISION);
         newOrderMinimumFill = mininimumReceiveFillBig.times(newOrderPrice); // Don't shift because price is shifted
-
     } else {
         newOrderPrice = shiftDecimals(receiveVolumeBig.dividedBy(sendVolumeBig), renexNode.DECIMAL_PRECISION);
         newOrderVolume = shiftDecimals(receiveVolumeBig, renexNode.DECIMAL_PRECISION);
@@ -275,6 +274,12 @@ export const openOrder = async (
         price: new BN(newOrderPrice.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()), // 350,
         minimumFill: new BN(newOrderMinimumFill.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()), // 10,
     };
+
+    console.log({
+        volume: newOrder.volume.toString(),
+        price: newOrder.price.toString(),
+        minimumFill: newOrder.minimumFill.toString(),
+    });
 
     simpleConsole.log("Submitting order to SwapperD");
     try {
