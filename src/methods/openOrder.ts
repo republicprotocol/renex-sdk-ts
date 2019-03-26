@@ -142,6 +142,34 @@ export const validateUserInputs = (
     }
 };
 
+export const normalizeSwap = (orderInputsIn: OrderInputs): OrderInputs => {
+    const orderInputs = { ...orderInputsIn };
+
+    // let side = OrderSide.BUY;
+
+    // const marketPair = getMarket(orderInputs.receiveToken, orderInputs.sendToken);
+    // if (marketPair) {
+    //     const marketDetails = MarketPairs.get(marketPair);
+    //     if (marketDetails) {
+    //         side = orderInputs.receiveToken === marketDetails.base ? OrderSide.BUY : OrderSide.SELL;
+    //     }
+    // }
+
+    if (orderInputs.price) {
+        orderInputs.price = new BigNumber(orderInputs.price).decimalPlaces(8); // , side === OrderSide.BUY ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN);
+    }
+
+    if (orderInputs.sendVolume) {
+        orderInputs.sendVolume = new BigNumber(orderInputs.sendVolume).decimalPlaces(8); // , BigNumber.ROUND_DOWN);
+    }
+
+    if (orderInputs.receiveVolume) {
+        orderInputs.receiveVolume = new BigNumber(orderInputs.receiveVolume).decimalPlaces(8); // , BigNumber.ROUND_UP);
+    }
+
+    return orderInputs;
+};
+
 export const validateSwap = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
@@ -206,6 +234,7 @@ export const validateSwap = async (
         brokerFee: _brokerFee,
         delay: true,
         delayCallbackUrl: `${sdk._networkData.renexNode}/swaps`,
+        delayPriceRange: 300,
         delayInfo: {
             orderID: renexNode.randomNonce().toString("hex"),
             kycAddr: sdk.getAddress(),
@@ -283,11 +312,14 @@ export const openOrder = async (
         minimumFill: new BN(newOrderMinimumFill.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()), // 10,
     };
 
-    console.log({
+    console.log("Input values:");
+    console.table({
         volume: newOrder.volume.toString(),
         price: newOrder.price.toString(),
         minimumFill: newOrder.minimumFill.toString(),
     });
+    console.log("Details sent to swapperD:");
+    console.table(sentSwap);
 
     simpleConsole.log("Submitting order to SwapperD");
     try {
@@ -321,7 +353,8 @@ export const openOrder = async (
         encryptedShares: orderFragmentMappings,
     });
 
-    console.log(JSON.stringify(request.toJS(), null, "    "));
+    console.log("Details sent to RenEx node:");
+    console.table(request.toJS());
 
     try {
         await renexNode.submitOrderFragments(sdk._networkData.renexNode, request, options.token);

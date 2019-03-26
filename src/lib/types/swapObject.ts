@@ -44,6 +44,7 @@ export interface ReturnedNonDelayedSwap extends ReturnedSwapCore {
 
 export interface ReturnedDelayedSwap extends ReturnedSwapCore {
     delay: true;
+    delayPriceRange: number;
     delayInfo: {
         message: InnerDelayInfo;
         signature: string;
@@ -55,28 +56,28 @@ export type UnfixedReturnedSwap = ReturnedNonDelayedSwap | ReturnedDelayedSwap;
 //////////// SENT //////////////////////////////////////////////////////////////
 
 export interface SentSwapCore extends SwapCore {
-    id?: string;
-    minimumReceiveAmount?: string;
-    sendTo?: string;
-    receiveFrom?: string;
-    timeLock?: number;
-    secretHash?: string;
-    shouldInitiateFirst?: boolean;
-    delayCallbackUrl?: string;
-    brokerFee?: number;
-    sendFee?: string;
-    receiveFee?: string;
-    brokerSendTokenAddr?: string;
-    brokerReceiveTokenAddr?: string;
+    brokerFee: number;
+    // secretHash: string;
+    // sendFee: string;
+    // receiveFee: string;
+    // timeLock: number;
 }
 
 export interface SentNonDelayedSwap extends SentSwapCore {
     delay: false | undefined;
+    sendTo: string;
+    receiveFrom: string;
+    shouldInitiateFirst: boolean;
+    brokerSendTokenAddr: string;
+    brokerReceiveTokenAddr: string;
 }
 
 export interface SentDelayedSwap extends SentSwapCore {
+    minimumReceiveAmount: string;
     delay: true;
+    delayPriceRange: number;
     delayInfo: InnerDelayInfo;
+    delayCallbackUrl: string;
 }
 
 export type SentSwap = SentNonDelayedSwap | SentDelayedSwap;

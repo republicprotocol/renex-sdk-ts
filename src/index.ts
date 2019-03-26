@@ -15,7 +15,7 @@ import { NetworkData, networks } from "./lib/network";
 import { MarketPair, Token, Tokens } from "./lib/tokens";
 import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
-import { darknodeFees, minimumQuoteVolume, openOrder, validateSwap } from "./methods/openOrder";
+import { darknodeFees, minimumQuoteVolume, normalizeSwap, openOrder, validateSwap } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
     refreshSwapperDConnectionStatus, resetSwapperDConnection,
@@ -142,6 +142,10 @@ export class RenExSDK {
         options?: TransactionOptions,
     ): Promise<SentDelayedSwap> => validateSwap(this, orderInputsIn, options)
 
+    public normalizeSwap = (
+        orderInputsIn: OrderInputs,
+    ): OrderInputs => normalizeSwap(orderInputsIn)
+
     public cancelOrder = (orderID: OrderID, options: TransactionOptions):
         Promise<void> => cancelOrder(this, orderID, options)
 
@@ -165,8 +169,6 @@ export class RenExSDK {
     public updateProvider = (provider: Provider, mainnetProvider?: Provider): [Web3, ContractObject] => {
         this._web3 = new Web3(provider);
         const mainnetWeb3 = mainnetProvider ? new Web3(mainnetProvider) : this._web3;
-
-        console.log(mainnetProvider);
 
         // Update contract providers
         this._contracts = {
