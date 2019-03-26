@@ -112,14 +112,13 @@ export const minimumQuoteVolume = (quoteToken: Token) => {
 };
 
 export const validateUserInputs = (
-    orderInputsIn: OrderInputs,
+    inputsIn: OrderInputs,
     sendTokenBalance: BigNumber | null | undefined,
     options?: TransactionOptions,
-): OrderInputsAll => {
-
-    const inputs = populateOrderDefaults(orderInputsIn);
-
+) => {
     const simpleConsole = (options && options.simpleConsole) || NullConsole;
+
+    const inputs = populateOrderDefaults(inputsIn);
 
     if (inputs.price.lt(new BigNumber(0))) {
         simpleConsole.error(errors.InvalidPrice);
@@ -141,8 +140,6 @@ export const validateUserInputs = (
             throw new Error(errorMessage);
         }
     }
-
-    return inputs;
 };
 
 export const validateSwap = async (
@@ -151,19 +148,9 @@ export const validateSwap = async (
     options?: TransactionOptions,
 ): Promise<SentDelayedSwap> => {
 
-    const balances = await sdk.swapperD.fetchBalances([orderInputsIn.sendToken, orderInputsIn.receiveToken]);
-    const sendBalance = balances.get(orderInputsIn.sendToken);
-
-    const inputs = validateUserInputs(orderInputsIn, sendBalance && sendBalance.free, options);
+    const inputs = populateOrderDefaults(orderInputsIn);
 
     const simpleConsole = (options && options.simpleConsole) || NullConsole;
-
-    // Check that the quote volume is greater than the minimum quote volume
-    if (inputs.sendVolume.lt(inputs.mininimumSendFill)) {
-        const errMsg = `Volume must be at least ${inputs.mininimumSendFill} ${inputs.sendToken}`;
-        simpleConsole.error(errMsg);
-        throw new Error(errMsg);
-    }
 
     // Check that the minimum quote volume is greater than the enforced minimum
     // (this implies that the quote volume is also greater by previous check)
@@ -171,14 +158,25 @@ export const validateSwap = async (
     const enforcedSendVolume = inputs.sendToken === inputs.quoteToken ? enforcedQuoteVolume : enforcedQuoteVolume.div(inputs.price);
 
     if (inputs.sendVolume.lt(enforcedSendVolume)) {
-        const errMsg = `Volume must be at least ${enforcedSendVolume} ${inputs.sendToken}`;
+        let errMsg = `Volume must be at least ${enforcedQuoteVolume.toFixed()} ${inputs.quoteToken}`;
+        if (inputs.sendToken !== inputs.quoteToken) {
+            errMsg = `${errMsg} (${enforcedSendVolume.decimalPlaces(8).toFixed()} ${inputs.sendToken})`;
+        }
         simpleConsole.error(errMsg);
         throw new Error(errMsg);
     }
 
-    const _tokenAddress = await swapperDAddresses(sdk, [inputs.sendToken, inputs.receiveToken]);
-    // Convert the fee fraction to bips by multiplying by 10000
-    const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
+    if (inputs.price.eq(new BigNumber(0))) {
+        simpleConsole.error(errors.InvalidPrice);
+        throw new Error(errors.InvalidPrice);
+    }
+
+    // Check that the quote volume is greater than the minimum quote volume
+    if (inputs.sendVolume.lt(inputs.mininimumSendFill)) {
+        const errMsg = `Volume must be at least ${inputs.mininimumSendFill.toFixed()} ${inputs.sendToken}`;
+        simpleConsole.error(errMsg);
+        throw new Error(errMsg);
+    }
 
     const sendTokenDetails = sdk.tokenDetails.get(inputs.sendToken);
     if (!sendTokenDetails) {
@@ -188,6 +186,16 @@ export const validateSwap = async (
     if (!receiveTokenDetails) {
         throw new Error(`Unknown token ${inputs.receiveToken}`);
     }
+
+    const balances = await sdk.swapperD.fetchBalances([orderInputsIn.sendToken, orderInputsIn.receiveToken]);
+    const sendBalance = balances.get(orderInputsIn.sendToken);
+
+    // Check that the user has sufficient balance
+    validateUserInputs(inputs, sendBalance && sendBalance.free, options);
+
+    const _tokenAddress = await swapperDAddresses(sdk, [inputs.sendToken, inputs.receiveToken]);
+    // Convert the fee fraction to bips by multiplying by 10000
+    const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
     const sentSwap: SentSwap = {
         sendToken: inputs.sendToken,
