@@ -1,7 +1,10 @@
 import BN from "bn.js";
+
 import { expect } from "chai";
 import { List, Map } from "immutable";
+
 import * as shamir from "../../src/lib/shamir";
+
 import { EncodedData, Encodings } from "../../src/lib/encodedData";
 
 // tslint:disable:no-unused-expression
@@ -10,7 +13,8 @@ describe("Shamir's Secret Sharing", () => {
 
     it("decode", () => {
         const x = "AAAAAAAAAAEAAAAAAAAAIAAAAAAAAAAI/////////8UAAAAAAAAACMqmzYfQMk3l";
-        console.log(new EncodedData(x, Encodings.BASE64).toBuffer());
+        const buff = new EncodedData(x, Encodings.BASE64).toBuffer();
+        // console.log(buff);
     });
 
     it("should return the correct number of shares", () => {
@@ -66,7 +70,7 @@ describe("Shamir's Secret Sharing", () => {
             // Use i shares to reconstruct the secret.
             let kShares = List<shamir.Share>();
             for (let j = 0; j < indices.size; j++) {
-                kShares = kShares.set(j, shares.get(j) as shamir.Share);
+                kShares = kShares.set(j, shares.get(j));
             }
             const decodedSecret = shamir.join(kShares);
             expect(decodedSecret.cmp(secret)).equals(0);
@@ -99,7 +103,7 @@ describe("Shamir's Secret Sharing", () => {
             // Use i shares to reconstruct the secret.
             let kShares = List<shamir.Share>();
             for (let j = 0; j < indices.size; j++) {
-                kShares = kShares.set(j, shares.get(j) as shamir.Share);
+                kShares = kShares.set(j, shares.get(j));
             }
             const decodedSecret = shamir.join(kShares);
             expect(decodedSecret.cmp(secret)).not.equal(0);

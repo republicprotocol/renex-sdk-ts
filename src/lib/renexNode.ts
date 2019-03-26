@@ -253,23 +253,32 @@ export async function buildOrderMapping(
 //     return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
 // }
 
-async function getDarknodePublicKey(
-    darknodeRegistryContract: Contract, darknode: string, simpleConsole: SimpleConsole,
-): Promise<NodeRSAType | null> {
-    const darknodeKeyHex: string | null = await darknodeRegistryContract.methods.getDarknodePublicKey(darknode).call();
+const rsaPrefix = Buffer.from([0x00, 0x00, 0x00, 0x07, 0x73, 0x73, 0x68, 0x2d, 0x72, 0x73, 0x61]);
 
-    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
-        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
-        return null;
+export const hexToRSAKey = (darknodeKeyHexIn: string): NodeRSAType => {
+    const darknodeKeyHex = darknodeKeyHexIn.slice(0, 2) === "0x" ? darknodeKeyHexIn.slice(2) : darknodeKeyHexIn;
+    const darknodeKey = Buffer.from(darknodeKeyHex, "hex");
+
+    let e: number;
+    let n: Buffer;
+
+    if (darknodeKey.slice(0, 4 + 7).equals(rsaPrefix)) {
+        const eLength = new EncodedData(darknodeKey.slice(4 + 7, 4 + 7 + 4)).toNumber();
+        e = new EncodedData(darknodeKey.slice(4 + 7 + 4, 4 + 7 + 4 + eLength)).toNumber();
+        const nLength = new EncodedData(darknodeKey.slice(4 + 7 + 4 + eLength, 4 + 7 + 4 + eLength + 4)).toNumber();
+        n = darknodeKey.slice(4 + 7 + 4 + eLength + 4, 4 + 7 + 4 + eLength + 4 + nLength);
+
+        // May have 0x00 prefixed
+        if (nLength === 257 && n[0] === 0x00) {
+            n = n.slice(1);
+        }
+    } else {
+        // We require the exponent E to fit into 32 bytes.
+        // Since it is stored at 64 bytes, we ignore the first 32 bytes.
+        // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
+        e = darknodeKey.slice(0, 8).readUInt32BE(4);
+        n = darknodeKey.slice(8);
     }
-
-    const darknodeKey = Buffer.from(darknodeKeyHex.slice(2), "hex");
-
-    // We require the exponent E to fit into 32 bytes.
-    // Since it is stored at 64 bytes, we ignore the first 32 bytes.
-    // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
-    const e = darknodeKey.slice(0, 8).readUInt32BE(4);
-    const n = darknodeKey.slice(8);
 
     const key = new NodeRSA();
     key.importKey({
@@ -285,7 +294,20 @@ async function getDarknodePublicKey(
     });
 
     return key;
-}
+};
+
+const getDarknodePublicKey = async (
+    darknodeRegistryContract: Contract, darknode: string, simpleConsole: SimpleConsole,
+): Promise<NodeRSAType | null> => {
+    const darknodeKeyHex: string | null = await darknodeRegistryContract.methods.getDarknodePublicKey(darknode).call();
+
+    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
+        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
+        return null;
+    }
+
+    return hexToRSAKey(darknodeKeyHex);
+};
 
 function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
     // TODO: Check that bignumber isn't bigger than 8 bytes (64 bits)

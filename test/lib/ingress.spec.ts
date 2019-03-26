@@ -2,12 +2,13 @@
 // import MockAdapter from "axios-mock-adapter/types";
 // import NodeRSA from "node-rsa";
 
-// import { BN } from "bn.js";
-// import { randomBytes } from "crypto";
+import BN from "bn.js";
+import { randomBytes } from "crypto";
 // import { Map } from "immutable";
 
-// import * as ingress from "@Library/ingress";
-// import * as shamir from "@Library/shamir";
+import * as renexNode from "../../src/lib/renexNode";
+import * as shamir from "../../src/lib/shamir";
+// import { utils } from "web3";
 
 // import { Pair } from "@Library/market";
 // import { NetworkData } from "@Library/network";
@@ -16,14 +17,14 @@
 // import { DarknodeRegistryContractType } from "../types";
 // import { TransactionObject } from "web3/types";
 
-// // Define window.crypto.getRandomValues() for use within test suite.
-// Object.defineProperty(global, "crypto", {
-//     value: {
-//         getRandomValues: (arr: Int32Array) => {
-//             arr.set(randomBytes(arr.length), 0);
-//         }
-//     },
-// });
+// Define window.crypto.getRandomValues() for use within test suite.
+Object.defineProperty(global, "crypto", {
+    value: {
+        getRandomValues: (arr: Int32Array) => {
+            arr.set(randomBytes(arr.length), 0);
+        }
+    },
+});
 
 // // Mock DNR contract
 // // tslint:disable:no-object-literal-type-assertion
@@ -112,17 +113,6 @@
 // // Mock wallet
 // const wallet = Wallet.MockWallet;
 
-// // Mock order
-// const order = new ingress.Order({
-//     type: ingress.OrderType.LIMIT,
-//     parity: ingress.OrderParity.BUY,
-//     expiry: Math.round((new Date()).getTime() / 1000),
-//     tokens: Pair.ETHREN,
-//     price: new ingress.Tuple({ c: 200, q: 40 }),
-//     volume: new ingress.Tuple({ c: 500, q: 14 }),
-//     minimumVolume: new ingress.Tuple({ c: 500, q: 14 }),
-// });
-
 // test("it should open an order", async () => {
 //     const walletDetails = WalletDetails.get(wallet, undefined);
 //     const web3 = await walletDetails.getWeb3();
@@ -208,41 +198,61 @@
 //     expect(id).toEqual("0xa2cd3f1d4e22af998905cebc124a202b7fa388eff22a20e71206b3e9a5f261d8");
 // });
 
-// // test('can hash for arbitrary nonces', async () => {
-// //     const web3 = await WalletDetails.get(wallet).getWeb3();
-// //     const fixedOrder = new ingress.Order({
-// //         type: ingress.OrderType.LIMIT,
-// //         parity: ingress.OrderParity.BUY,
-// //         expiry: 1517652000,
-// //         tokens: Pair.ETHREN,
-// //         price: new ingress.Tuple({ c: 1, q: 2 }),
-// //         volume: new ingress.Tuple({ c: 1, q: 3 }),
-// //         minimumVolume: new ingress.Tuple({ c: 1, q: 3 }),
-// //         nonce: new BN(160287798389754777401),
-// //     });
-// //     ingress.getOrderID(web3, fixedOrder);
-// // })
-
-// test("encryption", async () => {
-
-//     const e = 65537;
-//     // tslint:disable-next-line:max-line-length
-//     const n1 = new BN("24647935769157309963029746721741242591066637337492827441264547298642683911218972660784467315444150987107529063809388610478698491188066426003616297365896581962431197338898492957490083413857431339437975377214995807392560304135209738268116819926041995271464167308597560210660741161074478272749195405678300175697197817254486386074828734308349240035958328665822993573422952820910501015042340650164148266752622232254604178733789995737926512618018579129063456583113889350038265435661987189299813479158921457192822827172347320786573335080477328647619807931059765376754043088403948592335324059564493112233936751738719109172121");
-//     const n = n1.toBuffer();
-
-//     const key = new NodeRSA();
-//     key.importKey({
-//         n,
-//         e,
+// test('can hash for arbitrary nonces', async () => {
+//     const web3 = await WalletDetails.get(wallet).getWeb3();
+//     const fixedOrder = new ingress.Order({
+//         type: ingress.OrderType.LIMIT,
+//         parity: ingress.OrderParity.BUY,
+//         expiry: 1517652000,
+//         tokens: Pair.ETHREN,
+//         price: new ingress.Tuple({ c: 1, q: 2 }),
+//         volume: new ingress.Tuple({ c: 1, q: 3 }),
+//         minimumVolume: new ingress.Tuple({ c: 1, q: 3 }),
+//         nonce: new BN(160287798389754777401),
 //     });
+//     ingress.getOrderID(web3, fixedOrder);
+// })
 
-//     // Options don't seem to work
-//     key.setOptions({
-//     });
-
-//     const shamirN = 24;
-//     const k = Math.floor((2 * (shamirN + 1)) / 3);
-//     const tokenShares = shamir.split(shamirN, k, new BN(order.tokens));
-
-//     ingress.encryptForDarknode(key, tokenShares.get(0), 8);
+// // Mock order
+// const order = new renexNode.Order({
+//     type: renexNode.OrderType.LIMIT,
+//     parity: renexNode.OrderParity.BUY,
+//     expiry: Math.round((new Date()).getTime() / 1000),
+//     tokens: Pair.ETHREN,
+//     price: new renexNode.Tuple({ c: 200, q: 40 }),
+//     volume: new renexNode.Tuple({ c: 500, q: 14 }),
+//     minimumVolume: new renexNode.Tuple({ c: 500, q: 14 }),
 // });
+
+describe("encryption", () => {
+    const sameKeys = [
+        {
+            ssh: "0x000000077373682d727361000000030100010000010100ad414c948e5b7b09578df1bcdc18c0a62aa4215a6b71450ea879d428594fe3d4fc11e6b2b4f793ee6ecd9372f2b0eec70eb073570fb8620af3ef5176d718f485fc03bf7f7e44dde90b54e649b0cb8b57992656903c1d4d71a43e062532186fc34ad9c45926750d87545b9b71bf28d639a4c53dd4f68f801dd7d4cf1d026b40dd8301992d0253380987e996e5469701b2191cbdceb382edd2fe242caca1b32cc7dcf4aac85e121ac26ed086446be98fdd5a60cc4b58461ba067c6b8683307f8d0e18809df16d10abf26fe2cc8b06a0189f665ff0454bd967dfee1877fee3270dc71226530e989a53a7a92d19c5bb71c474f2cd9b90b74ecd447b2ebaaac507cdb",
+            hex: "0x0000000000010001ad414c948e5b7b09578df1bcdc18c0a62aa4215a6b71450ea879d428594fe3d4fc11e6b2b4f793ee6ecd9372f2b0eec70eb073570fb8620af3ef5176d718f485fc03bf7f7e44dde90b54e649b0cb8b57992656903c1d4d71a43e062532186fc34ad9c45926750d87545b9b71bf28d639a4c53dd4f68f801dd7d4cf1d026b40dd8301992d0253380987e996e5469701b2191cbdceb382edd2fe242caca1b32cc7dcf4aac85e121ac26ed086446be98fdd5a60cc4b58461ba067c6b8683307f8d0e18809df16d10abf26fe2cc8b06a0189f665ff0454bd967dfee1877fee3270dc71226530e989a53a7a92d19c5bb71c474f2cd9b90b74ecd447b2ebaaac507cdb",
+        },
+        {
+            ssh: "000000077373682d727361000000030100010000010100cbd84e212eae7d428e10105a453226671179219343946025f106ff48c161dc5882cfb0c47fc0ae44cef4ddb0cc672a2c3eadff9c3d1e4d24221c549dc2e20c89fab04c6a642ada8c6076e37c25dbda4eee07e3eb6e170b5841095f11eb56f1223d52b06a4560df11b065b8e02c7c031a102d65410c688e3de385b04e4aa50e9adbb23a4aca3a519c349bfea799a311305f09191f984f3c0a3cc3fd3c5e7b0b3eb81d2ec4f0fc5297b2b90aec85c8a32fbb9784b6e60f1f1a1d1907be5f99bec8879ac1824b5322f975af2aec8c02a8428f2f1ebb43239053619683dde34264844e03839e59a52e58966c4d5505c28a44f46b926ddcb77c95968faa93173d9d9b",
+            hex: "0000000000010001cbd84e212eae7d428e10105a453226671179219343946025f106ff48c161dc5882cfb0c47fc0ae44cef4ddb0cc672a2c3eadff9c3d1e4d24221c549dc2e20c89fab04c6a642ada8c6076e37c25dbda4eee07e3eb6e170b5841095f11eb56f1223d52b06a4560df11b065b8e02c7c031a102d65410c688e3de385b04e4aa50e9adbb23a4aca3a519c349bfea799a311305f09191f984f3c0a3cc3fd3c5e7b0b3eb81d2ec4f0fc5297b2b90aec85c8a32fbb9784b6e60f1f1a1d1907be5f99bec8879ac1824b5322f975af2aec8c02a8428f2f1ebb43239053619683dde34264844e03839e59a52e58966c4d5505c28a44f46b926ddcb77c95968faa93173d9d9b",
+        },
+    ];
+
+    for (const sameKey of sameKeys) {
+        it("can decode two key formats", async () => {
+
+            const key1 = renexNode.hexToRSAKey(sameKey.ssh);
+            const key2 = renexNode.hexToRSAKey(sameKey.hex);
+
+            // tslint:disable: no-any
+            console.assert(JSON.stringify((key1 as any).keyPair.n) === JSON.stringify((key2 as any).keyPair.n));
+            console.assert((key1 as any).keyPair.e === (key2 as any).keyPair.e);
+            // tslint:enable: no-any
+
+            const shamirN = 24;
+            const k = Math.floor((2 * (shamirN + 1)) / 3);
+            const tokenShares = shamir.split(shamirN, k, new BN(0x1234));
+
+            await renexNode.encryptForDarknode([tokenShares.get(0), (async () => key1)()]);
+            await renexNode.encryptForDarknode([tokenShares.get(0), (async () => key2)()]);
+        });
+    }
+});

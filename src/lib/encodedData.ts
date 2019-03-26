@@ -159,4 +159,8 @@ export class EncodedData extends Record(DefaultEncodedData) {
     public toString(this: EncodedData): string {
         return this.toHex();
     }
+
+    public toNumber(this: EncodedData): number {
+        return parseInt(this.toHex(), 16);
+    }
 }
