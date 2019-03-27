@@ -305,10 +305,11 @@ export const openOrder = async (
         newOrderMinimumFill = shiftDecimals(mininimumReceiveFillBig, renexNode.DECIMAL_PRECISION);
     }
 
+    const delayPriceRange = sentSwap.delayPriceRange || 0;
     if (side === OrderSide.BUY) {
-        newOrderPrice = newOrderPrice.times(1.03);
+        newOrderPrice = newOrderPrice.times(1 + delayPriceRange / 10000);
     } else {
-        newOrderPrice = newOrderPrice.times(0.97);
+        newOrderPrice = newOrderPrice.times(1 - delayPriceRange / 10000);
     }
 
     const newOrder: renexNode.NewOrder = {
