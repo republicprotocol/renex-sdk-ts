@@ -1,13 +1,11 @@
 import axios from "axios";
-import Web3 from "web3";
 
 import { errors, responseError, updateError } from "../errors";
-import { EncodedData } from "./encodedData";
 import { Token } from "./tokens";
 import { ReturnedSwap, SentSwap, SubmitImmediateResponse, SwapStatus, UnfixedReturnedSwap } from "./types/swapObject";
 
 const API = "http://localhost:7928";
-const SIGNATURE_PREFIX = "RenEx: swapperD: ";
+// const SIGNATURE_PREFIX = "RenEx: swapperD: ";
 
 export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
@@ -169,44 +167,6 @@ export async function getSwapperDSwaps(options: { network: string }): Promise<Sw
     }
 
     return response;
-}
-
-async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
-    const hashForSigning: string = web3.utils.toHex(message);
-    let signature: EncodedData;
-    try {
-        // tslint:disable-next-line:no-any
-        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
-    } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
-        }
-        return Promise.reject(updateError(errors.UnsignedTransaction, error));
-    }
-
-    const buff = signature.toBuffer();
-    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
-    // but for future compatibility, we stick to one format)
-    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
-    if (buff[64] === 27 || buff[64] === 28) {
-        buff[64] = buff[64] - 27;
-    }
-
-    return buff.toString("base64");
-}
-
-export async function generateSignature(
-    web3: Web3,
-    address: string,
-    message: {
-        orderID: string;
-        kycAddr: string;
-        sendTokenAddr: string;
-        receiveTokenAddr: string;
-    },
-): Promise<string> {
-    const toSign = SIGNATURE_PREFIX + JSON.stringify(message);
-    return signMessage(web3, address, toSign);
 }
 
 export function fixSwapType(swap: UnfixedReturnedSwap): ReturnedSwap {

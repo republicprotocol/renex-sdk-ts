@@ -4,11 +4,11 @@ const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
 import axios, { AxiosRequestConfig } from "axios";
 import BN from "bn.js";
-import Web3 from "web3";
 import Contract from "web3/eth/contract";
 
 import { BigNumber } from "bignumber.js";
 import { List, Map } from "immutable";
+import { keccak256 } from "web3-utils";
 
 import * as shamir from "./shamir";
 
@@ -131,14 +131,13 @@ const promiseAll = async <a>(list: List<Promise<a>>, defaultValue: a): Promise<L
 };
 
 export async function buildOrderMapping(
-    web3: Web3,
     renexNode: string,
     darknodeRegistryContract: Contract,
     order: NewOrder,
     simpleConsole: SimpleConsole,
 ): Promise<Map<string, PodShares>> {
     const marketID = order.marketID;
-    const pods = await getPods(web3, renexNode, darknodeRegistryContract, simpleConsole, marketID);
+    const pods = await getPods(renexNode, darknodeRegistryContract, simpleConsole, marketID);
 
     const fragmentPromises = (pods)
         .map(async (pod: Pod): Promise<[string, PodShares]> => {
@@ -362,13 +361,13 @@ export const shareToEncodedData = async ([share, darknodeKeyP]: [shamir.Share, P
  * When the {start} value is not the NULL address, it is always returned as the
  * first entry so it should not be re-added to the list of all darknodes.
  */
-async function getAllDarknodes(web3: Web3, darknodeRegistryContract: Contract): Promise<string[]> {
-    const batchSize = web3.utils.toHex(50);
+async function getAllDarknodes(darknodeRegistryContract: Contract): Promise<string[]> {
+    const batchSize = 50;
 
     const allDarknodes = [];
     let lastDarknode = NULL;
     do {
-        const darknodes: string[] = await darknodeRegistryContract.methods.getDarknodes(lastDarknode, batchSize).call();
+        const darknodes: string[] = await darknodeRegistryContract.methods.getDarknodes(lastDarknode, `0x${(batchSize).toString(16)}`).call();
         allDarknodes.push(...darknodes.filter(addr => addr !== NULL && addr !== lastDarknode));
         [lastDarknode] = darknodes.slice(-1);
     } while (lastDarknode !== NULL);
@@ -377,7 +376,6 @@ async function getAllDarknodes(web3: Web3, darknodeRegistryContract: Contract): 
 }
 
 async function getPods(
-    web3: Web3,
     renexNode: string,
     darknodeRegistryContract: Contract,
     simpleConsole: SimpleConsole,
@@ -386,15 +384,15 @@ async function getPods(
     const res = await axios.get<string[]>(`${renexNode}/pods?pair=${marketID}`);
 
     const podsForPair = res.data;
-    const allPods = await getAllPods(web3, darknodeRegistryContract, simpleConsole);
+    const allPods = await getAllPods(darknodeRegistryContract, simpleConsole);
     return allPods.filter((pod: Pod) => podsForPair.includes(pod.id));
 }
 
 /*
  * Calculate pod arrangement based on current epoch
  */
-async function getAllPods(web3: Web3, darknodeRegistryContract: Contract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
-    const darknodes = await getAllDarknodes(web3, darknodeRegistryContract);
+export async function getAllPods(darknodeRegistryContract: Contract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
+    const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const minimumPodSize = new BN(await darknodeRegistryContract.methods.minimumPodSize().call()).toNumber();
     simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
     const epoch: [string, string] = await darknodeRegistryContract.methods.currentEpoch().call();
@@ -448,7 +446,7 @@ async function getAllPods(web3: Web3, darknodeRegistryContract: Contract, simple
             hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
         }
 
-        const id = new EncodedData(web3.utils.keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
+        const id = new EncodedData(keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
         const pod = new Pod({
             id: id.toBase64(),
             darknodes: pods.get(i, new Pod()).darknodes

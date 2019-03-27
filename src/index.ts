@@ -15,7 +15,7 @@ import { NetworkData, networks } from "./lib/network";
 import { MarketPair, Token, Tokens } from "./lib/tokens";
 import { ReturnedSwap, SentDelayedSwap, SentNonDelayedSwap } from "./lib/types/swapObject";
 import { cancelOrder } from "./methods/cancelOrder";
-import { darknodeFees, minimumQuoteVolume, normalizeSwap, openOrder, validateSwap } from "./methods/openOrder";
+import { darknodeFees, minimumQuoteVolume, normalizeSwap, openOrder, openOrderToBackend, openOrderToSwapperD, validateSwap } from "./methods/openOrder";
 import {
     currentSwapperDConnectionStatus, getSwapperID, getSwapperVersion,
     refreshSwapperDConnectionStatus, resetSwapperDConnection,
@@ -24,8 +24,8 @@ import {
 import { getWrappingFees, unwrap, unwrappingFees, wrap, WrapFees, WrapFeesMap, wrappingFees } from "./methods/wrapToken";
 import {
     Config, MarketDetails, NumberInput, Options, OrderID,
-    OrderInputs, SwapperDBalanceDetails, SwapperDConnectionStatus,
-    TokenDetails, TransactionOptions,
+    OrderInputs, SimpleConsole, SwapperDBalanceDetails,
+    SwapperDConnectionStatus, TokenDetails, TransactionOptions,
 } from "./types";
 
 // Contract bindings
@@ -88,7 +88,6 @@ export class RenExSDK {
         },
     };
 
-    private _web3: Web3;
     private _address: string = "";
     private _config: Config;
     /**
@@ -96,7 +95,7 @@ export class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, options?: Options, mainnetProvider?: Provider) {
+    constructor(provider: Provider, options?: Options) {
         this._config = generateConfig(options);
 
         switch (this.getConfig().network) {
@@ -110,10 +109,11 @@ export class RenExSDK {
                 throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
 
-        [this._web3, this._contracts] = this.updateProvider(provider, mainnetProvider);
+        const [web3, contracts] = this.updateProvider(provider);
+        this._contracts = contracts;
 
         // Show warning when the expected network ID is different from the provider network ID
-        this._web3.eth.net.getId()
+        web3.eth.net.getId()
             // tslint:disable-next-line: no-any
             .then((networkId: any) => {
                 if (networkId !== this._networkData.ethNetworkId) {
@@ -132,15 +132,24 @@ export class RenExSDK {
 
     // Order Methods
     public openOrder = (
-        orderInputsIn: OrderInputs | undefined,
+        orderInputsIn: OrderInputs,
         options: TransactionOptions,
-        sentSwapIn?: SentDelayedSwap,
-    ): Promise<SentDelayedSwap> => openOrder(this, orderInputsIn, options, sentSwapIn)
+    ): Promise<SentDelayedSwap> => openOrder(this, orderInputsIn, options)
+
+    public openOrderToSwapperD = (
+        sentSwap: SentDelayedSwap,
+        options: TransactionOptions,
+    ): Promise<void> => openOrderToSwapperD(this, sentSwap, options)
+
+    public openOrderToBackend = (
+        sentSwap: SentDelayedSwap,
+        options: TransactionOptions,
+    ): Promise<SentDelayedSwap> => openOrderToBackend(this, sentSwap, options)
 
     public validateSwap = (
         orderInputsIn: OrderInputs,
-        options?: TransactionOptions,
-    ): Promise<SentDelayedSwap> => validateSwap(this, orderInputsIn, options)
+        simpleConsole?: SimpleConsole,
+    ): Promise<SentDelayedSwap> => validateSwap(this, orderInputsIn, simpleConsole)
 
     public normalizeSwap = (
         orderInputsIn: OrderInputs,
@@ -154,10 +163,10 @@ export class RenExSDK {
     public fetchDarknodeFeePercent = (): Promise<BigNumber> => darknodeFees(this);
     public fetchWrappingFeePercent = (token: Token): Promise<BigNumber> => wrappingFees(this, token);
     public fetchUnwrappingFeePercent = (token: Token): Promise<BigNumber> => unwrappingFees(this, token);
-    public fetchMininimumQuoteVolume = (quoteToken: Token): BigNumber => minimumQuoteVolume(quoteToken);
+    public fetchMinimumQuoteVolume = (quoteToken: Token): BigNumber => minimumQuoteVolume(quoteToken);
 
     // Provider / account functions
-    public getWeb3 = (): Web3 => this._web3;
+    // public getWeb3 = (): Web3 => this._web3;
     public getAddress = (): string => this._address;
     public getConfig = (): Config => this._config;
 
@@ -166,16 +175,16 @@ export class RenExSDK {
         this._address = address;
     }
 
-    public updateProvider = (provider: Provider, mainnetProvider?: Provider): [Web3, ContractObject] => {
-        this._web3 = new Web3(provider);
-        const mainnetWeb3 = mainnetProvider ? new Web3(mainnetProvider) : this._web3;
+    public updateProvider = (provider: Provider): [Web3, ContractObject] => {
+        // this._web3 = new Web3(provider);
+        const web3 = new Web3(provider);
 
         // Update contract providers
         this._contracts = {
-            darknodeRegistry: new mainnetWeb3.eth.Contract(DarknodeRegistryABI, this._networkData.contracts[0].darknodeRegistry),
+            darknodeRegistry: new web3.eth.Contract(DarknodeRegistryABI, this._networkData.contracts[0].darknodeRegistry),
         };
 
-        return [this._web3, this._contracts];
+        return [web3, this._contracts];
     }
 }
 

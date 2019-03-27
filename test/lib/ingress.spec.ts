@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+dotenv.load();
+
+import Web3 from "web3";
 // import Axios from "axios";
 // import MockAdapter from "axios-mock-adapter/types";
 // import NodeRSA from "node-rsa";
@@ -5,6 +9,11 @@
 import BN from "bn.js";
 import { randomBytes } from "crypto";
 // import { Map } from "immutable";
+
+// Contract bindings
+import DarknodeRegistryABI from "../../src/ABIs/DarknodeRegistry.json";
+
+import { NetworkData, networks } from "../../src/lib/network";
 
 import * as renexNode from "../../src/lib/renexNode";
 import * as shamir from "../../src/lib/shamir";
@@ -255,4 +264,13 @@ describe("encryption", () => {
             await renexNode.encryptForDarknode([tokenShares.get(0), (async () => key2)()]);
         });
     }
+});
+
+describe("get all pods", () => {
+    it("can retrieve pods", async () => {
+        const web3 = new Web3(`https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`);
+        const darknodeRegistryContract = new web3.eth.Contract(DarknodeRegistryABI, networks.mainnet.contracts[0].darknodeRegistry);
+        const pods = await renexNode.getAllPods(web3, darknodeRegistryContract, console);
+        // console.log(pods);
+    });
 });

@@ -13,7 +13,7 @@ import { submitSwap } from "../lib/swapper";
 import { MarketPairs, Token, Tokens, toSmallestUnit } from "../lib/tokens";
 import { SentDelayedSwap, SentSwap } from "../lib/types/swapObject";
 import {
-    NullConsole, OrderInputs, OrderInputsAll, OrderSide, TransactionOptions,
+    NullConsole, OrderInputs, OrderInputsAll, OrderSide, SimpleConsole, TransactionOptions,
 } from "../types";
 import { swapperDAddresses } from "./swapperD";
 
@@ -114,9 +114,9 @@ export const minimumQuoteVolume = (quoteToken: Token) => {
 export const validateUserInputs = (
     inputsIn: OrderInputs,
     sendTokenBalance: BigNumber | null | undefined,
-    options?: TransactionOptions,
+    simpleConsole?: SimpleConsole,
 ) => {
-    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+    simpleConsole = simpleConsole || NullConsole;
 
     const inputs = populateOrderDefaults(inputsIn);
 
@@ -173,12 +173,12 @@ export const normalizeSwap = (orderInputsIn: OrderInputs): OrderInputs => {
 export const validateSwap = async (
     sdk: RenExSDK,
     orderInputsIn: OrderInputs,
-    options?: TransactionOptions,
+    simpleConsole?: SimpleConsole,
 ): Promise<SentDelayedSwap> => {
 
-    const inputs = populateOrderDefaults(orderInputsIn);
+    simpleConsole = simpleConsole || NullConsole;
 
-    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+    const inputs = populateOrderDefaults(orderInputsIn);
 
     // Check that the minimum quote volume is greater than the enforced minimum
     // (this implies that the quote volume is also greater by previous check)
@@ -219,7 +219,7 @@ export const validateSwap = async (
     const sendBalance = balances.get(orderInputsIn.sendToken);
 
     // Check that the user has sufficient balance
-    validateUserInputs(inputs, sendBalance && sendBalance.free, options);
+    validateUserInputs(inputs, sendBalance && sendBalance.free, simpleConsole);
 
     const _tokenAddress = await swapperDAddresses(sdk, [inputs.sendToken, inputs.receiveToken]);
     // Convert the fee fraction to bips by multiplying by 10000
@@ -248,19 +248,41 @@ export const validateSwap = async (
 
 export const openOrder = async (
     sdk: RenExSDK,
-    orderInputsIn: OrderInputs | undefined,
+    orderInputsIn: OrderInputs,
     options: TransactionOptions,
-    sentSwapIn?: SentDelayedSwap,
 ): Promise<SentDelayedSwap> => {
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
 
-    let sentSwap: SentDelayedSwap;
-    if (orderInputsIn !== undefined) {
-        sentSwap = await validateSwap(sdk, orderInputsIn, options);
-    } else if (sentSwapIn !== undefined) {
-        sentSwap = sentSwapIn;
-    } else {
-        throw new Error(`No order inputs provided`);
+    const sentSwap: SentDelayedSwap = await validateSwap(sdk, orderInputsIn, simpleConsole);
+
+    await openOrderToSwapperD(sdk, sentSwap, options);
+    return await openOrderToBackend(sdk, sentSwap, options);
+};
+
+export const openOrderToSwapperD = async (
+    sdk: RenExSDK,
+    sentSwap: SentDelayedSwap,
+    options: TransactionOptions,
+): Promise<void> => {
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+
+    console.log("Details sent to swapperD:");
+    console.table(sentSwap);
+
+    simpleConsole.log("Submitting order to SwapperD");
+    try {
+        await submitSwap(sentSwap, sdk._networkData.network);
+    } catch (error) {
+        simpleConsole.error(error.message || error);
+        throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
     }
+};
+
+export const openOrderToBackend = async (
+    sdk: RenExSDK,
+    sentSwap: SentDelayedSwap,
+    options: TransactionOptions,
+): Promise<SentDelayedSwap> => {
 
     const simpleConsole = (options && options.simpleConsole) || NullConsole;
 
@@ -325,16 +347,6 @@ export const openOrder = async (
         price: newOrder.price.toString(),
         minimumFill: newOrder.minimumFill.toString(),
     });
-    console.log("Details sent to swapperD:");
-    console.table(sentSwap);
-
-    simpleConsole.log("Submitting order to SwapperD");
-    try {
-        await submitSwap(sentSwap, sdk._networkData.network);
-    } catch (error) {
-        simpleConsole.error(error.message || error);
-        throw updateError(`Error sending order to SwapperD: ${error.message || error}`, error);
-    }
 
     // Create order fragment mapping
     simpleConsole.log("Building order mapping");
@@ -342,7 +354,6 @@ export const openOrder = async (
     let orderFragmentMappings;
     try {
         orderFragmentMappings = await renexNode.buildOrderMapping(
-            sdk.getWeb3(),
             sdk._networkData.renexNode,
             sdk._contracts.darknodeRegistry,
             newOrder,
