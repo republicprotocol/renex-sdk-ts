@@ -4,10 +4,10 @@ const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 
 import axios, { AxiosRequestConfig } from "axios";
 import BN from "bn.js";
-import Contract from "web3/eth/contract";
 
 import { BigNumber } from "bignumber.js";
 import { List, Map } from "immutable";
+import { Contract } from "web3-eth-contract/types";
 import { keccak256 } from "web3-utils";
 
 import * as shamir from "./shamir";

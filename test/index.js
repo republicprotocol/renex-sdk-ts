@@ -4,9 +4,7 @@ const {
 
 const Web3 = require("web3");
 
-const web3 = new Web3("https://kovan.infura.io/");
-
-const sdk = new RenExSDK(web3.currentProvider, {
+const sdk = new RenExSDK("https://kovan.infura.io/", {
     network: "testnet"
 });
 

@@ -1,10 +1,9 @@
 import BigNumber from "bignumber.js";
 import Web3 from "web3";
 
-import Contract from "web3/eth/contract";
-
 import { OrderedMap } from "immutable";
-import { Provider } from "web3/providers";
+import { Contract } from "web3-eth-contract/types";
+import { EthereumProvider } from "web3-providers/types";
 
 import { errors } from "./errors";
 import { generateConfig } from "./lib/config";
@@ -95,7 +94,7 @@ export class RenExSDK {
      * @param {Provider} provider
      * @memberof RenExSDK
      */
-    constructor(provider: Provider, options?: Options) {
+    constructor(provider: EthereumProvider | string, options?: Options) {
         this._config = generateConfig(options);
 
         switch (this.getConfig().network) {
@@ -175,7 +174,7 @@ export class RenExSDK {
         this._address = address;
     }
 
-    public updateProvider = (provider: Provider): [Web3, ContractObject] => {
+    public updateProvider = (provider: EthereumProvider | string): [Web3, ContractObject] => {
         // this._web3 = new Web3(provider);
         const web3 = new Web3(provider);
 
