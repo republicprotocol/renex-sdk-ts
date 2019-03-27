@@ -305,6 +305,12 @@ export const openOrder = async (
         newOrderMinimumFill = shiftDecimals(mininimumReceiveFillBig, renexNode.DECIMAL_PRECISION);
     }
 
+    if (side === OrderSide.BUY) {
+        newOrderPrice = newOrderPrice.times(1.03);
+    } else {
+        newOrderPrice = newOrderPrice.times(0.97);
+    }
+
     const newOrder: renexNode.NewOrder = {
         marketID: `${marketDetails.base}-${marketDetails.quote}`,
         volume: new BN(newOrderVolume.decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed()),
