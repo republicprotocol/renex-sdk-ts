@@ -154,8 +154,8 @@ export async function buildOrderMapping(
             const transform = (shares: List<shamir.Share>) => promiseAll(
                 shares
                     .zip(darknodeKeys)
-                    // .map(encryptForDarknode)
-                    .map(shareToEncodedData)
+                    .map(encryptForDarknode)
+                    // .map(shareToEncodedData)
                     .map(async data => (await data).toBase64())
                 ,
                 ""
@@ -351,6 +351,7 @@ export const encryptForDarknode = async ([share, darknodeKeyP]: [shamir.Share, P
 };
 
 export const shareToEncodedData = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
+    console.warn("Share not being encrypted!");
     return shareToBuffer(share, 8);
 };
 

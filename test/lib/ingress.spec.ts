@@ -13,7 +13,7 @@ import { randomBytes } from "crypto";
 // Contract bindings
 import DarknodeRegistryABI from "../../src/ABIs/DarknodeRegistry.json";
 
-import { NetworkData, networks } from "../../src/lib/network";
+import { networks } from "../../src/lib/network";
 
 import * as renexNode from "../../src/lib/renexNode";
 import * as shamir from "../../src/lib/shamir";
@@ -243,6 +243,10 @@ describe("encryption", () => {
             ssh: "000000077373682d727361000000030100010000010100cbd84e212eae7d428e10105a453226671179219343946025f106ff48c161dc5882cfb0c47fc0ae44cef4ddb0cc672a2c3eadff9c3d1e4d24221c549dc2e20c89fab04c6a642ada8c6076e37c25dbda4eee07e3eb6e170b5841095f11eb56f1223d52b06a4560df11b065b8e02c7c031a102d65410c688e3de385b04e4aa50e9adbb23a4aca3a519c349bfea799a311305f09191f984f3c0a3cc3fd3c5e7b0b3eb81d2ec4f0fc5297b2b90aec85c8a32fbb9784b6e60f1f1a1d1907be5f99bec8879ac1824b5322f975af2aec8c02a8428f2f1ebb43239053619683dde34264844e03839e59a52e58966c4d5505c28a44f46b926ddcb77c95968faa93173d9d9b",
             hex: "0000000000010001cbd84e212eae7d428e10105a453226671179219343946025f106ff48c161dc5882cfb0c47fc0ae44cef4ddb0cc672a2c3eadff9c3d1e4d24221c549dc2e20c89fab04c6a642ada8c6076e37c25dbda4eee07e3eb6e170b5841095f11eb56f1223d52b06a4560df11b065b8e02c7c031a102d65410c688e3de385b04e4aa50e9adbb23a4aca3a519c349bfea799a311305f09191f984f3c0a3cc3fd3c5e7b0b3eb81d2ec4f0fc5297b2b90aec85c8a32fbb9784b6e60f1f1a1d1907be5f99bec8879ac1824b5322f975af2aec8c02a8428f2f1ebb43239053619683dde34264844e03839e59a52e58966c4d5505c28a44f46b926ddcb77c95968faa93173d9d9b",
         },
+        {
+            ssh: "000000077373682d727361000000030100010000010100d6d9445b0fde0b6e499a51aafa1951a381f3ebd00c4313c2729e276f73eb67fcce980d62e71c2794ae9e37449ad32ea8197c3988a97eb09f02b45f4e11a41eb636e6dda2b28eb767123ee980d9bd4bbd9750b698020085a0e667c555a1fbcdf4f82df65208e057ea65efd3e4002240ab0d06736f44124e3aadf3973624300cf5665ee8cfa0cab92ba2d847ba4dcb4f2c8ced323e9d2a1201e9c53a20f15c22bf9720d2191de464f8bc761f37c9c7fe60e6b6d421da79f623d0536e1e463878cbc8307ba5cff8f8e1c7890dae69036c478010042cda103978da17ad83f4f11c37bba57319e9d19611414233bd4beaabd1f345d6aacd914aa821eabaf868bca373",
+            hex: "000000077373682d727361000000030100010000010100d6d9445b0fde0b6e499a51aafa1951a381f3ebd00c4313c2729e276f73eb67fcce980d62e71c2794ae9e37449ad32ea8197c3988a97eb09f02b45f4e11a41eb636e6dda2b28eb767123ee980d9bd4bbd9750b698020085a0e667c555a1fbcdf4f82df65208e057ea65efd3e4002240ab0d06736f44124e3aadf3973624300cf5665ee8cfa0cab92ba2d847ba4dcb4f2c8ced323e9d2a1201e9c53a20f15c22bf9720d2191de464f8bc761f37c9c7fe60e6b6d421da79f623d0536e1e463878cbc8307ba5cff8f8e1c7890dae69036c478010042cda103978da17ad83f4f11c37bba57319e9d19611414233bd4beaabd1f345d6aacd914aa821eabaf868bca373",
+        }
     ];
 
     for (const sameKey of sameKeys) {
@@ -262,6 +266,7 @@ describe("encryption", () => {
 
             await renexNode.encryptForDarknode([tokenShares.get(0), (async () => key1)()]);
             await renexNode.encryptForDarknode([tokenShares.get(0), (async () => key2)()]);
+            // console.log(key1.encrypt(Buffer.from([0x00, 0x01, 0x02, 0x03]), "buffer").toString("hex"));
         });
     }
 });
@@ -270,7 +275,7 @@ describe("get all pods", () => {
     it("can retrieve pods", async () => {
         const web3 = new Web3(`https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`);
         const darknodeRegistryContract = new web3.eth.Contract(DarknodeRegistryABI, networks.mainnet.contracts[0].darknodeRegistry);
-        const pods = await renexNode.getAllPods(web3, darknodeRegistryContract, console);
+        const pods = await renexNode.getAllPods(darknodeRegistryContract, console);
         // console.log(pods);
     });
 });
