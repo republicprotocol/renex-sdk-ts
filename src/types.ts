@@ -37,7 +37,7 @@ export interface OrderInputs {
     receiveVolume?: NumberInput;
     price?: NumberInput;
 
-    mininimumQuoteFill?: NumberInput;
+    minimumQuoteFill?: NumberInput;
 
     allOrNothing?: boolean;
     immediateOrCancel?: boolean;
@@ -49,12 +49,12 @@ export interface OrderInputsAll extends OrderInputs {
     sendVolume: BigNumber;
     price: BigNumber;
 
-    mininimumQuoteFill: BigNumber;
-    mininimumBaseFill: BigNumber;
+    minimumQuoteFill: BigNumber;
+    minimumBaseFill: BigNumber;
 
     // Double ups
-    mininimumReceiveFill: BigNumber;
-    mininimumSendFill: BigNumber;
+    minimumReceiveFill: BigNumber;
+    minimumSendFill: BigNumber;
     quoteToken: Token;
     quoteVolume: BigNumber;
     baseToken: Token;

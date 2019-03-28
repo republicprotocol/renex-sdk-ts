@@ -88,7 +88,7 @@ export class RenExSDK {
     };
 
     private _address: string = "";
-    private _config: Config;
+    private readonly _config: Config;
     /**
      * Creates an instance of RenExSDK.
      * @param {Provider} provider
@@ -116,9 +116,11 @@ export class RenExSDK {
             // tslint:disable-next-line: no-any
             .then((networkId: any) => {
                 if (networkId !== this._networkData.ethNetworkId) {
+                    // tslint:disable-next-line: no-console
                     console.warn(`Incorrect provider network! Your provider should be using the ${this._networkData.ethNetworkLabel} Ethereum network!`);
                 }
             })
+            // tslint:disable-next-line: no-console
             .catch(console.error);
 
         // Hack to suppress web3 MaxListenersExceededWarning

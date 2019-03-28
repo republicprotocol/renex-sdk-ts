@@ -21,7 +21,7 @@ export class Share {
  * @param {BN} secret The secret number that will be split into shares.
  * @returns {List<Share>} An immutable list of shares.
  */
-export function split(n: number, k: number, secret: BN): List<Share> {
+export const split = (n: number, k: number, secret: BN): List<Share> => {
     if (n < k) {
         throw new Error(`n-k error: n = ${n}, k = ${k}`);
     }
@@ -57,9 +57,8 @@ export function split(n: number, k: number, secret: BN): List<Share> {
         shares[x - 1] = new Share(x, accumulator);
     }
 
-    const shareList = List(shares);
-    return shareList;
-}
+    return List(shares);
+};
 
 /**
  * Join shares into a secret using the finite field defined by the PRIME
@@ -70,7 +69,7 @@ export function split(n: number, k: number, secret: BN): List<Share> {
  * @returns {BN} The reconstructed secret, or meaningless garbage when an
  *          insufficient number of shares is provided.
  */
-export function join(shares: List<Share>): BN {
+export const join = (shares: List<Share>): BN => {
     let secret = new BN(0);
     for (let i = 0; i < shares.size; i++) {
         let num = new BN(1);
@@ -110,4 +109,4 @@ export function join(shares: List<Share>): BN {
     }
 
     return secret;
-}
+};

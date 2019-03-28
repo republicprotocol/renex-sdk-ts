@@ -12,6 +12,6 @@ export const getMarket = (left: Token, right: Token): MarketPair | undefined => 
     );
 };
 
-export async function fetchMarkets(_sdk: RenExSDK): Promise<OrderedMap<MarketPair, MarketDetails>> {
+export const fetchMarkets = async (_sdk: RenExSDK): Promise<OrderedMap<MarketPair, MarketDetails>> => {
     return MarketPairs;
-}
+};

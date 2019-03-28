@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import crypto from "crypto";
 
 import { BigNumber } from "bignumber.js";
 
@@ -11,7 +12,7 @@ import { normalizePrice, normalizeVolume, shiftDecimals } from "../lib/conversio
 import { getMarket } from "../lib/market";
 import { submitSwap } from "../lib/swapper";
 import { MarketPairs, Token, Tokens, toSmallestUnit } from "../lib/tokens";
-import { SentDelayedSwap, SentSwap } from "../lib/types/swapObject";
+import { SentDelayedSwap } from "../lib/types/swapObject";
 import {
     NullConsole, OrderInputs, OrderInputsAll, OrderSide, SimpleConsole, TransactionOptions,
 } from "../types";
@@ -21,8 +22,21 @@ export const darknodeFees = async (_sdk: RenExSDK): Promise<BigNumber> => {
     return new BigNumber(2).dividedBy(1000);
 };
 
+// tslint:disable-next-line: no-string-based-set-timeout
 export const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const second = 1000;
+
+export const minimumQuoteVolume = (quoteToken: Token) => {
+    if (quoteToken === Token.BTC) {
+        return new BigNumber(0.003);
+    } else if (quoteToken === Token.ETH) {
+        return new BigNumber(0.1);
+    } else if (quoteToken === Token.DAI) {
+        return new BigNumber(10);
+    } else {
+        return new BigNumber(0);
+    }
+};
 
 export const populateOrderDefaults = (
     orderInputs: OrderInputs,
@@ -71,11 +85,11 @@ export const populateOrderDefaults = (
     const quoteToken = marketDetails.quote;
     const quoteVolume = orderInputs.sendToken === quoteToken ? sendVolume : receiveVolume;
 
-    const mininimumQuoteFill = orderInputs.allOrNothing ? quoteVolume :
-        orderInputs.mininimumQuoteFill ? new BigNumber(orderInputs.mininimumQuoteFill) : minimumQuoteVolume(marketDetails.quote);
-    const mininimumBaseFill = mininimumQuoteFill.div(price);
-    const mininimumReceiveFill = orderInputs.receiveToken === quoteToken ? mininimumQuoteFill : mininimumBaseFill;
-    const mininimumSendFill = orderInputs.sendToken === quoteToken ? mininimumQuoteFill : mininimumBaseFill;
+    const minimumQuoteFill = orderInputs.allOrNothing ? quoteVolume :
+        orderInputs.minimumQuoteFill ? new BigNumber(orderInputs.minimumQuoteFill) : minimumQuoteVolume(marketDetails.quote);
+    const minimumBaseFill = minimumQuoteFill.div(price);
+    const minimumReceiveFill = orderInputs.receiveToken === quoteToken ? minimumQuoteFill : minimumBaseFill;
+    const minimumSendFill = orderInputs.sendToken === quoteToken ? minimumQuoteFill : minimumBaseFill;
 
     return {
         ...orderInputs,
@@ -87,28 +101,16 @@ export const populateOrderDefaults = (
         price,
         sendVolume,
         receiveVolume,
-        mininimumQuoteFill,
-        mininimumBaseFill,
-        mininimumSendFill,
+        minimumQuoteFill,
+        minimumBaseFill,
+        minimumSendFill,
 
         baseToken,
         baseVolume,
         quoteToken,
         quoteVolume,
-        mininimumReceiveFill,
+        minimumReceiveFill,
     };
-};
-
-export const minimumQuoteVolume = (quoteToken: Token) => {
-    if (quoteToken === Token.BTC) {
-        return new BigNumber(0.003);
-    } else if (quoteToken === Token.ETH) {
-        return new BigNumber(0.1);
-    } else if (quoteToken === Token.DAI) {
-        return new BigNumber(10);
-    } else {
-        return new BigNumber(0);
-    }
 };
 
 export const validateUserInputs = (
@@ -200,8 +202,8 @@ export const validateSwap = async (
     }
 
     // Check that the quote volume is greater than the minimum quote volume
-    if (inputs.sendVolume.lt(inputs.mininimumSendFill)) {
-        const errMsg = `Volume must be at least ${inputs.mininimumSendFill.toFixed()} ${inputs.sendToken}`;
+    if (inputs.sendVolume.lt(inputs.minimumSendFill)) {
+        const errMsg = `Volume must be at least ${inputs.minimumSendFill.toFixed()} ${inputs.sendToken}`;
         simpleConsole.error(errMsg);
         throw new Error(errMsg);
     }
@@ -225,38 +227,23 @@ export const validateSwap = async (
     // Convert the fee fraction to bips by multiplying by 10000
     const _brokerFee = (await darknodeFees(sdk)).times(10000).toNumber();
 
-    const sentSwap: SentSwap = {
+    return {
         sendToken: inputs.sendToken,
         receiveToken: inputs.receiveToken,
         sendAmount: toSmallestUnit(inputs.sendVolume, sendTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_UP).toFixed(),
         receiveAmount: toSmallestUnit(inputs.receiveVolume, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
-        minimumReceiveAmount: toSmallestUnit(inputs.mininimumReceiveFill, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
+        minimumReceiveAmount: toSmallestUnit(inputs.minimumReceiveFill, receiveTokenDetails.decimals).decimalPlaces(0, BigNumber.ROUND_DOWN).toFixed(),
         brokerFee: _brokerFee,
         delay: true,
         delayCallbackUrl: `${sdk._networkData.renexNode}/swaps`,
         delayPriceRange: 300,
         delayInfo: {
-            orderID: renexNode.randomNonce().toString("hex"),
+            orderID: crypto.randomBytes(20).toString("hex"),
             kycAddr: sdk.getAddress(),
             sendTokenAddr: _tokenAddress[0],
             receiveTokenAddr: _tokenAddress[1],
         }
     };
-
-    return sentSwap;
-};
-
-export const openOrder = async (
-    sdk: RenExSDK,
-    orderInputsIn: OrderInputs,
-    options: TransactionOptions,
-): Promise<SentDelayedSwap> => {
-    const simpleConsole = (options && options.simpleConsole) || NullConsole;
-
-    const sentSwap: SentDelayedSwap = await validateSwap(sdk, orderInputsIn, simpleConsole);
-
-    await openOrderToSwapperD(sdk, sentSwap, options);
-    return await openOrderToBackend(sdk, sentSwap, options);
 };
 
 export const openOrderToSwapperD = async (
@@ -314,17 +301,17 @@ export const openOrderToBackend = async (
 
     const receiveVolumeBig = shiftDecimals(new BigNumber(sentSwap.receiveAmount), -receiveTokenDetails.decimals);
     const sendVolumeBig = shiftDecimals(new BigNumber(sentSwap.sendAmount), -sendTokenDetails.decimals);
-    const mininimumReceiveFillBig = shiftDecimals(new BigNumber(sentSwap.minimumReceiveAmount || "0"), -receiveTokenDetails.decimals);
+    const minimumReceiveFillBig = shiftDecimals(new BigNumber(sentSwap.minimumReceiveAmount || "0"), -receiveTokenDetails.decimals);
     // const minimum
 
     if (side === OrderSide.BUY) {
         newOrderPrice = shiftDecimals(sendVolumeBig.dividedBy(receiveVolumeBig), renexNode.DECIMAL_PRECISION);
         newOrderVolume = shiftDecimals(sendVolumeBig, renexNode.DECIMAL_PRECISION);
-        newOrderMinimumFill = mininimumReceiveFillBig.times(newOrderPrice); // Don't shift because price is shifted
+        newOrderMinimumFill = minimumReceiveFillBig.times(newOrderPrice); // Don't shift because price is shifted
     } else {
         newOrderPrice = shiftDecimals(receiveVolumeBig.dividedBy(sendVolumeBig), renexNode.DECIMAL_PRECISION);
         newOrderVolume = shiftDecimals(receiveVolumeBig, renexNode.DECIMAL_PRECISION);
-        newOrderMinimumFill = shiftDecimals(mininimumReceiveFillBig, renexNode.DECIMAL_PRECISION);
+        newOrderMinimumFill = shiftDecimals(minimumReceiveFillBig, renexNode.DECIMAL_PRECISION);
     }
 
     const delayPriceRange = sentSwap.delayPriceRange || 0;
@@ -382,4 +369,17 @@ export const openOrderToBackend = async (
     }
 
     return sentSwap;
+};
+
+export const openOrder = async (
+    sdk: RenExSDK,
+    orderInputsIn: OrderInputs,
+    options: TransactionOptions,
+): Promise<SentDelayedSwap> => {
+    const simpleConsole = (options && options.simpleConsole) || NullConsole;
+
+    const sentSwap: SentDelayedSwap = await validateSwap(sdk, orderInputsIn, simpleConsole);
+
+    await openOrderToSwapperD(sdk, sentSwap, options);
+    return await openOrderToBackend(sdk, sentSwap, options);
 };

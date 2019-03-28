@@ -13,7 +13,9 @@ import { fromSmallestUnit, Token } from "../lib/tokens";
 import { ReturnedSwap, SwapStatus } from "../lib/types/swapObject";
 import { OrderStatus, SwapperDBalanceDetails, SwapperDConnectionStatus } from "../types";
 
-/* SwapperD Connection */
+/***********************
+ * SwapperD Connection *
+ ***********************/
 
 type MaybeBigNumber = BigNumber | null;
 
@@ -28,14 +30,12 @@ export const swapperDConnected = (sdk: RenExSDK): boolean => {
     );
 };
 
-export const resetSwapperDConnection = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
-    sdk._swapperDConnectionStatus = SwapperDConnectionStatus.NotConnected;
-    return refreshSwapperDConnectionStatus(sdk);
+export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
+    return fetchSwapperAddress(sdk._networkData.network);
 };
 
-export const refreshSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
-    sdk._swapperDConnectionStatus = await getSwapperDConnectionStatus(sdk);
-    return sdk._swapperDConnectionStatus;
+export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
+    return fetchSwapperVersion(sdk._networkData.network);
 };
 
 const getSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
@@ -54,24 +54,28 @@ const getSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConne
     }
 };
 
+export const refreshSwapperDConnectionStatus = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
+    sdk._swapperDConnectionStatus = await getSwapperDConnectionStatus(sdk);
+    return sdk._swapperDConnectionStatus;
+};
+
+export const resetSwapperDConnection = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
+    sdk._swapperDConnectionStatus = SwapperDConnectionStatus.NotConnected;
+    return refreshSwapperDConnectionStatus(sdk);
+};
+
 // export const authorizeSwapperD = async (sdk: RenExSDK): Promise<SwapperDConnectionStatus> => {
 //     const address = await getSwapperID(sdk);
 //     await _authorizeSwapperD(sdk.getWeb3(), sdk._networkData.renexNode, address, sdk.getAddress());
 //     return refreshSwapperDConnectionStatus(sdk);
 // };
 
-export const getSwapperID = async (sdk: RenExSDK): Promise<string> => {
-    return fetchSwapperAddress(sdk._networkData.network);
-};
-
-export const getSwapperVersion = async (sdk: RenExSDK): Promise<string> => {
-    return fetchSwapperVersion(sdk._networkData.network);
-};
-
-/* SwapperD balances */
+/*********************
+ * SwapperD balances *
+ *********************/
 
 const retrieveSwapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<MaybeBigNumber[]> => {
-    return getSwapperDBalances({ network: sdk._networkData.network }).then(balances => {
+    return getSwapperDBalances({ network: sdk._networkData.network }).then(async (balances) => {
         return Promise.all(tokens.map(async token => {
             const tokenDetails = sdk.tokenDetails.get(token);
             if (tokenDetails && balances[token]) {
@@ -140,7 +144,9 @@ export const swapperDBalances = async (sdk: RenExSDK, tokens: Token[]): Promise<
     });
 };
 
-/* SwapperD swaps */
+/******************
+ * SwapperD swaps *
+ ******************/
 
 export const swapperDSwaps = async (sdk: RenExSDK): Promise<ReturnedSwap[]> => {
     return getSwapperDSwaps({ network: sdk._networkData.network }).then(swaps => {
@@ -148,14 +154,9 @@ export const swapperDSwaps = async (sdk: RenExSDK): Promise<ReturnedSwap[]> => {
     });
 };
 
-export async function fetchSwapperDOrderStatus(sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> {
-    const swap = await fetchSwapperDOrder(sdk, orderID);
-    return toOrderStatus(swap.status);
-}
-
-export async function fetchSwapperDOrder(sdk: RenExSDK, orderID: EncodedData): Promise<ReturnedSwap> {
+export const fetchSwapperDOrder = async (sdk: RenExSDK, orderID: EncodedData): Promise<ReturnedSwap> => {
     try {
-        const swap = await findMatchingReturnedSwap((swapReceipt) => {
+        return await findMatchingReturnedSwap((swapReceipt) => {
             if (swapReceipt.id === orderID.toBase64()) {
                 return true;
             } else if (
@@ -166,13 +167,12 @@ export async function fetchSwapperDOrder(sdk: RenExSDK, orderID: EncodedData): P
             }
             return false;
         }, sdk._networkData.network);
-        return swap;
     } catch (error) {
         throw updateError(`${errors.CouldNotFindSwap}: ${orderID.toBase64()}`, error);
     }
-}
+};
 
-export function toOrderStatus(status: SwapStatus): OrderStatus {
+export const toOrderStatus = (status: SwapStatus): OrderStatus => {
     switch (status) {
         case SwapStatus.INACTIVE:
         case SwapStatus.INITIATED:
@@ -190,4 +190,9 @@ export function toOrderStatus(status: SwapStatus): OrderStatus {
         case SwapStatus.EXPIRED:
             return OrderStatus.CANCELED;
     }
-}
+};
+
+export const fetchSwapperDOrderStatus = async (sdk: RenExSDK, orderID: EncodedData): Promise<OrderStatus> => {
+    const swap = await fetchSwapperDOrder(sdk, orderID);
+    return toOrderStatus(swap.status);
+};

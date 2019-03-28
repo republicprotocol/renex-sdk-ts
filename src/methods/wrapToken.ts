@@ -36,25 +36,25 @@ interface BalanceResponse {
     };
 }
 
-function wrapped(token: Token): Token {
+const wrapped = (token: Token): Token => {
     switch (token) {
         case Token.BTC:
             return Token.WBTC;
         default:
             throw new Error(`No wrapped version of token: ${token}`);
     }
-}
+};
 
-function unwrapped(token: Token): Token {
+const unwrapped = (token: Token): Token => {
     switch (token) {
         case Token.WBTC:
             return Token.BTC;
         default:
             throw new Error(`No unwrapped version of token: ${token}`);
     }
-}
+};
 
-export async function getWrappingFees(sdk: RenExSDK, token: Token): Promise<WrapFees> {
+export const getWrappingFees = async (sdk: RenExSDK, token: Token): Promise<WrapFees> => {
     if (sdk._wrappingFees[token]) {
         return sdk._wrappingFees[token];
     }
@@ -73,7 +73,7 @@ export async function getWrappingFees(sdk: RenExSDK, token: Token): Promise<Wrap
     sdk._wrappingFees[token] = response[token];
 
     return response[token];
-}
+};
 
 /**
  *
@@ -82,7 +82,7 @@ export async function getWrappingFees(sdk: RenExSDK, token: Token): Promise<Wrap
  * @param {BigNumber} amount in the smallest possible token unit
  * @param {string} fromToken
  */
-async function checkSufficientServerBalance(amount: BigNumber, response: BalanceResponse, toToken: Token, amountString: string): Promise<boolean> {
+const checkSufficientServerBalance = async (amount: BigNumber, response: BalanceResponse, toToken: Token, amountString: string): Promise<boolean> => {
     // The fee required to be in the server for initiation
     const initiateFee = new BigNumber(serverInitiateFeeSatoshi);
     const serverTokenBalance = BigNumber.max(0, new BigNumber(response[toToken].balance).minus(initiateFee));
@@ -107,7 +107,7 @@ async function checkSufficientServerBalance(amount: BigNumber, response: Balance
         throw error;
     }
     return true;
-}
+};
 
 /**
  *
@@ -116,17 +116,17 @@ async function checkSufficientServerBalance(amount: BigNumber, response: Balance
  * @param {BigNumber} amount in the smallest possible token unit
  * @param {string} fromToken the token to be wrapped or unwrapped
  */
-async function checkSufficientUserBalance(sdk: RenExSDK, amount: BigNumber, fromToken: Token): Promise<boolean> {
+const checkSufficientUserBalance = async (sdk: RenExSDK, amount: BigNumber, fromToken: Token): Promise<boolean> => {
     const balances = await getSwapperDBalances({ network: sdk._networkData.network });
     const fromTokenBalance = new BigNumber(balances[fromToken].balance);
     if (fromTokenBalance.lt(amount)) {
         throw new Error(`User has insufficient ${fromToken} balance in Swapper`);
     }
     return true;
-}
+};
 
 // tslint:disable-next-line:no-any
-async function convert(sdk: RenExSDK, orderInputsIn: OrderInputs, conversionFeePercent: BigNumber): Promise<SentNonDelayedSwap> {
+const convert = async (sdk: RenExSDK, orderInputsIn: OrderInputs, conversionFeePercent: BigNumber): Promise<SentNonDelayedSwap> => {
     const orderInputs = populateOrderDefaults(orderInputsIn);
 
     if (!orderInputs.price.isEqualTo(1)) {
@@ -170,10 +170,20 @@ async function convert(sdk: RenExSDK, orderInputsIn: OrderInputs, conversionFeeP
     }
 
     return sentSwap;
-}
+};
+
+export const wrappingFees = async (sdk: RenExSDK, token: Token): Promise<BigNumber> => {
+    const wrapFees = await getWrappingFees(sdk, token);
+    return Promise.resolve(new BigNumber(wrapFees.wrapFees).dividedBy(10000));
+};
+
+export const unwrappingFees = async (sdk: RenExSDK, token: Token): Promise<BigNumber> => {
+    const wrapFees = await getWrappingFees(sdk, token);
+    return Promise.resolve(new BigNumber(wrapFees.unwrapFees).dividedBy(10000));
+};
 
 // tslint:disable-next-line:no-any
-export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<SentNonDelayedSwap> {
+export const wrap = async (sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<SentNonDelayedSwap> => {
     const toToken = wrapped(fromToken);
 
     const orderDetails: OrderInputs = {
@@ -184,10 +194,10 @@ export async function wrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token)
     };
 
     return convert(sdk, orderDetails, await wrappingFees(sdk, toToken));
-}
+};
 
 // tslint:disable-next-line:no-any
-export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<SentNonDelayedSwap> {
+export const unwrap = async (sdk: RenExSDK, amount: NumberInput, fromToken: Token): Promise<SentNonDelayedSwap> => {
     const toToken = unwrapped(fromToken);
 
     const orderDetails: OrderInputs = {
@@ -198,14 +208,4 @@ export async function unwrap(sdk: RenExSDK, amount: NumberInput, fromToken: Toke
     };
 
     return convert(sdk, orderDetails, await unwrappingFees(sdk, fromToken));
-}
-
-export async function wrappingFees(sdk: RenExSDK, token: Token): Promise<BigNumber> {
-    const wrapFees = await getWrappingFees(sdk, token);
-    return Promise.resolve(new BigNumber(wrapFees.wrapFees).dividedBy(10000));
-}
-
-export async function unwrappingFees(sdk: RenExSDK, token: Token): Promise<BigNumber> {
-    const wrapFees = await getWrappingFees(sdk, token);
-    return Promise.resolve(new BigNumber(wrapFees.unwrapFees).dividedBy(10000));
-}
+};

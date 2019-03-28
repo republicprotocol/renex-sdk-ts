@@ -104,10 +104,10 @@ export const MarketPairs = OrderedMap<MarketPair, MarketDetails>()
 //     coingeckoID: "0x",
 // });
 
-export function toSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
+export const toSmallestUnit = (amount: NumberInput, decimals: number): BigNumber => {
     return new BigNumber(amount).times(new BigNumber(10).exponentiatedBy(decimals));
-}
+};
 
-export function fromSmallestUnit(amount: NumberInput, decimals: number): BigNumber {
+export const fromSmallestUnit = (amount: NumberInput, decimals: number): BigNumber => {
     return new BigNumber(amount).div(new BigNumber(10).exponentiatedBy(decimals));
-}
+};

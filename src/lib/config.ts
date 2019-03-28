@@ -5,7 +5,7 @@ const defaultConfig: Config = {
     autoNormalizeOrders: false,
 };
 
-export function generateConfig(options?: Options): Config {
+export const generateConfig = (options?: Options): Config => {
     options = options || {};
 
     const conf = defaultConfig;
@@ -16,4 +16,4 @@ export function generateConfig(options?: Options): Config {
         conf.autoNormalizeOrders = options.autoNormalizeOrders;
     }
     return conf;
-}
+};

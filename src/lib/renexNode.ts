@@ -5,7 +5,6 @@ const NodeRSA = require("node-rsa") as new () => NodeRSAType;
 import axios, { AxiosRequestConfig } from "axios";
 import BN from "bn.js";
 
-import { BigNumber } from "bignumber.js";
 import { List, Map } from "immutable";
 import { Contract } from "web3-eth-contract/types";
 import { keccak256 } from "web3-utils";
@@ -47,11 +46,6 @@ export class Pod extends Record({
     darknodes: List<string>(),
 }) { }
 
-export function randomNonce(): BN {
-    const nonce = new BigNumber(Math.random()).multipliedBy(new BigNumber(shamir.PRIME.toString()));
-    return new BN(nonce.toFixed());
-}
-
 const authConfig = (token: string): AxiosRequestConfig => {
     return {
         withCredentials: true,
@@ -68,11 +62,11 @@ export interface NewOrder {
     minimumFill: BN;
 }
 
-export async function submitOrderFragments(
+export const submitOrderFragments = async (
     renexNode: string,
     request: OpenOrderRequest,
     token: string,
-): Promise<void> {
+): Promise<void> => {
     try {
         const resp = await axios.post(`${renexNode}/order`, request.toJS(), authConfig(token));
         if (resp.status !== 200) {
@@ -91,13 +85,13 @@ export async function submitOrderFragments(
             throw error;
         }
     }
-}
+};
 
-export async function cancelOrder(
+export const cancelOrder = async (
     renexNode: string,
     orderID: string,
     token: string,
-): Promise<void> {
+): Promise<void> => {
     try {
         const resp = await axios.delete(`${renexNode}/order?id=${orderID}`, authConfig(token));
         if (resp.status !== 200) {
@@ -116,7 +110,224 @@ export async function cancelOrder(
             throw error;
         }
     }
-}
+};
+
+// function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string {
+//     // TODO: Fix order hashing
+//     return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
+// }
+
+const rsaPrefix = Buffer.from([0x00, 0x00, 0x00, 0x07, 0x73, 0x73, 0x68, 0x2d, 0x72, 0x73, 0x61]);
+
+export const hexToRSAKey = (darknodeKeyHexIn: string): NodeRSAType => {
+    const darknodeKeyHex = darknodeKeyHexIn.slice(0, 2) === "0x" ? darknodeKeyHexIn.slice(2) : darknodeKeyHexIn;
+    const darknodeKey = Buffer.from(darknodeKeyHex, "hex");
+
+    let e: number;
+    let n: Buffer;
+
+    if (darknodeKey.slice(0, 4 + 7).equals(rsaPrefix)) {
+        const eLength = new EncodedData(darknodeKey.slice(4 + 7, 4 + 7 + 4)).toNumber();
+        e = new EncodedData(darknodeKey.slice(4 + 7 + 4, 4 + 7 + 4 + eLength)).toNumber();
+        const nLength = new EncodedData(darknodeKey.slice(4 + 7 + 4 + eLength, 4 + 7 + 4 + eLength + 4)).toNumber();
+        n = darknodeKey.slice(4 + 7 + 4 + eLength + 4, 4 + 7 + 4 + eLength + 4 + nLength);
+
+        // May have 0x00 prefixed
+        if (nLength === 257 && n[0] === 0x00) {
+            n = n.slice(1);
+        }
+    } else {
+        // We require the exponent E to fit into 32 bytes.
+        // Since it is stored at 64 bytes, we ignore the first 32 bytes.
+        // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
+        e = darknodeKey.slice(0, 8).readUInt32BE(4);
+        n = darknodeKey.slice(8);
+    }
+
+    const key = new NodeRSA();
+    key.importKey({
+        n,
+        e,
+    });
+
+    key.setOptions({
+        encryptionScheme: {
+            scheme: "pkcs1_oaep",
+            hash: "sha1"
+        }
+    });
+
+    return key;
+};
+
+const getDarknodePublicKey = async (
+    darknodeRegistryContract: Contract, darknode: string, simpleConsole: SimpleConsole,
+): Promise<NodeRSAType | null> => {
+    const darknodeKeyHex: string | null = await darknodeRegistryContract.methods.getDarknodePublicKey(darknode).call();
+
+    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
+        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
+        return null;
+    }
+
+    return hexToRSAKey(darknodeKeyHex);
+};
+
+const shareToBuffer = (share: shamir.Share, byteCount = 8): EncodedData => {
+    // TODO: Check that bignumber isn't bigger than 8 bytes (64 bits)
+    // Serialize number to 8-byte array (64-bits) (big-endian)
+    try {
+
+        /* Total: 40
+        64bit: index
+        64bit: length of share.value (32)
+        64bit: length of prime (4)
+        64bit: prime
+        64bit: length of value (4)
+        64bit: value
+        */
+
+        // TODO: Calculate length of prime and value
+        const indexBytes = new BN(share.index).toArrayLike(Buffer, "be", byteCount);
+        const shareLengthBytes = new BN(byteCount + byteCount + 8 + 8).toArrayLike(Buffer, "be", byteCount);
+        const primeLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
+        const primeBytes = shamir.PRIME.toArrayLike(Buffer, "be", 8);
+        const shareValueLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
+        const shareValueBytes = share.value.toArrayLike(Buffer, "be", 8);
+
+        const bytes = Buffer.concat([indexBytes, shareLengthBytes, primeLengthBytes, primeBytes, shareValueLengthBytes, shareValueBytes]);
+
+        return new EncodedData(bytes, Encodings.BUFFER);
+    } catch (error) {
+        throw updateError(`${error.message}: ${share.index}, ${share.value.toString()}`, error);
+    }
+};
+
+export const encryptForDarknode = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
+    const darknodeKey = await darknodeKeyP;
+
+    if (darknodeKey === null) {
+        throw new Error("Darknode key is null");
+    }
+
+    const bytes = shareToBuffer(share, 8);
+
+    return new EncodedData(darknodeKey.encrypt(bytes.toBuffer(), "buffer"), Encodings.BUFFER);
+};
+
+export const shareToEncodedData = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
+    // tslint:disable-next-line: no-console
+    console.warn("Share not being encrypted!");
+    return shareToBuffer(share, 8);
+};
+
+/*
+ * Retrieve all the darknodes registered in the current epoch.
+ * The getDarknodes() function will always return an array of {count} with empty
+ * values being the NULL address. These addresses must be filtered out.
+ * When the {start} value is not the NULL address, it is always returned as the
+ * first entry so it should not be re-added to the list of all darknodes.
+ */
+const getAllDarknodes = async (darknodeRegistryContract: Contract): Promise<string[]> => {
+    const batchSize = 50;
+
+    const allDarknodes = [];
+    let lastDarknode = NULL;
+    do {
+        const darknodes: string[] = await darknodeRegistryContract.methods.getDarknodes(lastDarknode, `0x${(batchSize).toString(16)}`).call();
+        allDarknodes.push(...darknodes.filter(addr => addr !== NULL && addr !== lastDarknode));
+        [lastDarknode] = darknodes.slice(-1);
+    } while (lastDarknode !== NULL);
+
+    return allDarknodes;
+};
+
+/*
+ * Calculate pod arrangement based on current epoch
+ */
+export const getAllPods = async (darknodeRegistryContract: Contract, simpleConsole: SimpleConsole): Promise<List<Pod>> => {
+    const darknodes = await getAllDarknodes(darknodeRegistryContract);
+    const minimumPodSize = new BN(await darknodeRegistryContract.methods.minimumPodSize().call()).toNumber();
+    simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
+    const epoch: [string, string] = await darknodeRegistryContract.methods.currentEpoch().call();
+
+    if (!darknodes.length) {
+        return Promise.reject(new Error("no darknodes in contract"));
+    }
+
+    if (minimumPodSize === 0) {
+        return Promise.reject(new Error("invalid minimum pod size (0)"));
+    }
+
+    const epochVal = new BN(epoch[0]);
+    const numberOfDarknodes = new BN(darknodes.length);
+    let x = epochVal.mod(numberOfDarknodes);
+    let positionInOcean = List();
+    for (let i = 0; i < darknodes.length; i++) {
+        positionInOcean = positionInOcean.set(i, -1);
+    }
+
+    simpleConsole.log(`Calculating pods`);
+
+    let pods = List<Pod>();
+    // FIXME: (setting to 1 if 0)
+    const numberOfPods = Math.floor(darknodes.length / minimumPodSize) || 1;
+    for (let i = 0; i < numberOfPods; i++) {
+        pods = pods.push(new Pod());
+    }
+
+    for (let i = 0; i < numberOfPods * minimumPodSize; i++) {
+        while (positionInOcean.get(x.toNumber()) !== -1) {
+            x = x.add(new BN(1));
+            x = x.mod(numberOfDarknodes);
+        }
+
+        positionInOcean = positionInOcean.set(x.toNumber(), i);
+        const podIndex = i % numberOfPods;
+
+        const pod = new Pod({
+            darknodes: pods.get(podIndex, new Pod()).darknodes.push(darknodes[x.toNumber()])
+        });
+        pods = pods.set(podIndex, pod);
+
+        x = x.add(epochVal);
+        x = x.mod(numberOfDarknodes);
+    }
+
+    for (let i = 0; i < pods.size; i++) {
+        let hashData = List<Buffer>();
+        for (const darknode of pods.get(i, new Pod()).darknodes.toArray()) {
+            hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
+        }
+
+        const id = new EncodedData(keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
+        const pod = new Pod({
+            id: id.toBase64(),
+            darknodes: pods.get(i, new Pod()).darknodes
+        });
+
+        // console.log(pod.id, JSON.stringify(pod.darknodes.map((node: string) =>
+        //     new EncodedData("0x1B20" + node.slice(2), Encodings.HEX).toBase58()
+        // ).toArray()));
+
+        pods = pods.set(i, pod);
+    }
+
+    return pods;
+};
+
+const getPods = async (
+    renexNode: string,
+    darknodeRegistryContract: Contract,
+    simpleConsole: SimpleConsole,
+    marketID: string,
+): Promise<List<Pod>> => {
+    const res = await axios.get<string[]>(`${renexNode}/pods?pair=${marketID}`);
+
+    const podsForPair = res.data;
+    const allPods = await getAllPods(darknodeRegistryContract, simpleConsole);
+    return allPods.filter((pod: Pod) => podsForPair.includes(pod.id));
+};
 
 const promiseAll = async <a>(list: List<Promise<a>>, defaultValue: a): Promise<List<a>> => {
     let newList = List<a>();
@@ -130,12 +341,12 @@ const promiseAll = async <a>(list: List<Promise<a>>, defaultValue: a): Promise<L
     return newList;
 };
 
-export async function buildOrderMapping(
+export const buildOrderMapping = async (
     renexNode: string,
     darknodeRegistryContract: Contract,
     order: NewOrder,
     simpleConsole: SimpleConsole,
-): Promise<Map<string, PodShares>> {
+): Promise<Map<string, PodShares>> => {
     const marketID = order.marketID;
     const pods = await getPods(renexNode, darknodeRegistryContract, simpleConsole, marketID);
 
@@ -239,226 +450,11 @@ export async function buildOrderMapping(
                 const [podID, podShares] = await podPromise;
                 return fragmentMappings.set(podID, podShares);
             } catch (error) {
+                // tslint:disable-next-line: no-console
                 console.error(error);
                 return fragmentMappings;
             }
         },
         Promise.resolve(Map<string, PodShares>())
     );
-}
-
-// function hashOrderFragmentToId(web3: Web3, orderFragment: OrderFragment): string {
-//     // TODO: Fix order hashing
-//     return Buffer.from(web3.utils.keccak256(JSON.stringify(orderFragment)).slice(2), "hex").toString("base64");
-// }
-
-const rsaPrefix = Buffer.from([0x00, 0x00, 0x00, 0x07, 0x73, 0x73, 0x68, 0x2d, 0x72, 0x73, 0x61]);
-
-export const hexToRSAKey = (darknodeKeyHexIn: string): NodeRSAType => {
-    const darknodeKeyHex = darknodeKeyHexIn.slice(0, 2) === "0x" ? darknodeKeyHexIn.slice(2) : darknodeKeyHexIn;
-    const darknodeKey = Buffer.from(darknodeKeyHex, "hex");
-
-    let e: number;
-    let n: Buffer;
-
-    if (darknodeKey.slice(0, 4 + 7).equals(rsaPrefix)) {
-        const eLength = new EncodedData(darknodeKey.slice(4 + 7, 4 + 7 + 4)).toNumber();
-        e = new EncodedData(darknodeKey.slice(4 + 7 + 4, 4 + 7 + 4 + eLength)).toNumber();
-        const nLength = new EncodedData(darknodeKey.slice(4 + 7 + 4 + eLength, 4 + 7 + 4 + eLength + 4)).toNumber();
-        n = darknodeKey.slice(4 + 7 + 4 + eLength + 4, 4 + 7 + 4 + eLength + 4 + nLength);
-
-        // May have 0x00 prefixed
-        if (nLength === 257 && n[0] === 0x00) {
-            n = n.slice(1);
-        }
-    } else {
-        // We require the exponent E to fit into 32 bytes.
-        // Since it is stored at 64 bytes, we ignore the first 32 bytes.
-        // (Go's crypto/rsa Validate() also requires E to fit into a 32-bit integer)
-        e = darknodeKey.slice(0, 8).readUInt32BE(4);
-        n = darknodeKey.slice(8);
-    }
-
-    const key = new NodeRSA();
-    key.importKey({
-        n,
-        e,
-    });
-
-    key.setOptions({
-        encryptionScheme: {
-            scheme: "pkcs1_oaep",
-            hash: "sha1"
-        }
-    });
-
-    return key;
 };
-
-const getDarknodePublicKey = async (
-    darknodeRegistryContract: Contract, darknode: string, simpleConsole: SimpleConsole,
-): Promise<NodeRSAType | null> => {
-    const darknodeKeyHex: string | null = await darknodeRegistryContract.methods.getDarknodePublicKey(darknode).call();
-
-    if (darknodeKeyHex === null || darknodeKeyHex.length === 0) {
-        simpleConsole.error(`Unable to retrieve public key for ${darknode}`);
-        return null;
-    }
-
-    return hexToRSAKey(darknodeKeyHex);
-};
-
-function shareToBuffer(share: shamir.Share, byteCount = 8): EncodedData {
-    // TODO: Check that bignumber isn't bigger than 8 bytes (64 bits)
-    // Serialize number to 8-byte array (64-bits) (big-endian)
-    try {
-
-        /* Total: 40
-        64bit: index
-        64bit: length of share.value (32)
-        64bit: length of prime (4)
-        64bit: prime
-        64bit: length of value (4)
-        64bit: value
-        */
-
-        // TODO: Calculate length of prime and value
-        const indexBytes = new BN(share.index).toArrayLike(Buffer, "be", byteCount);
-        const shareLengthBytes = new BN(byteCount + byteCount + 8 + 8).toArrayLike(Buffer, "be", byteCount);
-        const primeLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
-        const primeBytes = shamir.PRIME.toArrayLike(Buffer, "be", 8);
-        const shareValueLengthBytes = new BN(8).toArrayLike(Buffer, "be", byteCount);
-        const shareValueBytes = share.value.toArrayLike(Buffer, "be", 8);
-
-        const bytes = Buffer.concat([indexBytes, shareLengthBytes, primeLengthBytes, primeBytes, shareValueLengthBytes, shareValueBytes]);
-
-        return new EncodedData(bytes, Encodings.BUFFER);
-    } catch (error) {
-        throw updateError(`${error.message}: ${share.index}, ${share.value.toString()}`, error);
-    }
-}
-
-export const encryptForDarknode = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
-    const darknodeKey = await darknodeKeyP;
-
-    if (darknodeKey === null) {
-        throw new Error("Darknode key is null");
-    }
-
-    const bytes = shareToBuffer(share, 8);
-
-    return new EncodedData(darknodeKey.encrypt(bytes.toBuffer(), "buffer"), Encodings.BUFFER);
-};
-
-export const shareToEncodedData = async ([share, darknodeKeyP]: [shamir.Share, Promise<NodeRSAType | null>]): Promise<EncodedData> => {
-    console.warn("Share not being encrypted!");
-    return shareToBuffer(share, 8);
-};
-
-/*
- * Retrieve all the darknodes registered in the current epoch.
- * The getDarknodes() function will always return an array of {count} with empty
- * values being the NULL address. These addresses must be filtered out.
- * When the {start} value is not the NULL address, it is always returned as the
- * first entry so it should not be re-added to the list of all darknodes.
- */
-async function getAllDarknodes(darknodeRegistryContract: Contract): Promise<string[]> {
-    const batchSize = 50;
-
-    const allDarknodes = [];
-    let lastDarknode = NULL;
-    do {
-        const darknodes: string[] = await darknodeRegistryContract.methods.getDarknodes(lastDarknode, `0x${(batchSize).toString(16)}`).call();
-        allDarknodes.push(...darknodes.filter(addr => addr !== NULL && addr !== lastDarknode));
-        [lastDarknode] = darknodes.slice(-1);
-    } while (lastDarknode !== NULL);
-
-    return allDarknodes;
-}
-
-async function getPods(
-    renexNode: string,
-    darknodeRegistryContract: Contract,
-    simpleConsole: SimpleConsole,
-    marketID: string,
-): Promise<List<Pod>> {
-    const res = await axios.get<string[]>(`${renexNode}/pods?pair=${marketID}`);
-
-    const podsForPair = res.data;
-    const allPods = await getAllPods(darknodeRegistryContract, simpleConsole);
-    return allPods.filter((pod: Pod) => podsForPair.includes(pod.id));
-}
-
-/*
- * Calculate pod arrangement based on current epoch
- */
-export async function getAllPods(darknodeRegistryContract: Contract, simpleConsole: SimpleConsole): Promise<List<Pod>> {
-    const darknodes = await getAllDarknodes(darknodeRegistryContract);
-    const minimumPodSize = new BN(await darknodeRegistryContract.methods.minimumPodSize().call()).toNumber();
-    simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
-    const epoch: [string, string] = await darknodeRegistryContract.methods.currentEpoch().call();
-
-    if (!darknodes.length) {
-        return Promise.reject(new Error("no darknodes in contract"));
-    }
-
-    if (minimumPodSize === 0) {
-        return Promise.reject(new Error("invalid minimum pod size (0)"));
-    }
-
-    const epochVal = new BN(epoch[0]);
-    const numberOfDarknodes = new BN(darknodes.length);
-    let x = epochVal.mod(numberOfDarknodes);
-    let positionInOcean = List();
-    for (let i = 0; i < darknodes.length; i++) {
-        positionInOcean = positionInOcean.set(i, -1);
-    }
-
-    simpleConsole.log(`Calculating pods`);
-
-    let pods = List<Pod>();
-    // FIXME: (setting to 1 if 0)
-    const numberOfPods = Math.floor(darknodes.length / minimumPodSize) || 1;
-    for (let i = 0; i < numberOfPods; i++) {
-        pods = pods.push(new Pod());
-    }
-
-    for (let i = 0; i < numberOfPods * minimumPodSize; i++) {
-        while (positionInOcean.get(x.toNumber()) !== -1) {
-            x = x.add(new BN(1));
-            x = x.mod(numberOfDarknodes);
-        }
-
-        positionInOcean = positionInOcean.set(x.toNumber(), i);
-        const podIndex = i % numberOfPods;
-
-        const pod = new Pod({
-            darknodes: pods.get(podIndex, new Pod()).darknodes.push(darknodes[x.toNumber()])
-        });
-        pods = pods.set(podIndex, pod);
-
-        x = x.add(epochVal);
-        x = x.mod(numberOfDarknodes);
-    }
-
-    for (let i = 0; i < pods.size; i++) {
-        let hashData = List<Buffer>();
-        for (const darknode of pods.get(i, new Pod()).darknodes.toArray()) {
-            hashData = hashData.push(Buffer.from(darknode.substring(2), "hex"));
-        }
-
-        const id = new EncodedData(keccak256(`0x${Buffer.concat(hashData.toArray()).toString("hex")}`), Encodings.HEX);
-        const pod = new Pod({
-            id: id.toBase64(),
-            darknodes: pods.get(i, new Pod()).darknodes
-        });
-
-        // console.log(pod.id, JSON.stringify(pod.darknodes.map((node: string) =>
-        //     new EncodedData("0x1B20" + node.slice(2), Encodings.HEX).toBase58()
-        // ).toArray()));
-
-        pods = pods.set(i, pod);
-    }
-
-    return pods;
-}

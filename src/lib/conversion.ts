@@ -10,7 +10,7 @@ export const normalizeVolume = (input: BigNumber, roundUp?: boolean): BigNumber 
     return input.decimalPlaces(8, roundUp ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN);
 };
 
-export function toOriginalType(converted: BigNumber, original: NumberInput): NumberInput {
+export const toOriginalType = (converted: BigNumber, original: NumberInput): NumberInput => {
     if (BigNumber.isBigNumber(original)) {
         return converted;
     }
@@ -22,7 +22,7 @@ export function toOriginalType(converted: BigNumber, original: NumberInput): Num
         default:
             throw new Error(`Could not convert ${typeof original} to original type`);
     }
-}
+};
 
 /***
  * Shift decimals places by 10^exponent

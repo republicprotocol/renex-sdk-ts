@@ -42,7 +42,7 @@ export const fetchSwapperAddress = async (network: string): Promise<string> => {
     return (await axios.get(`${API}/id/eth?network=${network}`)).data;
 };
 
-export async function fetchSwapperStatus(network: string, renexNode: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> {
+export const fetchSwapperStatus = async (network: string, renexNode: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> => {
     try {
         const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
         if (response.bootloaded) {
@@ -62,9 +62,9 @@ export async function fetchSwapperStatus(network: string, renexNode: string, get
         }
         return SwapperConnectionStatus.NotConnected;
     }
-}
+};
 
-export function toSwapStatus(num: number): SwapStatus {
+export const toSwapStatus = (num: number): SwapStatus => {
 
     switch (num) {
         case 0:
@@ -92,9 +92,9 @@ export function toSwapStatus(num: number): SwapStatus {
         default:
             throw new Error(`Invalid SwapStatus number: ${num}`);
     }
-}
+};
 
-export async function submitSwap(swap: SentSwap, network: string): Promise<boolean | SubmitImmediateResponse> {
+export const submitSwap = async (swap: SentSwap, network: string): Promise<boolean | SubmitImmediateResponse> => {
     let resp;
 
     try {
@@ -114,9 +114,14 @@ export async function submitSwap(swap: SentSwap, network: string): Promise<boole
         return true;
     }
     return resp.data as SubmitImmediateResponse;
-}
+};
 
-export async function findMatchingReturnedSwap(check: (swap: ReturnedSwap) => boolean, network: string): Promise<ReturnedSwap> {
+export const fixSwapType = (swap: UnfixedReturnedSwap): ReturnedSwap => {
+    const { status, ...details } = swap;
+    return Object.assign({ status: toSwapStatus(status) }, details);
+};
+
+export const findMatchingReturnedSwap = async (check: (swap: ReturnedSwap) => boolean, network: string): Promise<ReturnedSwap> => {
     let response: { swaps: UnfixedReturnedSwap[] };
     try {
         response = (await axios.get(`${API}/swaps?network=${network}`)).data;
@@ -135,18 +140,14 @@ export async function findMatchingReturnedSwap(check: (swap: ReturnedSwap) => bo
         }
     }
     throw new Error(errors.UnableToFindMatchingSwap);
-}
+};
 
-export async function getSwapperDAddresses(tokens: Token[], options: { network: string }): Promise<string[]> {
-
-    const addresses = await Promise.all(tokens.map(async (token) => {
+export const getSwapperDAddresses = (tokens: Token[], options: { network: string }): Promise<string[]> =>
+    Promise.all(tokens.map(async (token) => {
         return (await axios.get(`${API}/addresses/${token}?network=${options.network}`)).data;
     }));
 
-    return addresses;
-}
-
-export async function getSwapperDBalances(options: { network: string }): Promise<BalancesResponse> {
+export const getSwapperDBalances = async (options: { network: string }): Promise<BalancesResponse> => {
 
     let response: BalancesResponse;
     try {
@@ -156,9 +157,9 @@ export async function getSwapperDBalances(options: { network: string }): Promise
     }
 
     return response;
-}
+};
 
-export async function getSwapperDSwaps(options: { network: string }): Promise<SwapsResponse> {
+export const getSwapperDSwaps = async (options: { network: string }): Promise<SwapsResponse> => {
     let response: SwapsResponse;
     try {
         response = (await axios.get(`${API}/swaps?network=${options.network}`)).data;
@@ -167,10 +168,4 @@ export async function getSwapperDSwaps(options: { network: string }): Promise<Sw
     }
 
     return response;
-}
-
-export function fixSwapType(swap: UnfixedReturnedSwap): ReturnedSwap {
-    const { status, ...details } = swap;
-    const result: ReturnedSwap = Object.assign({ status: toSwapStatus(status) }, details);
-    return result;
-}
+};
