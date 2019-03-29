@@ -248,14 +248,8 @@ const getAllDarknodes = async (darknodeRegistryContract: Contract): Promise<stri
 export const getAllPods = async (darknodeRegistryContract: Contract, simpleConsole: SimpleConsole): Promise<List<Pod>> => {
     const darknodes = await getAllDarknodes(darknodeRegistryContract);
     const podSizeReturnValue = await darknodeRegistryContract.methods.minimumPodSize().call();
-    console.log(podSizeReturnValue);
-    let minimumPodSize;
-    try {
-        minimumPodSize = new BN(podSizeReturnValue).toNumber();
-    } catch (error) {
-        console.error(error);
-        minimumPodSize = 8;
-    }
+    console.log(`podSizeReturnValue: ${podSizeReturnValue} (${podSizeReturnValue.toString()})`);
+    const minimumPodSize = new BN(podSizeReturnValue.toString()).toNumber();
     simpleConsole.log(`Using minimum pod size ${minimumPodSize}`);
     const epoch: [string, string] = await darknodeRegistryContract.methods.currentEpoch().call();
 
@@ -267,7 +261,8 @@ export const getAllPods = async (darknodeRegistryContract: Contract, simpleConso
         return Promise.reject(new Error("invalid minimum pod size (0)"));
     }
 
-    const epochVal = new BN(epoch[0]);
+    console.log(`epoch[0]: ${epoch[0]} (${epoch[0].toString()})`);
+    const epochVal = new BN(epoch[0].toString());
     const numberOfDarknodes = new BN(darknodes.length);
     let x = epochVal.mod(numberOfDarknodes);
     let positionInOcean = List();
