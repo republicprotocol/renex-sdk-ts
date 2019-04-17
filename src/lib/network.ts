@@ -3,7 +3,7 @@ import testnet from "./networks/testnet.json";
 
 export interface NetworkData {
     network: string;
-    ingress: string;
+    renexNode: string;
     infura: string;
     etherscan: string;
     wbtcKYCServer: string;
@@ -13,21 +13,8 @@ export interface NetworkData {
     contracts: [
         {
             darknodeRegistry: string;
-            orderbook: string;
-            renExTokens: string;
-            renExBalances: string;
-            renExSettlement: string;
-            wyre: string;
         }
     ];
-    tokens: {
-        DGX: string;
-        TUSD: string;
-        REN: string;
-        OMG: string;
-        ZRX: string;
-        WBTC: string;
-    };
 }
 
 export const networks = {

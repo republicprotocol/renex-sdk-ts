@@ -1,18 +1,17 @@
 import axios from "axios";
-import Web3 from "web3";
 
 import { errors, responseError, updateError } from "../errors";
-import { TokenCode } from "../types";
-import { EncodedData } from "./encodedData";
+import { Token } from "./tokens";
+import { ReturnedSwap, SentSwap, SubmitImmediateResponse, SwapStatus, UnfixedReturnedSwap } from "./types/swapObject";
 
 const API = "http://localhost:7928";
-const SIGNATURE_PREFIX = "RenEx: swapperd: ";
+// const SIGNATURE_PREFIX = "RenEx: swapperD: ";
 
 export enum SwapperConnectionStatus {
     NotConnected = "not_connected",
     ConnectedUnlocked = "connected_unlocked",
     ConnectedLocked = "connected_locked",
-    NotAuthorized = "not_authorized",
+    // NotAuthorized = "not_authorized",
 }
 
 interface InfoResponse {
@@ -31,6 +30,10 @@ export interface BalancesResponse {
     [token: string]: BalanceObject;
 }
 
+export interface SwapsResponse {
+    swaps: UnfixedReturnedSwap[];
+}
+
 export const fetchSwapperVersion = async (network: string): Promise<string> => {
     return (await axios.get(`${API}/version`)).data;
 };
@@ -39,16 +42,16 @@ export const fetchSwapperAddress = async (network: string): Promise<string> => {
     return (await axios.get(`${API}/id/eth?network=${network}`)).data;
 };
 
-export async function fetchSwapperStatus(network: string, ingress: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> {
+export const fetchSwapperStatus = async (network: string, renexNode: string, getSwapperID: () => Promise<string>): Promise<SwapperConnectionStatus> => {
     try {
         const response: InfoResponse = (await axios.get(`${API}/info?network=${network}`)).data;
         if (response.bootloaded) {
-            try {
-                const swapperID = await getSwapperID();
-                await axios.get(`${ingress}/kyc/${swapperID}`);
-            } catch (error) {
-                return SwapperConnectionStatus.NotAuthorized;
-            }
+            // try {
+            //     const swapperID = await getSwapperID();
+            //     await axios.get(`${renexNode}/kyc/${swapperID}`);
+            // } catch (error) {
+            //     return SwapperConnectionStatus.NotAuthorized;
+            // }
 
             return SwapperConnectionStatus.ConnectedUnlocked;
         }
@@ -59,23 +62,9 @@ export async function fetchSwapperStatus(network: string, ingress: string, getSw
         }
         return SwapperConnectionStatus.NotConnected;
     }
-}
+};
 
-export enum SwapStatus {
-    INACTIVE = "inactive",
-    INITIATED = "initiated",
-    AUDITED = "audited",
-    AUDIT_PENDING = "audit_pending",
-    AUDIT_FAILED = "audit_failed",
-    REDEEMED = "redeemed",
-    AUDITED_SECRET = "audited_secret",
-    REFUNDED = "refunded",
-    REFUND_FAILED = "refund_failed",
-    CANCELLED = "cancelled",
-    EXPIRED = "expired",
-}
-
-function toSwapStatus(num: number): SwapStatus {
+export const toSwapStatus = (num: number): SwapStatus => {
 
     switch (num) {
         case 0:
@@ -103,57 +92,9 @@ function toSwapStatus(num: number): SwapStatus {
         default:
             throw new Error(`Invalid SwapStatus number: ${num}`);
     }
-}
-interface SwapCore {
-    id?: string;
-    sendToken: string;
-    receiveToken: string;
-    sendAmount: string;
-    receiveAmount: string;
-    delay?: boolean;
-    // tslint:disable-next-line:no-any
-    delayInfo?: any;
-}
+};
 
-export interface SwapBlob extends SwapCore {
-    minimumReceiveAmount?: string;
-    sendTo?: string;
-    receiveFrom?: string;
-    timeLock?: number;
-    secretHash?: string;
-    shouldInitiateFirst?: boolean;
-    delayCallbackUrl?: string;
-    brokerFee?: number;
-    sendFee?: string;
-    receiveFee?: string;
-    brokerSendTokenAddr?: string;
-    brokerReceiveTokenAddr?: string;
-}
-
-export interface SubmitImmediateResponse {
-    swap: SwapBlob;
-    signature: string;
-    id: string;
-}
-
-interface InnerSwapReceipt extends SwapCore {
-    // tslint:disable-next-line:no-any
-    sendCost: any;
-    // tslint:disable-next-line:no-any
-    receiveCost: any;
-    timestamp: number;
-    timeLock: number;
-    status: number;
-}
-
-/**
- * This replaces the InnerSwapReceipt status from type number to type SwapStatus
- */
-export interface SwapReceipt extends Pick<InnerSwapReceipt, Exclude<keyof InnerSwapReceipt, "status">> {
-    status: SwapStatus;
-}
-
-export async function submitSwap(swap: SwapBlob, network: string): Promise<boolean | SubmitImmediateResponse> {
+export const submitSwap = async (swap: SentSwap, network: string): Promise<boolean | SubmitImmediateResponse> => {
     let resp;
 
     try {
@@ -173,10 +114,15 @@ export async function submitSwap(swap: SwapBlob, network: string): Promise<boole
         return true;
     }
     return resp.data as SubmitImmediateResponse;
-}
+};
 
-export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => boolean, network: string): Promise<SwapReceipt> {
-    let response: { swaps: InnerSwapReceipt[] };
+export const fixSwapType = (swap: UnfixedReturnedSwap): ReturnedSwap => {
+    const { status, ...details } = swap;
+    return Object.assign({ status: toSwapStatus(status) }, details);
+};
+
+export const findMatchingReturnedSwap = async (check: (swap: ReturnedSwap) => boolean, network: string): Promise<ReturnedSwap> => {
+    let response: { swaps: UnfixedReturnedSwap[] };
     try {
         response = (await axios.get(`${API}/swaps?network=${network}`)).data;
     } catch (error) {
@@ -184,7 +130,7 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
     }
 
     for (const innerSwap of response.swaps) {
-        const swap: SwapReceipt = fixSwapType(innerSwap);
+        const swap: ReturnedSwap = fixSwapType(innerSwap);
         try {
             if (check(swap)) {
                 return swap;
@@ -194,18 +140,14 @@ export async function findMatchingSwapReceipt(check: (swap: SwapReceipt) => bool
         }
     }
     throw new Error(errors.UnableToFindMatchingSwap);
-}
+};
 
-export async function getSwapperdAddresses(tokens: TokenCode[], options: { network: string }): Promise<string[]> {
-
-    const addresses = await Promise.all(tokens.map(async (token) => {
+export const getSwapperDAddresses = (tokens: Token[], options: { network: string }): Promise<string[]> =>
+    Promise.all(tokens.map(async (token) => {
         return (await axios.get(`${API}/addresses/${token}?network=${options.network}`)).data;
     }));
 
-    return addresses;
-}
-
-export async function getSwapperdBalances(options: { network: string }): Promise<BalancesResponse> {
+export const getSwapperDBalances = async (options: { network: string }): Promise<BalancesResponse> => {
 
     let response: BalancesResponse;
     try {
@@ -215,48 +157,15 @@ export async function getSwapperdBalances(options: { network: string }): Promise
     }
 
     return response;
-}
+};
 
-async function signMessage(web3: Web3, address: string, message: string): Promise<string> {
-    const hashForSigning: string = web3.utils.toHex(message);
-    let signature: EncodedData;
+export const getSwapperDSwaps = async (options: { network: string }): Promise<SwapsResponse> => {
+    let response: SwapsResponse;
     try {
-        // tslint:disable-next-line:no-any
-        signature = new EncodedData(await (web3.eth.personal.sign as any)(hashForSigning, address));
+        response = (await axios.get(`${API}/swaps?network=${options.network}`)).data;
     } catch (error) {
-        if (error.message.match(/User denied message signature/)) {
-            return Promise.reject(updateError(errors.SignatureCanceledByUser, error));
-        }
-        return Promise.reject(updateError(errors.UnsignedTransaction, error));
+        throw updateError(`${errors.UnableToRetrieveSwaps}: ${error.message || error}`, error);
     }
 
-    const buff = signature.toBuffer();
-    // Normalize v to be 0 or 1 (NOTE: Orderbook contract expects either format,
-    // but for future compatibility, we stick to one format)
-    // MetaMask gives v as 27 or 28, Ledger gives v as 0 or 1
-    if (buff[64] === 27 || buff[64] === 28) {
-        buff[64] = buff[64] - 27;
-    }
-
-    return buff.toString("base64");
-}
-
-export async function generateSignature(
-    web3: Web3,
-    address: string,
-    message: {
-        orderID: string;
-        kycAddr: string;
-        sendTokenAddr: string;
-        receiveTokenAddr: string;
-    },
-): Promise<string> {
-    const toSign = SIGNATURE_PREFIX + JSON.stringify(message);
-    return signMessage(web3, address, toSign);
-}
-
-function fixSwapType(swap: InnerSwapReceipt): SwapReceipt {
-    const { status, ...details } = swap;
-    const result: SwapReceipt = Object.assign({ status: toSwapStatus(status) }, details);
-    return result;
-}
+    return response;
+};

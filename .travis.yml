@@ -8,9 +8,10 @@ cache:
   - node_modules
 script:
 # Build and lint
-- npm run build:dev
-- npm run lint
-- npm run lint:extra || true
+- yarn run build:dev
+- yarn run lint
+- yarn run lint:extra || true
+- yarn test
 
 # Test installing package
 - mkdir tmp

@@ -2,7 +2,7 @@ import BN from "bn.js";
 import crypto from "crypto";
 import { List } from "immutable";
 
-export const PRIME: BN = new BN("17012364981921935471");
+export const PRIME: BN = new BN("18446744073709551359");
 
 export class Share {
     public index: number;
@@ -21,7 +21,7 @@ export class Share {
  * @param {BN} secret The secret number that will be split into shares.
  * @returns {List<Share>} An immutable list of shares.
  */
-export function split(n: number, k: number, secret: BN): List<Share> {
+export const split = (n: number, k: number, secret: BN): List<Share> => {
     if (n < k) {
         throw new Error(`n-k error: n = ${n}, k = ${k}`);
     }
@@ -29,16 +29,15 @@ export function split(n: number, k: number, secret: BN): List<Share> {
         throw new Error("finite field error: secret is too big");
     }
 
-    const coefficients = new Array(k);
+    const coefficients = new Array<BN>(k);
     coefficients[0] = secret;
 
     for (let i = 1; i < k; i++) {
+        // 8 bytes for a 64-bit number
+        const coefficientSize = 64;
         let coefficient = new BN(0);
-        const words = new Int32Array(2);
         do {
-            const bytes = crypto.randomBytes(words.length);
-            words.set(bytes);
-            coefficient = new BN(Math.abs(words[0])).pow(new BN(2)).add(new BN(Math.abs(words[1])));
+            coefficient = new BN(crypto.randomBytes(coefficientSize / 8));
         } while (coefficient.gte(PRIME));
         coefficients[i] = coefficient;
     }
@@ -58,9 +57,8 @@ export function split(n: number, k: number, secret: BN): List<Share> {
         shares[x - 1] = new Share(x, accumulator);
     }
 
-    const shareList = List(shares);
-    return shareList;
-}
+    return List(shares);
+};
 
 /**
  * Join shares into a secret using the finite field defined by the PRIME
@@ -71,7 +69,7 @@ export function split(n: number, k: number, secret: BN): List<Share> {
  * @returns {BN} The reconstructed secret, or meaningless garbage when an
  *          insufficient number of shares is provided.
  */
-export function join(shares: List<Share>): BN {
+export const join = (shares: List<Share>): BN => {
     let secret = new BN(0);
     for (let i = 0; i < shares.size; i++) {
         let num = new BN(1);
@@ -111,4 +109,4 @@ export function join(shares: List<Share>): BN {
     }
 
     return secret;
-}
+};

@@ -19,7 +19,7 @@ export const updateError = (msg: string, error: Error) => {
 
 export const errors = {
     CouldNotFindSwap: "Couldn't find a swap with matching orderID",
-    CouldNotAuthorizeSwapper: "Could not authorize swapper",
+    // CouldNotAuthorizeSwapper: "Could not authorize swapper",
 
     InvalidBuffer: "invalid buffer",
     InvalidHex: "invalid hex",
@@ -35,7 +35,7 @@ export const errors = {
     UserRejectedSwap: "User rejected the swap",
     InvalidPrice: "Invalid price",
     InvalidVolume: "Invalid volume",
-    InvalidMinimumVolume: "Invalid minimum volume",
+    InvalidMinimumFill: "Invalid minimum fill",
     EthGasStationError: "Cannot retrieve gas price from Eth Gas Station",
     CouldNotConnectSwapServer: "Could not connect to swap server",
     Unimplemented: "Method not implemented.",
@@ -50,5 +50,4 @@ export const errors = {
     InsufficientFunds: "Insufficient funds - please ensure you have enough ETH for the transaction fees",
     UnsupportedFilterStatus: "Unable to filter by specified status",
     UnknownOrderStatus: "Unknown order status",
-    InvalidStoragePath: "Storage path must start with either: '~/', './', or '/'",
 };
