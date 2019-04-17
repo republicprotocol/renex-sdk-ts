@@ -3,7 +3,7 @@ import Web3 from "web3";
 
 import { OrderedMap } from "immutable";
 import { Contract } from "web3-eth-contract/types";
-import { EthereumProvider } from "web3-providers/types";
+import { provider } from "web3-providers";
 
 import { errors } from "./errors";
 import { generateConfig } from "./lib/config";
@@ -91,10 +91,10 @@ export class RenExSDK {
     private readonly _config: Config;
     /**
      * Creates an instance of RenExSDK.
-     * @param {Provider} provider
+     * @param {Provider} web3Provider
      * @memberof RenExSDK
      */
-    constructor(provider: EthereumProvider | string, options?: Options) {
+    constructor(web3Provider: provider | string, options?: Options) {
         this._config = generateConfig(options);
 
         switch (this.getConfig().network) {
@@ -108,7 +108,7 @@ export class RenExSDK {
                 throw new Error(`Unsupported network field: ${this.getConfig().network}`);
         }
 
-        const [web3, contracts] = this.updateProvider(provider);
+        const [web3, contracts] = this.updateProvider(web3Provider);
         this._contracts = contracts;
 
         // Show warning when the expected network ID is different from the provider network ID
@@ -176,9 +176,9 @@ export class RenExSDK {
         this._address = address;
     }
 
-    public updateProvider = (provider: EthereumProvider | string): [Web3, ContractObject] => {
+    public updateProvider = (newProvider: provider | string): [Web3, ContractObject] => {
         // this._web3 = new Web3(provider);
-        const web3 = new Web3(provider);
+        const web3 = new Web3(newProvider);
 
         // Update contract providers
         this._contracts = {
